@@ -105,7 +105,7 @@ final class ChatController
 
             return Response::error(
                 'Sorry — I could not generate an answer just now. Please try again in a moment, '
-                . 'or open a support ticket if it keeps happening.',
+                . 'or contact us on WhatsApp if it keeps happening.',
                 503,
                 'generation_failed'
             )->withHeaders($limit->headers());
