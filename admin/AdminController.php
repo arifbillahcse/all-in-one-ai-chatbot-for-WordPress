@@ -196,15 +196,68 @@ final class AdminController
 
         $total = $metrics->countConversations($search);
 
+        $rows = array_map(
+            fn (array $row): array => $row + ['visitor' => $this->decodeVisitorMeta($row['metadata'] ?? null)],
+            $metrics->recentConversations($perPage, ($page - 1) * $perPage, $search)
+        );
+
+        $selectedId = Security::sanitizeIdentifier((string) $request->input('id', ''));
+        $selected = null;
+        $selectedMessages = [];
+
+        if ($selectedId !== '') {
+            $selected = $metrics->conversation($selectedId);
+
+            if ($selected !== null) {
+                $selected['visitor'] = $this->decodeVisitorMeta($selected['metadata'] ?? null);
+                $selectedMessages = $metrics->conversationMessages((int) $selected['id']);
+            }
+        }
+
         return [
-            'title'    => 'Conversations',
-            'template' => 'conversations',
-            'active'   => 'conversations',
-            'search'   => $search,
-            'page'     => $page,
-            'perPage'  => $perPage,
-            'total'    => $total,
-            'rows'     => $metrics->recentConversations($perPage, ($page - 1) * $perPage, $search),
+            'title'            => 'Conversations',
+            'template'         => 'conversations',
+            'active'           => 'conversations',
+            'search'           => $search,
+            'page'             => $page,
+            'perPage'          => $perPage,
+            'total'            => $total,
+            'rows'             => $rows,
+            'stats'            => $metrics->today(),
+            'selectedId'       => $selectedId,
+            'selected'         => $selected,
+            'selectedMessages' => $selectedMessages,
+        ];
+    }
+
+    /**
+     * Pre-chat form answers (name, email, department), stored as a JSON blob
+     * on the conversation row. Decoded defensively — the column is empty for
+     * every conversation that started before this feature existed, and a
+     * customer never types JSON here, but the value is still attacker-
+     * influenced free text passed through json_encode(), not a fact about the
+     * column's shape.
+     *
+     * @return array{name: string, email: string, department: string}
+     */
+    private function decodeVisitorMeta(?string $json): array
+    {
+        $empty = ['name' => '', 'email' => '', 'department' => ''];
+
+        if ($json === null || $json === '') {
+            return $empty;
+        }
+
+        $decoded = json_decode($json, true);
+
+        if (!is_array($decoded)) {
+            return $empty;
+        }
+
+        return [
+            'name'       => is_string($decoded['visitor_name'] ?? null) ? $decoded['visitor_name'] : '',
+            'email'      => is_string($decoded['visitor_email'] ?? null) ? $decoded['visitor_email'] : '',
+            'department' => is_string($decoded['visitor_department'] ?? null) ? $decoded['visitor_department'] : '',
         ];
     }
 
