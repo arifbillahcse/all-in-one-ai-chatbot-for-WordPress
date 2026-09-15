@@ -13,9 +13,12 @@ return [
      * Defaults to the configured APP_URL only. Add the customer's site here
      * if the widget is embedded on a different hostname.
      */
-    'allowed_origins' => array_values(array_filter([
-        rtrim((string) Env::get('APP_URL', ''), '/'),
-    ])),
+    'allowed_origins' => [
+        'https://hostorio.com',
+        'https://www.hostorio.com',
+        'https://my.hostorio.com',
+        'https://paymenter.hostorio.com',
+    ],
 
     /*
      * Proxy IPs whose X-Forwarded-For header may be trusted when resolving the
