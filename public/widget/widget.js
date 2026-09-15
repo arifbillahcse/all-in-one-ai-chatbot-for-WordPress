@@ -92,8 +92,71 @@
     var STORAGE_KEY_OPEN = 'hoai_widget_open';
     var STORAGE_KEY_FORM = 'hoai_form_data';
     var STORAGE_KEY_TOKEN = 'hoai_identity_token';
+    var STORAGE_KEY_LOG = 'hoai_chat_log';
+    var LOCAL_LOG_LIMIT = 100;
     var conversationId = null;
     var formData = null;
+    var messageLog = [];
+
+    /*
+     * Redisplaying a resumed chat should not depend on the backend ever having
+     * handed back a conversation_id — that field can be null for reasons that
+     * have nothing to do with whether the turn was answered (a transient
+     * storage error, a provider hiccup after the id was minted, and so on).
+     * The visible log is instead rebuilt straight from what this browser sent
+     * and received, which is available immediately and never blocked on a
+     * network round trip.
+     */
+    function loadLocalLog() {
+        try {
+            var stored = window.localStorage.getItem(STORAGE_KEY_LOG);
+            var parsed = stored ? JSON.parse(stored) : [];
+            messageLog = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            messageLog = [];
+        }
+    }
+
+    function saveLocalLog() {
+        try {
+            window.localStorage.setItem(STORAGE_KEY_LOG, JSON.stringify(messageLog.slice(-LOCAL_LOG_LIMIT)));
+        } catch (e) { /* storage unavailable or full; this turn just won't survive a reload */ }
+    }
+
+    function recordMessage(role, text, sources) {
+        messageLog.push({ role: role, content: String(text || ''), sources: sources || null });
+        if (messageLog.length > LOCAL_LOG_LIMIT) {
+            messageLog = messageLog.slice(-LOCAL_LOG_LIMIT);
+        }
+        saveLocalLog();
+    }
+
+    var STORAGE_KEY_SESSION = 'hoai_session_key';
+
+    /*
+     * A stable id for "this visitor's browser", independent of whatever
+     * conversation_id the backend does or does not hand back. Cross-tab sync
+     * used to be keyed on the backend id, which meant a null id (storage
+     * down, a slow first save) silently disabled it — every sibling tab
+     * dropped the turn instead of just not knowing which backend thread it
+     * belonged to. Every tab sharing this localStorage key is the same
+     * visitor by definition, so that is what ties them together instead.
+     */
+    function getSessionKey() {
+        try {
+            var existing = window.localStorage.getItem(STORAGE_KEY_SESSION);
+            if (existing) {
+                return existing;
+            }
+            var created = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+            window.localStorage.setItem(STORAGE_KEY_SESSION, created);
+            return created;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    var sessionKey = getSessionKey();
 
     try {
         // localStorage rather than sessionStorage: the conversation, the
@@ -138,15 +201,20 @@
     /**
      * Push a just-completed turn (the visitor's message and the assistant's
      * reply) to every other open tab on this origin.
+     *
+     * Keyed on `sessionKey`, not the backend conversation id — the id can be
+     * null (storage hiccup, first message not saved yet) without that having
+     * any bearing on whether sibling tabs should see the turn. Every tab
+     * reading the same `sessionKey` from localStorage is this same visitor.
      */
-    function broadcastTurn(forConversationId, userText, botText, sources) {
-        if (!syncChannel || !forConversationId) {
+    function broadcastTurn(userText, botText, sources) {
+        if (!syncChannel || !sessionKey) {
             return;
         }
 
         try {
             syncChannel.postMessage({
-                conversationId: forConversationId,
+                sessionKey: sessionKey,
                 userText: userText,
                 botText: botText,
                 sources: sources || null
@@ -160,24 +228,14 @@
 
             // `log` only exists once build() has run; a message that
             // arrives before this tab has finished booting is simply
-            // covered instead by the normal history load a few lines below.
-            if (!data || !data.conversationId || !log) {
+            // covered instead by the local-log restore a few lines below.
+            if (!data || !data.sessionKey || !log) {
                 return;
             }
 
-            // This tab has not started (or resumed) a conversation of its
-            // own yet — adopt the one a sibling tab just proved exists for
-            // this same visitor.
-            if (!conversationId) {
-                conversationId = data.conversationId;
-                try {
-                    window.localStorage.setItem(STORAGE_KEY, conversationId);
-                } catch (e) { /* storage unavailable; conversation still works for this tab */ }
-            }
-
-            if (data.conversationId !== conversationId) {
-                // A different conversation than the one this tab is showing
-                // — nothing to reconcile.
+            if (data.sessionKey !== sessionKey) {
+                // A different visitor's browser (should not happen on the
+                // same localStorage origin, but keyed defensively anyway).
                 return;
             }
 
@@ -188,10 +246,12 @@
 
             if (data.userText) {
                 addMessage('user', data.userText);
+                recordMessage('user', data.userText);
             }
 
             if (data.botText) {
                 addMessage('bot', data.botText, { sources: data.sources });
+                recordMessage('bot', data.botText, data.sources);
             }
         };
     }
@@ -629,6 +689,7 @@
         }
 
         addMessage('user', text);
+        recordMessage('user', text);
         input.value = '';
         autoGrow();
         setBusy(true);
@@ -669,6 +730,11 @@
             setBusy(false);
 
             if (result.body && result.body.ok) {
+                // A missing conversation_id (a transient storage hiccup on the
+                // server) no longer costs the visitor their history — the
+                // local log below is what persistence actually relies on.
+                // This is still saved when present, since it lets the server
+                // rebuild LLM context for the next turn.
                 if (result.body.conversation_id) {
                     conversationId = result.body.conversation_id;
                     try {
@@ -680,8 +746,9 @@
                     progressive: true,
                     sources: result.body.sources
                 });
+                recordMessage('bot', result.body.answer || '', result.body.sources);
 
-                broadcastTurn(conversationId, text, result.body.answer || '', result.body.sources);
+                broadcastTurn(text, result.body.answer || '', result.body.sources);
                 announce('Reply received.');
                 return;
             }
@@ -1209,13 +1276,26 @@
     }
 
     /**
-     * Redisplay a resumed conversation's messages after a page navigation.
-     *
-     * The conversation itself already continues server-side purely from the
-     * id stored in localStorage — the model sees the prior turns regardless
-     * of this. What is missing without it is the visible log: without
-     * re-rendering, every new page looks like the chat forgot everything,
-     * even though it did not.
+     * Redisplay a resumed conversation from what this browser already has in
+     * localStorage — instant, and independent of the backend ever having
+     * returned a conversation_id for any given turn.
+     */
+    function restoreLocalLog() {
+        if (!messageLog.length) {
+            return;
+        }
+
+        messageLog.forEach(function (message) {
+            addMessage(message.role === 'user' ? 'user' : 'bot', String(message.content || ''), {
+                sources: message.sources
+            });
+        });
+    }
+
+    /**
+     * Fallback path when there is nothing in the local log to show (a fresh
+     * browser profile, or localStorage was cleared) but a conversation_id is
+     * still on file — ask the backend for that thread's history instead.
      *
      * Always resolves; a failed or empty fetch just leaves the log empty,
      * same as a first-ever visit.
@@ -1242,7 +1322,10 @@
                 }
 
                 body.messages.forEach(function (message) {
-                    addMessage(message.role === 'user' ? 'user' : 'bot', String(message.content || ''));
+                    var role = message.role === 'user' ? 'user' : 'bot';
+                    var content = String(message.content || '');
+                    addMessage(role, content);
+                    recordMessage(role, content);
                 });
             })
             .catch(function () {
@@ -1268,6 +1351,7 @@
     function boot() {
         // Load stored form data if it exists from a previous session
         loadFormData();
+        loadLocalLog();
 
         // A token from a prior in-widget sign-in takes precedence unless the
         // page itself supplied one (e.g. the WHMCS template hook) — either
@@ -1304,7 +1388,17 @@
                 applyOverrides();
                 build();
 
-                return loadHistory();
+                // The local log is what persistence actually relies on now —
+                // instant, and unaffected by whether the backend ever handed
+                // back a conversation_id for any given turn. The backend
+                // fetch only runs as a fallback when there is nothing local
+                // to show (e.g. a cleared localStorage) but a conversation_id
+                // is still on file.
+                restoreLocalLog();
+
+                if (!messageLog.length) {
+                    return loadHistory();
+                }
             })
             .then(function () {
                 if (settings.openOnLoad || wasOpenBefore()) {

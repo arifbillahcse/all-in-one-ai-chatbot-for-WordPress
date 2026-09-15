@@ -113,20 +113,6 @@ final class ChatEngine
 
                 $conversationId = $conversation['id'];
                 $publicId       = $conversation['public_id'];
-
-                // Store visitor metadata on newly created conversations only
-                if (!$conversation['resumed'] && ($this->visitorName || $this->visitorEmail)) {
-                    $this->conversations->setVisitorMetadata(
-                        $conversationId,
-                        $this->visitorName,
-                        $this->visitorEmail,
-                        $this->visitorDepartment
-                    );
-                }
-
-                if ($conversation['resumed']) {
-                    $history = $this->conversations->history($conversationId);
-                }
             } catch (Throwable $e) {
                 // Persistence is an enhancement, not a prerequisite. A database
                 // that is down should cost the customer their history, not their
@@ -138,6 +124,36 @@ final class ChatEngine
                 $conversationId = null;
                 $publicId       = null;
                 $history        = [];
+            }
+
+            /*
+             * Metadata and history are best-effort extras on top of an already
+             * -resolved conversation id. Either one throwing must not discard
+             * the id itself — that would make the reply un-resumable over a
+             * failure that has nothing to do with identifying the thread.
+             */
+            if ($conversationId !== null) {
+                if (!$conversation['resumed'] && ($this->visitorName || $this->visitorEmail)) {
+                    try {
+                        $this->conversations->setVisitorMetadata(
+                            $conversationId,
+                            $this->visitorName,
+                            $this->visitorEmail,
+                            $this->visitorDepartment
+                        );
+                    } catch (Throwable $e) {
+                        Logger::error('Storing visitor metadata failed', ['error' => $e->getMessage()]);
+                    }
+                }
+
+                if ($conversation['resumed']) {
+                    try {
+                        $history = $this->conversations->history($conversationId);
+                    } catch (Throwable $e) {
+                        Logger::error('Loading conversation history failed', ['error' => $e->getMessage()]);
+                        $history = [];
+                    }
+                }
             }
         }
 
