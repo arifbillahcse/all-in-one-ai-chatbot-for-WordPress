@@ -24,7 +24,7 @@ if ( empty( $softorio_ai_settings['delete_on_uninstall'] ) ) {
 
 global $wpdb;
 
-foreach ( array( 'softorio_ai_chunks', 'softorio_ai_conversations', 'softorio_ai_messages', 'softorio_ai_limits', 'softorio_ai_jobs', 'softorio_ai_logs' ) as $softorio_ai_table ) {
+foreach ( array( 'softorio_ai_chunks', 'softorio_ai_conversations', 'softorio_ai_messages', 'softorio_ai_limits', 'softorio_ai_jobs', 'softorio_ai_logs', 'softorio_ai_leads' ) as $softorio_ai_table ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange -- removing the plugin's own tables.
 	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $wpdb->prefix . $softorio_ai_table ) );
 }

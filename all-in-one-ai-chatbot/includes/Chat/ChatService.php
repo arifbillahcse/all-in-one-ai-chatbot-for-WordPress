@@ -53,7 +53,7 @@ final class ChatService {
 	 * @param string $conversation_id Conversation to continue, or ''.
 	 * @param string $visitor_token   Widget's random token.
 	 * @param string $page_url        Page the visitor is on.
-	 * @return array{reply: string, conversation_id: string, sources: array<int, array{title: string, url: string}>}
+	 * @return array{reply: string, conversation_id: string, sources: array<int, array{title: string, url: string}>, unanswered: bool, offer_lead: bool}
 	 * @throws ChatError When the message cannot be answered.
 	 */
 	public function ask( string $message, string $conversation_id, string $visitor_token, string $page_url ): array {
@@ -104,12 +104,17 @@ final class ChatService {
 			);
 		}
 
-		$sources = self::sources( $passages, $response->text );
+		$parsed     = PromptBuilder::extract_no_answer( $response->text );
+		$reply      = '' !== $parsed['text'] ? $parsed['text'] : __( 'Sorry, I do not have that information.', 'all-in-one-ai-chatbot' );
+		$unanswered = $parsed['unanswered'];
+
+		// Pages the model could not use to answer are not "related".
+		$sources = $unanswered ? array() : self::sources( $passages, $reply );
 
 		$store->add_exchange(
 			$thread['id'],
 			$message,
-			$response->text,
+			$reply,
 			$sources,
 			array(
 				'provider'      => $response->provider,
@@ -117,6 +122,7 @@ final class ChatService {
 				'input_tokens'  => $response->input_tokens,
 				'output_tokens' => $response->output_tokens,
 				'cost'          => $response->cost(),
+				'unanswered'    => $unanswered,
 			)
 		);
 
@@ -129,24 +135,34 @@ final class ChatService {
 		 * @param string $reply    Assistant reply.
 		 * @param string $public_id Conversation id.
 		 */
-		do_action( 'softorio_ai_answered', $message, $response->text, $thread['public_id'] );
+		do_action( 'softorio_ai_answered', $message, $reply, $thread['public_id'] );
 
-		Events::emit(
-			Events::MESSAGE_ANSWERED,
-			array(
-				'conversation_id' => $thread['public_id'],
-				'question'        => $message,
-				'answer'          => $response->text,
-				'page_url'        => $page_url,
-				'provider'        => $response->provider,
-				'model'           => $response->model,
-			)
+		$event = array(
+			'conversation_id' => $thread['public_id'],
+			'question'        => $message,
+			'answer'          => $reply,
+			'page_url'        => $page_url,
+			'provider'        => $response->provider,
+			'model'           => $response->model,
 		);
 
+		Events::emit( Events::MESSAGE_ANSWERED, $event );
+
+		if ( $unanswered ) {
+			Events::emit( Events::QUESTION_UNANSWERED, $event );
+		}
+
+		$conversation = $store->find( $thread['id'] );
+
 		return array(
-			'reply'           => $response->text,
+			'reply'           => $reply,
 			'conversation_id' => $thread['public_id'],
 			'sources'         => Settings::get( 'show_sources', true ) ? $sources : array(),
+			'unanswered'      => $unanswered,
+			// Offer the lead form once per conversation, when it would help.
+			'offer_lead'      => $unanswered
+				&& 'fallback' === Settings::get( 'leads_mode', 'off' )
+				&& 0 === (int) ( $conversation['lead_id'] ?? 0 ),
 		);
 	}
 

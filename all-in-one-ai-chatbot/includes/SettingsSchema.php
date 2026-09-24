@@ -39,6 +39,9 @@ final class SettingsSchema {
 			'ai'        => __( 'AI Provider', 'all-in-one-ai-chatbot' ),
 			'knowledge' => __( 'Knowledge', 'all-in-one-ai-chatbot' ),
 			'widget'    => __( 'Widget', 'all-in-one-ai-chatbot' ),
+			'leads'     => __( 'Leads', 'all-in-one-ai-chatbot' ),
+			'notify'    => __( 'Notifications', 'all-in-one-ai-chatbot' ),
+			'integrations' => __( 'Integrations', 'all-in-one-ai-chatbot' ),
 			'limits'    => __( 'Limits & Privacy', 'all-in-one-ai-chatbot' ),
 		);
 
@@ -74,6 +77,24 @@ final class SettingsSchema {
 			'knowledge.search'  => array( 'title' => __( 'Search', 'all-in-one-ai-chatbot' ) ),
 			'widget.look'       => array( 'title' => __( 'Appearance', 'all-in-one-ai-chatbot' ) ),
 			'widget.behaviour'  => array( 'title' => __( 'Behaviour', 'all-in-one-ai-chatbot' ) ),
+			'leads.form'        => array(
+				'title' => __( 'Lead capture', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'Collect visitors\' contact details in the chat. Leads appear under AI Chatbot → Leads and can trigger emails, Telegram messages and webhooks.', 'all-in-one-ai-chatbot' ),
+			),
+			'leads.text'        => array( 'title' => __( 'Form text', 'all-in-one-ai-chatbot' ) ),
+			'leads.consent'     => array(
+				'title' => __( 'Consent (GDPR)', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'Needed for visitors from the EU and UK. The exact text a visitor agreed to is stored with their lead.', 'all-in-one-ai-chatbot' ),
+			),
+			'notify.email'      => array( 'title' => __( 'Email', 'all-in-one-ai-chatbot' ) ),
+			'notify.telegram'   => array(
+				'title' => __( 'Telegram', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'Get alerts on your phone. Create a bot with @BotFather, paste its token, send your bot any message, then use "Find my chat ID".', 'all-in-one-ai-chatbot' ),
+			),
+			'integrations.webhooks' => array(
+				'title' => __( 'Webhooks', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'Send events to Zapier, Make, n8n, Google Sheets, your CRM or any URL. Each request is JSON, signed with the secret below in the X-AICB-Signature header (HMAC-SHA256 of the body).', 'all-in-one-ai-chatbot' ),
+			),
 			'limits.abuse'      => array( 'title' => __( 'Usage limits', 'all-in-one-ai-chatbot' ) ),
 			'limits.privacy'    => array( 'title' => __( 'Privacy and data', 'all-in-one-ai-chatbot' ) ),
 		);
@@ -372,6 +393,180 @@ final class SettingsSchema {
 			),
 		);
 
+		$visibility = array(
+			'required' => __( 'Required', 'all-in-one-ai-chatbot' ),
+			'optional' => __( 'Optional', 'all-in-one-ai-chatbot' ),
+			'hidden'   => __( 'Hidden', 'all-in-one-ai-chatbot' ),
+		);
+		$events     = Support\Events::catalogue();
+
+		$fields += array(
+			// ── Leads ──────────────────────────────────────────────────────
+			'leads_mode'           => array(
+				'tab'     => 'leads',
+				'section' => 'form',
+				'type'    => 'select',
+				'label'   => __( 'Ask for contact details', 'all-in-one-ai-chatbot' ),
+				'options' => array(
+					'off'      => __( 'Never', 'all-in-one-ai-chatbot' ),
+					'fallback' => __( 'Only when the assistant cannot help or the visitor asks for a person', 'all-in-one-ai-chatbot' ),
+					'optional' => __( 'Before the chat (visitor can skip)', 'all-in-one-ai-chatbot' ),
+					'required' => __( 'Before the chat (required)', 'all-in-one-ai-chatbot' ),
+				),
+				'default' => 'off',
+			),
+			'lead_name'            => array(
+				'tab'     => 'leads',
+				'section' => 'form',
+				'type'    => 'select',
+				'label'   => __( 'Name field', 'all-in-one-ai-chatbot' ),
+				'options' => $visibility,
+				'default' => 'required',
+			),
+			'lead_email'           => array(
+				'tab'     => 'leads',
+				'section' => 'form',
+				'type'    => 'select',
+				'label'   => __( 'Email field', 'all-in-one-ai-chatbot' ),
+				'options' => $visibility,
+				'default' => 'required',
+			),
+			'lead_phone'           => array(
+				'tab'     => 'leads',
+				'section' => 'form',
+				'type'    => 'select',
+				'label'   => __( 'Phone field', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'At least one of email or phone is always required, so you can reach the visitor.', 'all-in-one-ai-chatbot' ),
+				'options' => $visibility,
+				'default' => 'optional',
+			),
+			'lead_title'           => array(
+				'tab'     => 'leads',
+				'section' => 'text',
+				'type'    => 'text',
+				'label'   => __( 'Form title', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'Leave your details', 'all-in-one-ai-chatbot' ),
+				'max'     => 80,
+			),
+			'lead_intro'           => array(
+				'tab'     => 'leads',
+				'section' => 'text',
+				'type'    => 'textarea',
+				'rows'    => 2,
+				'label'   => __( 'Form intro', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'We will get back to you as soon as possible.', 'all-in-one-ai-chatbot' ),
+				'max'     => 300,
+			),
+			'lead_thanks'          => array(
+				'tab'     => 'leads',
+				'section' => 'text',
+				'type'    => 'textarea',
+				'rows'    => 2,
+				'label'   => __( 'Thank-you message', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'Thanks! We have received your details and will contact you soon.', 'all-in-one-ai-chatbot' ),
+				'max'     => 300,
+			),
+			'consent_required'     => array(
+				'tab'     => 'leads',
+				'section' => 'consent',
+				'type'    => 'checkbox',
+				'label'   => __( 'Consent checkbox', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Visitors must tick a consent box before sending their details', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'consent_text'         => array(
+				'tab'     => 'leads',
+				'section' => 'consent',
+				'type'    => 'textarea',
+				'rows'    => 2,
+				'label'   => __( 'Consent text', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'A link to your privacy policy page is added automatically when one is set in Settings → Privacy.', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'I agree that my details are stored so the team can contact me.', 'all-in-one-ai-chatbot' ),
+				'max'     => 500,
+			),
+
+			// ── Notifications ──────────────────────────────────────────────
+			'notify_email'         => array(
+				'tab'         => 'notify',
+				'section'     => 'email',
+				'type'        => 'email',
+				'label'       => __( 'Send alerts to', 'all-in-one-ai-chatbot' ),
+				'desc'        => __( 'Leave blank to use the site admin email.', 'all-in-one-ai-chatbot' ),
+				'placeholder' => (string) get_option( 'admin_email' ),
+				'default'     => '',
+				'test'        => 'email',
+			),
+			'notify_email_events'  => array(
+				'tab'     => 'notify',
+				'section' => 'email',
+				'type'    => 'multicheck',
+				'label'   => __( 'Email me when', 'all-in-one-ai-chatbot' ),
+				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true ) ),
+				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
+			),
+			'transcript_to_visitor' => array(
+				'tab'     => 'notify',
+				'section' => 'email',
+				'type'    => 'checkbox',
+				'label'   => __( 'Visitor transcript', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Email visitors a copy of their chat when it ends (only visitors who left an email address)', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'telegram_key'         => array(
+				'tab'     => 'notify',
+				'section' => 'telegram',
+				'type'    => 'secret',
+				'label'   => __( 'Bot token', 'all-in-one-ai-chatbot' ),
+				'default' => '',
+			),
+			'telegram_chat_id'     => array(
+				'tab'     => 'notify',
+				'section' => 'telegram',
+				'type'    => 'text',
+				'label'   => __( 'Chat ID', 'all-in-one-ai-chatbot' ),
+				'default' => '',
+				'max'     => 40,
+				'test'    => 'telegram',
+			),
+			'telegram_events'      => array(
+				'tab'     => 'notify',
+				'section' => 'telegram',
+				'type'    => 'multicheck',
+				'label'   => __( 'Message me when', 'all-in-one-ai-chatbot' ),
+				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true ) ),
+				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
+			),
+
+			// ── Integrations ───────────────────────────────────────────────
+			'webhook_urls'         => array(
+				'tab'         => 'integrations',
+				'section'     => 'webhooks',
+				'type'        => 'urls',
+				'rows'        => 3,
+				'label'       => __( 'Webhook URLs', 'all-in-one-ai-chatbot' ),
+				'desc'        => __( 'One per line, up to 5. Leave empty to switch webhooks off.', 'all-in-one-ai-chatbot' ),
+				'placeholder' => 'https://hooks.zapier.com/hooks/catch/…',
+				'default'     => '',
+				'test'        => 'webhook',
+			),
+			'webhook_events'       => array(
+				'tab'     => 'integrations',
+				'section' => 'webhooks',
+				'type'    => 'multicheck',
+				'label'   => __( 'Send these events', 'all-in-one-ai-chatbot' ),
+				'options' => $events,
+				'default' => array( Support\Events::LEAD_CREATED ),
+			),
+			'webhook_secret'       => array(
+				'tab'     => 'integrations',
+				'section' => 'webhooks',
+				'type'    => 'generated',
+				'label'   => __( 'Signing secret', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Use it to check a request really came from this site. Tick "Generate a new secret" and save to replace it.', 'all-in-one-ai-chatbot' ),
+				'default' => '',
+			),
+		);
+
 		// One key/model block per provider.
 		foreach ( Settings::providers() as $id => $p ) {
 			$fields[ $id . '_key' ]   = array(
@@ -491,6 +686,32 @@ final class SettingsSchema {
 				// Secrets are never echoed back to the browser, so an empty
 				// field means "unchanged", not "delete".
 				return '' === $plain ? (string) $old : Support\Crypto::encrypt( $plain );
+
+			case 'multicheck':
+				$chosen = is_array( $value ) ? array_map( 'strval', $value ) : array();
+				return array_values( array_intersect( array_keys( (array) $field['options'] ), $chosen ) );
+
+			case 'urls':
+				$urls = array();
+				foreach ( preg_split( '/\R/', $scalar ) ?: array() as $line ) {
+					$line = trim( $line );
+
+					// esc_url_raw() "repairs" junk into a URL (it would turn
+					// "not a url" into http://not%20a%20url), so require a
+					// real absolute http(s) URL first.
+					if ( false === filter_var( $line, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) wp_parse_url( $line, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) {
+						continue;
+					}
+
+					$urls[] = esc_url_raw( $line, array( 'http', 'https' ) );
+				}
+				return implode( "\n", array_slice( array_values( array_unique( $urls ) ), 0, 5 ) );
+
+			case 'generated':
+				if ( ! empty( $input[ $key . '_regenerate' ] ) || '' === (string) $old ) {
+					return wp_generate_password( 40, false );
+				}
+				return (string) $old;
 
 			case 'post_types':
 				$types = array_filter( array_map( 'sanitize_key', is_array( $value ) ? $value : array() ), 'post_type_exists' );

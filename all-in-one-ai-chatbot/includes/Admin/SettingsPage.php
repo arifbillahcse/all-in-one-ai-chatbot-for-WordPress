@@ -167,7 +167,7 @@ final class SettingsPage {
 							<?php foreach ( $fields as $key => $field ) : ?>
 								<tr>
 									<th scope="row">
-										<?php if ( in_array( $field['type'], array( 'checkbox', 'radio', 'post_types' ), true ) ) : ?>
+										<?php if ( in_array( $field['type'], array( 'checkbox', 'radio', 'post_types', 'multicheck' ), true ) ) : ?>
 											<?php echo esc_html( (string) $field['label'] ); ?>
 										<?php else : ?>
 											<label for="sai-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( (string) $field['label'] ); ?></label>
@@ -318,6 +318,39 @@ final class SettingsPage {
 				}
 				break;
 
+			case 'multicheck':
+				foreach ( (array) $field['options'] as $option => $label ) {
+					printf(
+						'<label class="sai-block"><input type="checkbox" name="%s[]" value="%s" %s> %s</label>',
+						esc_attr( $name ),
+						esc_attr( (string) $option ),
+						checked( in_array( (string) $option, (array) $value, true ), true, false ),
+						esc_html( (string) $label )
+					);
+				}
+				break;
+
+			case 'urls':
+				printf(
+					'<textarea id="%s" name="%s" rows="%d" class="large-text code" placeholder="%s">%s</textarea>',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					(int) ( $field['rows'] ?? 3 ),
+					esc_attr( $ph ),
+					esc_textarea( (string) $value )
+				);
+				break;
+
+			case 'generated':
+				printf(
+					'<input type="text" id="%s" value="%s" class="regular-text code" readonly onclick="this.select()"> <label class="sai-clear"><input type="checkbox" name="%s" value="1"> %s</label>',
+					esc_attr( $id ),
+					esc_attr( (string) $value ),
+					esc_attr( self::name( $key . '_regenerate' ) ),
+					esc_html__( 'Generate a new secret', 'all-in-one-ai-chatbot' )
+				);
+				break;
+
 			case 'model':
 				printf( '<input type="text" id="%s" name="%s" value="%s" class="regular-text code">', esc_attr( $id ), esc_attr( $name ), esc_attr( (string) $value ) );
 				break;
@@ -341,6 +374,14 @@ final class SettingsPage {
 
 		if ( '' !== $desc ) {
 			printf( '<p class="description">%s</p>', esc_html( $desc ) );
+		}
+
+		if ( ! empty( $field['test'] ) ) {
+			printf(
+				'<p><button type="button" class="button sai-test-integration" data-kind="%1$s">%2$s</button> <span class="sai-test-result" data-for="%1$s"></span></p>',
+				esc_attr( (string) $field['test'] ),
+				esc_html( 'telegram' === $field['test'] ? __( 'Find my chat ID / send test', 'all-in-one-ai-chatbot' ) : __( 'Send a test', 'all-in-one-ai-chatbot' ) )
+			);
 		}
 	}
 

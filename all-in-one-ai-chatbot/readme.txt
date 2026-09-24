@@ -4,7 +4,7 @@ Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,16 @@ It does not invent answers. When your content does not cover a question, it says
 * Replies in the visitor's language, including Bangla and other non-Latin scripts.
 * "Talk to a person" button for WhatsApp, email or your contact page.
 * Read every conversation in WP Admin to see what visitors ask and what your content is missing.
+
+**Leads and alerts**
+
+* Lead capture: before the chat, or only when the assistant can't help or the visitor asks for a person.
+* You choose the fields (name, email, phone), with an optional GDPR consent checkbox.
+* Leads screen with statuses, search and CSV export.
+* Instant alerts by email and Telegram, and chat transcripts by email.
+* Webhooks to Zapier, Make, n8n, Google Sheets or any CRM, signed with HMAC-SHA256.
+* Works with WordPress's personal data export and erase tools.
+* Activity log that shows every email, alert and webhook, with automatic retries.
 
 **You control the cost**
 
@@ -49,6 +59,8 @@ When a visitor sends a chat message, the plugin sends the provider: the visitor'
 
 * **OpenAI**: used when OpenAI is selected as the main or backup provider, when you press "Test connection" for OpenAI, and for semantic search if you turn it on. With semantic search on, the text of your published content is also sent when it is indexed. [Terms of use](https://openai.com/policies/terms-of-use/), [Privacy policy](https://openai.com/policies/privacy-policy/).
 * **Anthropic (Claude)**: used when Claude is selected as the main or backup provider. [Commercial terms](https://www.anthropic.com/legal/commercial-terms), [Privacy policy](https://www.anthropic.com/legal/privacy).
+* **Telegram**: only if you add a Telegram bot token. Lead and alert details are sent to your own bot chat. [Terms](https://telegram.org/tos), [Privacy policy](https://telegram.org/privacy).
+* **Your webhook URLs**: only if you add them. Event data, including lead contact details and chat transcripts, is sent to the URLs you enter.
 * **DeepSeek**: used when DeepSeek is selected as the main or backup provider. [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html), [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
 
 Suggested wording for your privacy policy is added under Settings → Privacy.
@@ -99,6 +111,14 @@ Not yet. Product and order tools are planned for a future version.
 * `softorio_ai_answered` (action): fires after each answer, with the question, reply and conversation id.
 
 == Changelog ==
+
+= 1.1.0 =
+* New: lead capture (before the chat, or when the assistant can't answer), with a consent checkbox.
+* New: Leads screen with CSV export, and personal data export and erase.
+* New: email and Telegram alerts, chat transcripts, webhooks.
+* New: detects questions the assistant could not answer.
+* New: tabbed settings and an Activity Log.
+* Fix: restoring chat history on sites without pretty permalinks.
 
 = 1.0.0 =
 * First release.

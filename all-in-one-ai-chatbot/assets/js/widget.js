@@ -26,6 +26,10 @@
 	var KEY_CONVERSATION = 'softorioAi.conversation';
 	var KEY_LOG = 'softorioAi.log';
 	var KEY_OPEN = 'softorioAi.open';
+	var KEY_LEAD = 'softorioAi.lead';
+	var KEY_SKIPPED = 'softorioAi.leadSkipped';
+	var leadCfg = config.leads || null;
+	var gate = null;
 	var LOG_LIMIT = 60;
 
 	var root, hostEl, launcher, panel, log, input, sendButton, suggestionsBox, contactBox;
@@ -67,6 +71,21 @@
 				}
 			}
 		} catch ( e ) {}
+	}
+
+	/**
+	 * Endpoint URL with query parameters.
+	 *
+	 * The REST base is either pretty (/wp-json/…/) or, on sites without pretty
+	 * permalinks, a query string (?rest_route=/…/) — so parameters must join
+	 * with & when a ? is already there.
+	 */
+	function endpoint( path, params ) {
+		var url = config.restUrl + path;
+		var query = Object.keys( params || {} ).map( function ( key ) {
+			return encodeURIComponent( key ) + '=' + encodeURIComponent( params[ key ] );
+		} ).join( '&' );
+		return query ? url + ( url.indexOf( '?' ) === -1 ? '?' : '&' ) + query : url;
 	}
 
 	function randomToken() {
@@ -292,7 +311,7 @@
 		var hasUserMessage = messages.some( function ( m ) {
 			return m.role === 'user';
 		} );
-		suggestionsBox.hidden = hasUserMessage || ! suggestionsBox.childNodes.length;
+		suggestionsBox.hidden = hasUserMessage || ! suggestionsBox.childNodes.length || ( !! gate && leadCfg.mode === 'required' );
 	}
 
 	// ── Network ─────────────────────────────────────────────────────────────────
@@ -304,12 +323,27 @@
 			return;
 		}
 
+		// The pre-chat form is waiting: "required" means it must be filled
+		// in first; with "optional", chatting anyway counts as skipping it.
+		if ( gate ) {
+			if ( leadCfg.mode === 'required' ) {
+				var first = gate.querySelector( 'input' );
+				if ( first ) {
+					first.focus();
+				}
+				return;
+			}
+			write( session, KEY_SKIPPED, '1' );
+			gate.remove();
+			releaseGate();
+		}
+
 		addMessage( 'user', text, null, true );
 		input.value = '';
 		autoGrow();
 		setBusy( true );
 
-		fetch( config.restUrl + 'chat', {
+		fetch( endpoint( 'chat' ), {
 			method: 'POST',
 			credentials: 'omit',
 			headers: { 'Content-Type': 'application/json' },
@@ -338,6 +372,9 @@
 						write( local, KEY_CONVERSATION, result.body.conversation_id );
 					}
 					addMessage( 'bot', result.body.reply, result.body.sources, true );
+					if ( result.body.offer_lead && leadCfg && ! leadDone() ) {
+						showLeadForm( 'fallback' );
+					}
 					return;
 				}
 
@@ -352,6 +389,220 @@
 			} )
 			.then( function () {
 				input.focus();
+			} );
+	}
+
+	// ── Lead form ───────────────────────────────────────────────────────────────
+
+	function leadDone() {
+		return read( local, KEY_LEAD ) === '1';
+	}
+
+	function hasUserMessage() {
+		return messages.some( function ( m ) {
+			return m.role === 'user';
+		} );
+	}
+
+	/** Lock or unlock the message box while the pre-chat form is required. */
+	function lockInput( locked ) {
+		input.disabled = locked;
+		sendButton.disabled = locked;
+		input.placeholder = locked ? i18n.formFirst : i18n.placeholder;
+	}
+
+	/** Show the pre-chat form if the owner wants details before chatting. */
+	function maybeGate() {
+		if ( ! leadCfg || ( leadCfg.mode !== 'optional' && leadCfg.mode !== 'required' ) ) {
+			return;
+		}
+		if ( leadDone() || hasUserMessage() || gate || ( leadCfg.mode === 'optional' && read( session, KEY_SKIPPED ) === '1' ) ) {
+			return;
+		}
+		gate = showLeadForm( 'pre_chat' );
+		lockInput( true );
+		updateSuggestions();
+	}
+
+	function releaseGate() {
+		if ( gate ) {
+			gate = null;
+			lockInput( false );
+			updateSuggestions();
+		}
+	}
+
+	function formField( form, name, rule, type, autocomplete ) {
+		var wrap = el( 'label', 'sai-field' );
+		wrap.appendChild( el( 'span', 'sai-field-label', i18n[ name ] + ( rule === 'optional' ? ' (' + i18n.optional + ')' : '' ) ) );
+		var field = el( type === 'textarea' ? 'textarea' : 'input', 'sai-field-input' );
+		if ( type !== 'textarea' ) {
+			field.type = type;
+		} else {
+			field.rows = 3;
+		}
+		field.name = name;
+		field.required = rule === 'required';
+		if ( autocomplete ) {
+			field.autocomplete = autocomplete;
+		}
+		wrap.appendChild( field );
+		wrap.appendChild( el( 'span', 'sai-field-error' ) );
+		form.appendChild( wrap );
+		return field;
+	}
+
+	/**
+	 * Render the lead form as a card in the conversation.
+	 *
+	 * @param {string} source pre_chat | fallback | handoff
+	 * @return {Element} the card row
+	 */
+	function showLeadForm( source ) {
+		var row = el( 'div', 'sai-msg sai-bot sai-lead-row' );
+		var form = el( 'form', 'sai-lead' );
+		form.noValidate = true;
+
+		form.appendChild( el( 'strong', 'sai-lead-title', leadCfg.title || i18n.leaveDetails ) );
+		if ( leadCfg.intro ) {
+			form.appendChild( el( 'p', 'sai-lead-intro', leadCfg.intro ) );
+		}
+
+		var fields = {};
+		var rules = leadCfg.fields || {};
+
+		if ( rules.name && rules.name !== 'hidden' ) {
+			fields.name = formField( form, 'name', rules.name, 'text', 'name' );
+		}
+		if ( rules.email && rules.email !== 'hidden' ) {
+			fields.email = formField( form, 'email', rules.email, 'email', 'email' );
+		}
+		if ( rules.phone && rules.phone !== 'hidden' ) {
+			fields.phone = formField( form, 'phone', rules.phone, 'tel', 'tel' );
+		}
+		if ( source === 'handoff' ) {
+			fields.message = formField( form, 'message', 'optional', 'textarea', '' );
+		}
+
+		var consent = null;
+		if ( leadCfg.consent ) {
+			var consentWrap = el( 'label', 'sai-consent' );
+			consent = el( 'input' );
+			consent.type = 'checkbox';
+			consent.name = 'consent';
+			consentWrap.appendChild( consent );
+			consentWrap.appendChild( document.createTextNode( ' ' + leadCfg.consent + ' ' ) );
+			if ( leadCfg.privacyUrl && safeHref( leadCfg.privacyUrl ) ) {
+				consentWrap.appendChild( link( leadCfg.privacyUrl, i18n.privacy ) );
+			}
+			consentWrap.appendChild( el( 'span', 'sai-field-error' ) );
+			form.appendChild( consentWrap );
+		}
+
+		var error = el( 'div', 'sai-lead-error' );
+		error.setAttribute( 'role', 'alert' );
+		form.appendChild( error );
+
+		var actions = el( 'div', 'sai-lead-actions' );
+		var submit = el( 'button', 'sai-lead-submit', i18n.submit );
+		submit.type = 'submit';
+		actions.appendChild( submit );
+
+		if ( source === 'pre_chat' && leadCfg.mode === 'optional' ) {
+			var skip = el( 'button', 'sai-lead-skip', i18n.skip );
+			skip.type = 'button';
+			skip.addEventListener( 'click', function () {
+				write( session, KEY_SKIPPED, '1' );
+				row.remove();
+				releaseGate();
+				input.focus();
+			} );
+			actions.appendChild( skip );
+		}
+		form.appendChild( actions );
+
+		form.addEventListener( 'submit', function ( event ) {
+			event.preventDefault();
+			submitLead( source, form, fields, consent, row, submit, error );
+		} );
+
+		row.appendChild( form );
+		log.appendChild( row );
+		scrollDown();
+
+		var first = form.querySelector( 'input, textarea' );
+		if ( first && ! panel.hidden ) {
+			first.focus();
+		}
+
+		return row;
+	}
+
+	function submitLead( source, form, fields, consent, row, submit, error ) {
+		form.querySelectorAll( '.sai-field-error' ).forEach( function ( node ) {
+			node.textContent = '';
+		} );
+		error.textContent = '';
+		submit.disabled = true;
+		submit.textContent = i18n.sending;
+
+		var body = {
+			source: source,
+			visitor_token: visitorToken(),
+			conversation_id: conversationId(),
+			page_url: window.location.href.split( '#' )[ 0 ],
+			consent: consent && consent.checked ? 1 : 0
+		};
+		Object.keys( fields ).forEach( function ( key ) {
+			body[ key ] = fields[ key ].value.trim();
+		} );
+
+		fetch( endpoint( 'lead' ), {
+			method: 'POST',
+			credentials: 'omit',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify( body )
+		} )
+			.then( function ( response ) {
+				return response.json().then(
+					function ( data ) {
+						return { ok: response.ok, body: data || {} };
+					},
+					function () {
+						return { ok: false, body: {} };
+					}
+				);
+			} )
+			.then( function ( result ) {
+				if ( result.ok ) {
+					write( local, KEY_LEAD, '1' );
+					row.remove();
+					addMessage( 'bot', result.body.message || leadCfg.thanks, null, true );
+					releaseGate();
+					input.focus();
+					return;
+				}
+
+				submit.disabled = false;
+				submit.textContent = i18n.submit;
+
+				var fieldErrors = result.body.fields || {};
+				var shown = false;
+				Object.keys( fieldErrors ).forEach( function ( key ) {
+					var target = key === 'consent' ? consent : fields[ key ];
+					if ( target ) {
+						target.closest( 'label' ).querySelector( '.sai-field-error' ).textContent = fieldErrors[ key ];
+						shown = true;
+					}
+				} );
+				if ( ! shown ) {
+					error.textContent = result.body.message || i18n.error;
+				}
+			} )
+			.catch( function () {
+				submit.disabled = false;
+				submit.textContent = i18n.submit;
+				error.textContent = navigator.onLine === false ? i18n.offline : i18n.error;
 			} );
 	}
 
@@ -374,7 +625,7 @@
 
 		// The local log is gone (cleared storage, another tab wrote over it)
 		// but the conversation still exists server-side.
-		fetch( config.restUrl + 'history?conversation_id=' + encodeURIComponent( id ) + '&visitor_token=' + encodeURIComponent( visitorToken() ), {
+		fetch( endpoint( 'history', { conversation_id: id, visitor_token: visitorToken() } ), {
 			credentials: 'omit'
 		} )
 			.then( function ( r ) {
@@ -392,6 +643,12 @@
 				} );
 				saveLog();
 				updateSuggestions();
+
+				// A returning visitor with an existing chat is not asked again.
+				if ( gate && hasUserMessage() ) {
+					gate.remove();
+					releaseGate();
+				}
 			} )
 			.catch( function () {} );
 	}
@@ -403,8 +660,11 @@
 		while ( log.firstChild ) {
 			log.removeChild( log.firstChild );
 		}
+		gate = null;
+		lockInput( false );
 		greet();
 		updateSuggestions();
+		maybeGate();
 		input.focus();
 	}
 
@@ -521,6 +781,16 @@
 			}
 		} );
 
+		if ( leadCfg ) {
+			var leave = el( 'button', 'sai-contact-link sai-leave', i18n.leaveDetails );
+			leave.type = 'button';
+			leave.addEventListener( 'click', function () {
+				contactBox.hidden = true;
+				showLeadForm( 'handoff' );
+			} );
+			contactBox.appendChild( leave );
+		}
+
 		if ( contactBox.childNodes.length ) {
 			var human = el( 'button', 'sai-human', i18n.human );
 			human.type = 'button';
@@ -585,6 +855,7 @@
 
 		greet();
 		restore();
+		maybeGate();
 
 		if ( read( session, KEY_OPEN ) === '1' ) {
 			open();

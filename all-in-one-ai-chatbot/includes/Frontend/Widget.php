@@ -8,6 +8,7 @@
 namespace Softorio\AiAssistant\Frontend;
 
 use Softorio\AiAssistant\Chat\PromptBuilder;
+use Softorio\AiAssistant\Leads\LeadService;
 use Softorio\AiAssistant\Rest\ChatController;
 use Softorio\AiAssistant\Settings;
 
@@ -94,6 +95,7 @@ final class Widget {
 			'position'    => 'left' === Settings::get( 'position', 'right' ) ? 'left' : 'right',
 			'suggestions' => array_slice( $suggestions, 0, 4 ),
 			'maxLength'   => max( 50, (int) Settings::get( 'max_message_length', 1000 ) ),
+			'leads'       => LeadService::enabled() ? LeadService::form_config() : null,
 			'contact'     => array(
 				'whatsapp' => '' !== $whatsapp ? 'https://wa.me/' . $whatsapp : '',
 				'email'    => '' !== $email ? 'mailto:' . $email : '',
@@ -114,6 +116,17 @@ final class Widget {
 				'contactPage' => __( 'Contact page', 'all-in-one-ai-chatbot' ),
 				'newChat'     => __( 'Start a new chat', 'all-in-one-ai-chatbot' ),
 				'disclaimer'  => __( 'AI assistant — answers may be imperfect.', 'all-in-one-ai-chatbot' ),
+				'name'        => __( 'Name', 'all-in-one-ai-chatbot' ),
+				'email'       => __( 'Email', 'all-in-one-ai-chatbot' ),
+				'phone'       => __( 'Phone', 'all-in-one-ai-chatbot' ),
+				'message'     => __( 'How can we help?', 'all-in-one-ai-chatbot' ),
+				'submit'      => __( 'Send', 'all-in-one-ai-chatbot' ),
+				'skip'        => __( 'Skip', 'all-in-one-ai-chatbot' ),
+				'sending'     => __( 'Sending…', 'all-in-one-ai-chatbot' ),
+				'leaveDetails' => __( 'Leave your details', 'all-in-one-ai-chatbot' ),
+				'optional'    => __( 'optional', 'all-in-one-ai-chatbot' ),
+				'privacy'     => __( 'Privacy policy', 'all-in-one-ai-chatbot' ),
+				'formFirst'   => __( 'Please fill in the form above to start chatting.', 'all-in-one-ai-chatbot' ),
 			),
 		);
 	}

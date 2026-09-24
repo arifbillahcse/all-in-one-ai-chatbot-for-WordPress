@@ -35,7 +35,9 @@ final class FakeHttp {
 }
 
 add_filter( 'pre_http_request', static function ( $pre, $args, $url ) {
-	if ( ! str_contains( $url, 'api.openai.com' ) && ! str_contains( $url, 'api.anthropic.com' ) && ! str_contains( $url, 'api.deepseek.com' ) ) {
+	$faked = array( 'api.openai.com', 'api.anthropic.com', 'api.deepseek.com', 'api.telegram.org', 'hooks.example.com' );
+
+	if ( ! in_array( wp_parse_url( $url, PHP_URL_HOST ), $faked, true ) ) {
 		return $pre;
 	}
 
@@ -59,6 +61,27 @@ add_filter( 'pre_http_request', static function ( $pre, $args, $url ) {
 		'filename' => null,
 	);
 }, 10, 3 );
+
+/** Outgoing emails, captured instead of sent. */
+final class FakeMail {
+	public static array $sent = array();
+	public static bool $fail = false;
+}
+
+add_filter( 'pre_wp_mail', static function ( $pre, $atts ) {
+	if ( FakeMail::$fail ) {
+		do_action( 'wp_mail_failed', new WP_Error( 'wp_mail_failed', 'SMTP connect() failed.' ) );
+		return false;
+	}
+	FakeMail::$sent[] = $atts;
+	return true;
+}, 10, 2 );
+
+/** Run the job queue until nothing is due. */
+function sai_run_queue(): void {
+	delete_option( 'softorio_ai_queue_lock' );
+	\Softorio\AiAssistant\Support\Queue::run();
+}
 
 /** Save settings the same way the settings form does. */
 function sai_save_settings( array $changes ): void {

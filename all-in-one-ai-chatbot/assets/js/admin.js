@@ -145,6 +145,31 @@
 		} );
 	} );
 
+	// ── Test email / Telegram / webhooks ────────────────────────────────────────
+	document.querySelectorAll( '.sai-test-integration' ).forEach( function ( button ) {
+		button.addEventListener( 'click', function () {
+			var kind = button.getAttribute( 'data-kind' );
+			var out = document.querySelector( '.sai-test-result[data-for="' + kind + '"]' );
+
+			out.className = 'sai-test-result';
+			out.textContent = cfg.i18n.working;
+			button.disabled = true;
+
+			post( 'softorio_ai_test_integration', { kind: kind } )
+				.then( function ( res ) {
+					out.classList.add( res && res.success ? 'is-ok' : 'is-error' );
+					out.textContent = res && res.data && res.data.message ? res.data.message : cfg.i18n.failed;
+				} )
+				.catch( function () {
+					out.classList.add( 'is-error' );
+					out.textContent = cfg.i18n.failed;
+				} )
+				.then( function () {
+					button.disabled = false;
+				} );
+		} );
+	} );
+
 	// ── Delete conversation ─────────────────────────────────────────────────────
 	var del = document.getElementById( 'sai-delete-conversation' );
 

@@ -98,7 +98,7 @@ T::test( 'admin AJAX actions require a nonce and manage_options', function () {
 	T::ok( false === has_action( 'wp_ajax_nopriv_softorio_ai_test' ), 'test not available to visitors' );
 
 	$source = file_get_contents( SOFTORIO_AI_DIR . 'includes/Admin/Ajax.php' );
-	T::same( 4, substr_count( $source, 'self::guard();' ), 'every action calls the nonce + capability guard' );
+	T::same( substr_count( $source, "add_action( 'wp_ajax_" ), substr_count( $source, 'self::guard();' ), 'every action calls the nonce + capability guard' );
 } );
 
 T::test( 'widget config exposes no secrets', function () {

@@ -26,6 +26,37 @@ defined( 'ABSPATH' ) || exit;
 final class PromptBuilder {
 
 	/**
+	 * Marker the model puts at the start of a reply it could not ground.
+	 */
+	public const NO_ANSWER = '[NO_ANSWER]';
+
+	/**
+	 * Split a model reply into the visible text and the "could not answer" flag.
+	 *
+	 * Tolerant of the ways models mangle a marker: surrounding whitespace,
+	 * bold wrapping, or putting it on its own line.
+	 *
+	 * @param string $reply Raw model reply.
+	 * @return array{text: string, unanswered: bool}
+	 */
+	public static function extract_no_answer( string $reply ): array {
+		$pattern = '/^\s*(?:\*\*)?\[NO_ANSWER\](?:\*\*)?\s*/i';
+
+		if ( 1 === preg_match( $pattern, $reply ) ) {
+			return array(
+				'text'       => trim( (string) preg_replace( $pattern, '', $reply ) ),
+				'unanswered' => true,
+			);
+		}
+
+		// Anywhere else it is still not meant for the visitor.
+		return array(
+			'text'       => trim( str_ireplace( self::NO_ANSWER, '', $reply ) ),
+			'unanswered' => false,
+		);
+	}
+
+	/**
 	 * Build the system prompt.
 	 *
 	 * @param array<int, array{title: string, url: string, content: string}> $passages Retrieved passages.
@@ -49,6 +80,7 @@ final class PromptBuilder {
 How to answer:
 - Answer using the WEBSITE CONTENT below. It is this site's own information and is the only source you may rely on for facts about the business: prices, policies, delivery, opening hours, products, services, contact details.
 - If the content does not answer the question, say so honestly and briefly, and point the visitor to the contact options below. Never invent prices, policies, dates, phone numbers or steps.
+- Whenever the visitor asks something about this business that the WEBSITE CONTENT does not answer, start your reply with the exact marker [NO_ANSWER] followed by your normal reply. Do not use the marker for greetings, thanks or general questions you answered well. The marker is removed before the visitor sees your reply.
 - General questions that need no site-specific facts (greetings, how to use a website, explaining a common term) may be answered normally, briefly.
 - When you use a passage that has a URL, you may link it so the visitor can read more. Only use URLs that appear in the content.
 - Reply in the same language the visitor writes in (for example Bangla, English or Banglish), in a friendly, professional tone.

@@ -33,6 +33,7 @@ final class Ajax {
 		add_action( 'wp_ajax_softorio_ai_search', array( self::class, 'search' ) );
 		add_action( 'wp_ajax_softorio_ai_test', array( self::class, 'test' ) );
 		add_action( 'wp_ajax_softorio_ai_delete_conversation', array( self::class, 'delete_conversation' ) );
+		add_action( 'wp_ajax_softorio_ai_test_integration', array( self::class, 'test_integration' ) );
 	}
 
 	/**
@@ -121,6 +122,123 @@ final class Ajax {
 				'message' => sprintf( __( 'Connected. Model %s replied.', 'all-in-one-ai-chatbot' ), $response->model ),
 			)
 		);
+	}
+
+	/**
+	 * Try an integration with its saved settings and report what happened.
+	 */
+	public static function test_integration(): void {
+		self::guard();
+
+		$kind = isset( $_POST['kind'] ) ? sanitize_key( wp_unslash( $_POST['kind'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in guard().
+
+		try {
+			$message = match ( $kind ) {
+				'email'    => self::test_email(),
+				'telegram' => self::test_telegram(),
+				'webhook'  => self::test_webhooks(),
+				default    => throw new \RuntimeException( __( 'Unknown test.', 'all-in-one-ai-chatbot' ) ),
+			};
+		} catch ( \Throwable $e ) {
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+		}
+
+		wp_send_json_success( array( 'message' => $message ) );
+	}
+
+	/**
+	 * Send a test alert email right now (not through the queue).
+	 */
+	private static function test_email(): string {
+		$to = \Softorio\AiAssistant\Notify\Notifier::owner_email();
+
+		\Softorio\AiAssistant\Notify\Notifier::send_email(
+			array(
+				'to'      => $to,
+				'subject' => __( 'Test alert from your AI Chatbot', 'all-in-one-ai-chatbot' ),
+				'html'    => '<p>' . esc_html__( 'Email alerts are working.', 'all-in-one-ai-chatbot' ) . '</p>',
+			)
+		);
+
+		/* translators: %s: email address */
+		return sprintf( __( 'Sent to %s. Check the inbox (and spam folder).', 'all-in-one-ai-chatbot' ), $to );
+	}
+
+	/**
+	 * Find the chat ID if it is missing, then send a test message.
+	 */
+	private static function test_telegram(): string {
+		if ( '' === Settings::api_key( 'telegram' ) ) {
+			throw new \RuntimeException( __( 'Save the bot token first.', 'all-in-one-ai-chatbot' ) );
+		}
+
+		$note = '';
+
+		if ( '' === trim( (string) Settings::get( 'telegram_chat_id', '' ) ) ) {
+			$updates = \Softorio\AiAssistant\Notify\Notifier::telegram_api( 'getUpdates' );
+			$chat_id = '';
+
+			foreach ( array_reverse( $updates ) as $update ) {
+				$chat = $update['message']['chat']['id'] ?? $update['channel_post']['chat']['id'] ?? null;
+
+				if ( null !== $chat ) {
+					$chat_id = (string) $chat;
+					break;
+				}
+			}
+
+			if ( '' === $chat_id ) {
+				throw new \RuntimeException( __( 'No chat found. Open Telegram, send any message to your bot, then press this button again.', 'all-in-one-ai-chatbot' ) );
+			}
+
+			$settings                     = Settings::all();
+			$settings['telegram_chat_id'] = $chat_id;
+			update_option( Settings::OPTION, $settings );
+
+			/* translators: %s: Telegram chat id */
+			$note = sprintf( __( 'Found and saved chat ID %s. ', 'all-in-one-ai-chatbot' ), $chat_id );
+		}
+
+		\Softorio\AiAssistant\Notify\Notifier::send_telegram( array( 'text' => '✅ ' . __( 'Telegram alerts are working.', 'all-in-one-ai-chatbot' ) ) );
+
+		return $note . __( 'Test message sent.', 'all-in-one-ai-chatbot' );
+	}
+
+	/**
+	 * Post a "test" event to every configured webhook, synchronously.
+	 */
+	private static function test_webhooks(): string {
+		$urls = \Softorio\AiAssistant\Notify\Webhooks::urls();
+
+		if ( array() === $urls ) {
+			throw new \RuntimeException( __( 'Add a webhook URL and save first.', 'all-in-one-ai-chatbot' ) );
+		}
+
+		$lines = array();
+		$ok    = true;
+
+		foreach ( $urls as $url ) {
+			$result = \Softorio\AiAssistant\Notify\Webhooks::post(
+				$url,
+				'test',
+				wp_generate_uuid4(),
+				array(
+					'event'       => 'test',
+					'occurred_at' => gmdate( 'c' ),
+					'site'        => home_url( '/' ),
+					'message'     => 'Webhook test from All in One AI Chatbot',
+				)
+			);
+
+			$ok      = $ok && $result['ok'];
+			$lines[] = ( $result['ok'] ? '✓ ' : '✗ ' ) . $result['message'];
+		}
+
+		if ( ! $ok ) {
+			throw new \RuntimeException( implode( ' · ', $lines ) );
+		}
+
+		return implode( ' · ', $lines );
 	}
 
 	/**

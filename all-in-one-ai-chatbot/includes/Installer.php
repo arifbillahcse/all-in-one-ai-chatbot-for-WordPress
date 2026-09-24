@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION        = '2';
+	public const DB_VERSION        = '3';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**
@@ -36,6 +36,7 @@ final class Installer {
 			'limits'        => $wpdb->prefix . 'softorio_ai_limits',
 			'jobs'          => $wpdb->prefix . 'softorio_ai_jobs',
 			'logs'          => $wpdb->prefix . 'softorio_ai_logs',
+			'leads'         => $wpdb->prefix . 'softorio_ai_leads',
 		);
 	}
 
@@ -118,11 +119,15 @@ CREATE TABLE {$t['conversations']} (
   title varchar(191) NOT NULL DEFAULT '',
   message_count int(11) unsigned NOT NULL DEFAULT 0,
   total_cost decimal(12,6) NOT NULL DEFAULT 0,
+  lead_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  status varchar(16) NOT NULL DEFAULT 'open',
+  ended_at datetime NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),
   UNIQUE KEY public_id (public_id),
-  KEY updated_at (updated_at)
+  KEY updated_at (updated_at),
+  KEY status (status)
 ) $charset;
 
 CREATE TABLE {$t['messages']} (
@@ -136,6 +141,8 @@ CREATE TABLE {$t['messages']} (
   input_tokens int(11) unsigned NOT NULL DEFAULT 0,
   output_tokens int(11) unsigned NOT NULL DEFAULT 0,
   cost decimal(12,6) NOT NULL DEFAULT 0,
+  unanswered tinyint(1) NOT NULL DEFAULT 0,
+  rating tinyint(1) NOT NULL DEFAULT 0,
   created_at datetime NOT NULL,
   PRIMARY KEY  (id),
   KEY conversation_id (conversation_id),
@@ -173,6 +180,27 @@ CREATE TABLE {$t['logs']} (
   PRIMARY KEY  (id),
   KEY created_at (created_at),
   KEY channel (channel)
+) $charset;
+
+CREATE TABLE {$t['leads']} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  conversation_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  name varchar(191) NOT NULL DEFAULT '',
+  email varchar(191) NOT NULL DEFAULT '',
+  phone varchar(40) NOT NULL DEFAULT '',
+  message text NULL,
+  source varchar(20) NOT NULL DEFAULT '',
+  status varchar(20) NOT NULL DEFAULT 'new',
+  consent tinyint(1) NOT NULL DEFAULT 0,
+  consent_text text NULL,
+  page_url varchar(2048) NOT NULL DEFAULT '',
+  user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  created_at datetime NOT NULL,
+  updated_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  KEY email (email),
+  KEY status (status),
+  KEY created_at (created_at)
 ) $charset;"
 		);
 

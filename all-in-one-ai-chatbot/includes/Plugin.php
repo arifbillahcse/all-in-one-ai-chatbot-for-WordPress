@@ -24,6 +24,10 @@ final class Plugin {
 		Knowledge\Indexer::init();
 		Cron::init();
 		Support\Queue::init();
+		Chat\ConversationCloser::init();
+		Notify\Notifier::init();
+		Notify\Webhooks::init();
+		Leads\PrivacyTools::init();
 
 		/**
 		 * Fires once the core is loaded: feature modules register their
@@ -32,6 +36,7 @@ final class Plugin {
 		do_action( 'softorio_ai_loaded' );
 
 		add_action( 'rest_api_init', array( Rest\ChatController::class, 'register' ) );
+		add_action( 'rest_api_init', array( Rest\LeadController::class, 'register' ) );
 
 		if ( is_admin() ) {
 			Admin\Menu::init();

@@ -15,6 +15,13 @@ defined( 'ABSPATH' ) || exit;
 final class ChatError extends \RuntimeException {
 
 	/**
+	 * Per-field messages for form validation errors.
+	 *
+	 * @var array<string, string>
+	 */
+	public array $fields = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $error_code  Machine-readable code for the widget.

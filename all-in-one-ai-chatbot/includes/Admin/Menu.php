@@ -27,6 +27,7 @@ final class Menu {
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'setup_notice' ) );
 		LogPage::init();
+		LeadsPage::init();
 		add_filter( 'plugin_action_links_' . plugin_basename( SOFTORIO_AI_FILE ), array( self::class, 'action_links' ) );
 	}
 
@@ -60,6 +61,15 @@ final class Menu {
 			'manage_options',
 			self::SLUG . '-conversations',
 			array( ConversationsPage::class, 'render' )
+		);
+
+		add_submenu_page(
+			self::SLUG,
+			__( 'AI Chatbot — Leads', 'all-in-one-ai-chatbot' ),
+			__( 'Leads', 'all-in-one-ai-chatbot' ),
+			'manage_options',
+			self::SLUG . '-leads',
+			array( LeadsPage::class, 'render' )
 		);
 
 		add_submenu_page(

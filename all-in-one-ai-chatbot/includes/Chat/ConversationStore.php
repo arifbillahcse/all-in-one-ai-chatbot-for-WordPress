@@ -108,6 +108,34 @@ final class ConversationStore {
 	}
 
 	/**
+	 * A conversation by internal id.
+	 *
+	 * @param int $id Conversation id.
+	 * @return array<string, mixed>|null
+	 */
+	public function find( int $id ): ?array {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $this->t['conversations'], $id ), ARRAY_A );
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
+	 * Attach a lead to a conversation.
+	 *
+	 * @param int $conversation_id Conversation id.
+	 * @param int $lead_id         Lead id.
+	 */
+	public function set_lead( int $conversation_id, int $lead_id ): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
+		$wpdb->update( $this->t['conversations'], array( 'lead_id' => $lead_id ), array( 'id' => $conversation_id ), array( '%d' ), array( '%d' ) );
+	}
+
+	/**
 	 * Recent turns to replay to the model, oldest first, strictly alternating.
 	 *
 	 * @param int $conversation_id Conversation.
@@ -234,14 +262,15 @@ final class ConversationStore {
 				'input_tokens'    => (int) ( $usage['input_tokens'] ?? 0 ),
 				'output_tokens'   => (int) ( $usage['output_tokens'] ?? 0 ),
 				'cost'            => (float) ( $usage['cost'] ?? 0 ),
+				'unanswered'      => ! empty( $usage['unanswered'] ) ? 1 : 0,
 				'created_at'      => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%f', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%f', '%d', '%s' )
 		);
 
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE %i SET message_count = message_count + 2, total_cost = total_cost + %f, updated_at = %s,
+				"UPDATE %i SET message_count = message_count + 2, total_cost = total_cost + %f, updated_at = %s, ended_at = NULL,
 				 title = CASE WHEN title = '' THEN %s ELSE title END
 				 WHERE id = %d",
 				$this->t['conversations'],
