@@ -96,6 +96,13 @@ final class Widget {
 			'suggestions' => array_slice( $suggestions, 0, 4 ),
 			'maxLength'   => max( 50, (int) Settings::get( 'max_message_length', 1000 ) ),
 			'leads'       => LeadService::enabled() ? LeadService::form_config() : null,
+			// Only logged-in visitors get a nonce: their pages are not served
+			// from a shared cache, so it cannot go stale for someone else.
+			'nonce'       => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
+			'woo'         => \Softorio\AiAssistant\Woo\WooModule::enabled() && class_exists( 'WC_AJAX' ) ? array(
+				'addToCart' => \WC_AJAX::get_endpoint( 'add_to_cart' ),
+				'cartUrl'   => wc_get_cart_url(),
+			) : null,
 			'contact'     => array(
 				'whatsapp' => '' !== $whatsapp ? 'https://wa.me/' . $whatsapp : '',
 				'email'    => '' !== $email ? 'mailto:' . $email : '',
@@ -127,6 +134,14 @@ final class Widget {
 				'optional'    => __( 'optional', 'all-in-one-ai-chatbot' ),
 				'privacy'     => __( 'Privacy policy', 'all-in-one-ai-chatbot' ),
 				'formFirst'   => __( 'Please fill in the form above to start chatting.', 'all-in-one-ai-chatbot' ),
+				'view'        => __( 'View', 'all-in-one-ai-chatbot' ),
+				'adding'      => __( 'Adding…', 'all-in-one-ai-chatbot' ),
+				'added'       => __( 'Added ✓', 'all-in-one-ai-chatbot' ),
+				'viewCart'    => __( 'View cart', 'all-in-one-ai-chatbot' ),
+				'order'       => __( 'Order', 'all-in-one-ai-chatbot' ),
+				'track'       => __( 'Track shipment', 'all-in-one-ai-chatbot' ),
+				'viewOrder'   => __( 'View order', 'all-in-one-ai-chatbot' ),
+				'itemsCount'  => __( 'items', 'all-in-one-ai-chatbot' ),
 			),
 		);
 	}

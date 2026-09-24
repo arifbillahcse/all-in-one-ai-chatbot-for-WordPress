@@ -4,7 +4,7 @@ Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,15 @@ It does not invent answers. When your content does not cover a question, it says
 * Replies in the visitor's language, including Bangla and other non-Latin scripts.
 * "Talk to a person" button for WhatsApp, email or your contact page.
 * Read every conversation in WP Admin to see what visitors ask and what your content is missing.
+
+**WooCommerce shop assistant**
+
+* Finds and recommends products using live data: prices, sale prices, stock, sizes and colours.
+* Shows product cards in the chat with photos and an Add to cart button. Simple products go straight into the real WooCommerce cart without leaving the chat.
+* Order tracking: logged-in customers see their own orders. Guests prove the order is theirs with the billing email or phone, lookups are rate limited, and a failed lookup never reveals which detail was wrong.
+* Shows the shop's customer notes and shipment tracking (WooCommerce Shipment Tracking, or any courier plugin through a filter).
+* Recognises logged-in customers and greets them by name.
+* Compatible with High-Performance Order Storage (HPOS).
 
 **Leads and alerts**
 

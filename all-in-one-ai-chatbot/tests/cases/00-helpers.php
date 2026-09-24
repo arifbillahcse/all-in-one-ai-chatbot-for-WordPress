@@ -29,6 +29,19 @@ final class FakeHttp {
 		) );
 	}
 
+	/** OpenAI response asking for tools: [[name, args], …]. */
+	public static function openai_tools( array $calls ): void {
+		$tool_calls = array();
+		foreach ( $calls as $i => $call ) {
+			$tool_calls[] = array( 'id' => 'call_' . $i . '_' . wp_rand(), 'type' => 'function', 'function' => array( 'name' => $call[0], 'arguments' => wp_json_encode( (object) $call[1] ) ) );
+		}
+		self::push( 200, array(
+			'model'   => 'gpt-5-mini',
+			'choices' => array( array( 'message' => array( 'role' => 'assistant', 'content' => null, 'tool_calls' => $tool_calls ), 'finish_reason' => 'tool_calls' ) ),
+			'usage'   => array( 'prompt_tokens' => 500, 'completion_tokens' => 30 ),
+		) );
+	}
+
 	public static function last(): array {
 		return end( self::$requests ) ?: array();
 	}

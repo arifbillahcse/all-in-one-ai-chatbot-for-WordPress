@@ -329,6 +329,63 @@ button { font: inherit; cursor: pointer; }
 .sai-leave { border: 0; cursor: pointer; font: inherit; font-size: 13px; }
 .sai-input:disabled { opacity: 0.6; }
 
+/* Cards: products and orders, in a horizontally scrolling strip. */
+.sai-cards {
+	display: flex;
+	gap: 10px;
+	overflow-x: auto;
+	padding: 2px 2px 6px;
+	scroll-snap-type: x mandatory;
+	flex-shrink: 0;
+}
+
+.sai-card {
+	flex: 0 0 auto;
+	width: 170px;
+	border: 1px solid var(--sai-border);
+	border-radius: 12px;
+	background: var(--sai-bg);
+	overflow: hidden;
+	scroll-snap-align: start;
+	display: flex;
+	flex-direction: column;
+}
+
+.sai-card-img { width: 100%; height: 130px; object-fit: cover; background: var(--sai-bot); display: block; }
+.sai-card-body { padding: 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.sai-card-title { font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sai-card-price { font-size: 14px; font-weight: 700; color: var(--sai-accent); }
+.sai-card-was { font-size: 12px; font-weight: 400; color: var(--sai-muted); }
+.sai-card-stock { font-size: 11px; color: #15803d; }
+.sai-card-stock.is-out { color: var(--sai-error); }
+.sai-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; }
+
+.sai-card-btn {
+	flex: 1 1 auto;
+	text-align: center;
+	border: 0;
+	border-radius: 8px;
+	background: var(--sai-accent);
+	color: #fff !important;
+	padding: 6px 8px;
+	font-size: 12px;
+	font-weight: 600;
+	text-decoration: none !important;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.sai-card-btn:disabled { opacity: 0.7; cursor: default; }
+.sai-card-btn-ghost { background: var(--sai-bot); color: var(--sai-text) !important; }
+
+.sai-order { width: 100%; max-width: 300px; padding: 12px; gap: 6px; }
+.sai-order-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sai-order-meta { font-size: 12px; color: var(--sai-muted); }
+.sai-order-status { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--sai-bot); white-space: nowrap; }
+.sai-status-processing, .sai-status-completed { background: #dcfce7; color: #166534; }
+.sai-status-on-hold, .sai-status-pending { background: #fef9c3; color: #854d0e; }
+.sai-status-cancelled, .sai-status-failed, .sai-status-refunded { background: #fee2e2; color: #991b1b; }
+
 @media (max-width: 480px) {
 	.sai-wrap { bottom: 16px; }
 	.sai-right { right: 16px; }

@@ -69,9 +69,10 @@ final class Router {
 	 * @param string                                          $system     System prompt.
 	 * @param array<int, array{role: string, content: string}> $messages  Turns.
 	 * @param int                                             $max_tokens Output limit.
+	 * @param array<int, ToolDefinition>                      $tools      Tools the model may call.
 	 * @throws LlmException When every provider failed; carries the last error.
 	 */
-	public function complete( string $system, array $messages, int $max_tokens ): LlmResponse {
+	public function complete( string $system, array $messages, int $max_tokens, array $tools = array() ): LlmResponse {
 		$last = null;
 
 		foreach ( self::chain() as $id ) {
@@ -82,11 +83,12 @@ final class Router {
 			}
 
 			try {
-				$response = $provider->complete( $system, $messages, $max_tokens );
+				$response = $provider->complete( $system, $messages, $max_tokens, $tools );
 
 				// Reasoning models can spend the whole budget thinking and
-				// return nothing visible. That is a failure, not an answer.
-				if ( '' === $response->text ) {
+				// return nothing visible. That is a failure, not an answer —
+				// unless the model is asking for a tool first.
+				if ( '' === $response->text && ! $response->wants_tools() ) {
 					throw new LlmException(
 						$response->truncated
 							? 'The model used its whole output budget without answering. Raise "Max answer length" or pick a non-reasoning model.'

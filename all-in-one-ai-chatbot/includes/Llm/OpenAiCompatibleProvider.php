@@ -85,21 +85,26 @@ final class OpenAiCompatibleProvider implements Provider {
 	 * @param string                                          $system     System prompt.
 	 * @param array<int, array{role: string, content: string}> $messages  Turns.
 	 * @param int                                             $max_tokens Output limit.
+	 * @param array<int, ToolDefinition>                      $tools      Tools the model may call.
 	 * @throws LlmException On failure.
 	 */
-	public function complete( string $system, array $messages, int $max_tokens ): LlmResponse {
+	public function complete( string $system, array $messages, int $max_tokens, array $tools = array() ): LlmResponse {
 		if ( '' === $this->api_key ) {
 			throw new LlmException( 'No API key is saved for ' . $this->name . '.', $this->name, 'not_configured' );
 		}
 
 		$request = array(
 			'model'            => $this->model,
-			'messages'         => array_merge( array( array( 'role' => 'system', 'content' => $system ) ), $messages ),
+			'messages'         => array_merge( array( array( 'role' => 'system', 'content' => $system ) ), self::convert_messages( $messages ) ),
 			$this->token_param => max( 1, $max_tokens ),
 		);
 
 		if ( '' !== $this->reasoning_effort ) {
 			$request['reasoning_effort'] = $this->reasoning_effort;
+		}
+
+		if ( array() !== $tools ) {
+			$request['tools'] = array_map( static fn( ToolDefinition $t ): array => $t->to_openai(), $tools );
 		}
 
 		$body = ( $this->http ?? new HttpClient() )->post_json(
@@ -117,13 +122,97 @@ final class OpenAiCompatibleProvider implements Provider {
 			throw new LlmException( 'The response had no choices.', $this->name, 'malformed' );
 		}
 
+		$calls = array();
+
+		foreach ( (array) ( $message['tool_calls'] ?? array() ) as $call ) {
+			$function = is_array( $call['function'] ?? null ) ? $call['function'] : array();
+			$args     = json_decode( (string) ( $function['arguments'] ?? '' ), true );
+
+			// Arguments arrive as a JSON string here, unlike Claude's object.
+			$calls[] = new ToolCall( (string) ( $call['id'] ?? '' ), (string) ( $function['name'] ?? '' ), is_array( $args ) ? $args : array() );
+		}
+
 		return new LlmResponse(
 			trim( is_string( $message['content'] ?? null ) ? $message['content'] : '' ),
 			$this->name,
 			(string) ( $body['model'] ?? $this->model ),
 			(int) ( $usage['prompt_tokens'] ?? 0 ),
 			(int) ( $usage['completion_tokens'] ?? 0 ),
-			'length' === ( $choice['finish_reason'] ?? '' )
+			'length' === ( $choice['finish_reason'] ?? '' ),
+			$calls
 		);
+	}
+
+	/**
+	 * Translate the neutral (Anthropic-shaped) messages into this protocol.
+	 *
+	 * Where the two differ: a tool call is a `tool_calls` array on the
+	 * assistant message with JSON-string arguments, and each tool result is
+	 * its own `role: tool` message rather than a block in a user turn.
+	 *
+	 * @param array<int, array{role: string, content: string|array<int, array<string, mixed>>}> $messages Neutral messages.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function convert_messages( array $messages ): array {
+		$out = array();
+
+		foreach ( $messages as $message ) {
+			if ( is_string( $message['content'] ) ) {
+				$out[] = array(
+					'role'    => $message['role'],
+					'content' => $message['content'],
+				);
+				continue;
+			}
+
+			$text    = array();
+			$calls   = array();
+			$results = array();
+
+			foreach ( $message['content'] as $block ) {
+				switch ( $block['type'] ?? '' ) {
+					case 'text':
+						$text[] = (string) $block['text'];
+						break;
+
+					case 'tool_use':
+						$calls[] = array(
+							'id'       => (string) $block['id'],
+							'type'     => 'function',
+							'function' => array(
+								'name'      => (string) $block['name'],
+								'arguments' => (string) wp_json_encode( (object) ( $block['input'] ?? array() ) ),
+							),
+						);
+						break;
+
+					case 'tool_result':
+						$results[] = array(
+							'role'         => 'tool',
+							'tool_call_id' => (string) $block['tool_use_id'],
+							'content'      => is_string( $block['content'] ?? null ) ? $block['content'] : (string) wp_json_encode( $block['content'] ?? '' ),
+						);
+						break;
+				}
+			}
+
+			if ( array() !== $results ) {
+				array_push( $out, ...$results );
+				continue;
+			}
+
+			$entry = array(
+				'role'    => $message['role'],
+				'content' => array() === $text && array() !== $calls ? null : implode( "\n", $text ),
+			);
+
+			if ( array() !== $calls ) {
+				$entry['tool_calls'] = $calls;
+			}
+
+			$out[] = $entry;
+		}
+
+		return $out;
 	}
 }

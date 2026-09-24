@@ -103,7 +103,12 @@ final class Indexer {
 	 * @return array<int, string>
 	 */
 	public static function post_types(): array {
-		$types = array_filter( (array) Settings::get( 'post_types', array() ), 'is_string' );
+		/**
+		 * Filter the post types the assistant reads (modules add their own).
+		 *
+		 * @param array<int, string> $types Post type slugs.
+		 */
+		$types = array_filter( (array) apply_filters( 'softorio_ai_post_types', (array) Settings::get( 'post_types', array() ) ), 'is_string' );
 
 		return array_values( array_filter( $types, 'post_type_exists' ) );
 	}

@@ -88,6 +88,46 @@
 		return query ? url + ( url.indexOf( '?' ) === -1 ? '?' : '&' ) + query : url;
 	}
 
+	/**
+	 * Call the plugin's REST API.
+	 *
+	 * Logged-in visitors send their cookie with a REST nonce, so the server
+	 * knows who they are (their orders, their name). If the nonce has expired
+	 * — a tab left open for a day — the call is retried anonymously rather
+	 * than failing.
+	 */
+	function api( path, options, params ) {
+		options = options || {};
+		var headers = { 'Content-Type': 'application/json' };
+		var signedIn = !! config.nonce && ! options.anonymous;
+
+		if ( signedIn ) {
+			headers[ 'X-WP-Nonce' ] = config.nonce;
+		}
+
+		return fetch( endpoint( path, params ), {
+			method: options.method || 'GET',
+			credentials: signedIn ? 'same-origin' : 'omit',
+			headers: headers,
+			body: options.body ? JSON.stringify( options.body ) : undefined
+		} ).then( function ( response ) {
+			return response.json().then(
+				function ( body ) {
+					return { ok: response.ok, status: response.status, body: body || {} };
+				},
+				function () {
+					return { ok: false, status: response.status, body: {} };
+				}
+			);
+		} ).then( function ( result ) {
+			if ( signedIn && result.status === 403 && result.body.code === 'rest_cookie_invalid_nonce' ) {
+				config.nonce = '';
+				return api( path, options, params );
+			}
+			return result;
+		} );
+	}
+
 	function randomToken() {
 		var bytes = new Uint8Array( 16 );
 		( window.crypto || window.msCrypto ).getRandomValues( bytes );
@@ -245,7 +285,7 @@
 		log.scrollTop = log.scrollHeight;
 	}
 
-	function renderMessage( role, text, sources ) {
+	function renderMessage( role, text, sources, cards ) {
 		var row = el( 'div', 'sai-msg sai-' + ( role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot' ) );
 		var bubble = el( 'div', 'sai-bubble' );
 
@@ -269,16 +309,166 @@
 
 		row.appendChild( bubble );
 		log.appendChild( row );
+
+		if ( cards && cards.length ) {
+			renderCards( cards );
+		}
+
 		scrollDown();
 	}
 
-	function addMessage( role, text, sources, persist ) {
-		renderMessage( role, text, sources );
+	function addMessage( role, text, sources, persist, cards ) {
+		renderMessage( role, text, sources, cards );
 		if ( persist ) {
-			messages.push( { role: role, content: text, sources: sources || [] } );
+			messages.push( { role: role, content: text, sources: sources || [], cards: cards || [] } );
 			saveLog();
 		}
 		updateSuggestions();
+	}
+
+	// ── Cards (products, orders) ────────────────────────────────────────────────
+
+	function renderCards( cards ) {
+		var strip = el( 'div', 'sai-cards' );
+
+		cards.forEach( function ( card ) {
+			if ( card.type === 'product' ) {
+				strip.appendChild( productCard( card ) );
+			} else if ( card.type === 'order' ) {
+				strip.appendChild( orderCard( card ) );
+			}
+		} );
+
+		if ( strip.childNodes.length ) {
+			log.appendChild( strip );
+		}
+	}
+
+	function productCard( card ) {
+		var box = el( 'div', 'sai-card sai-product' );
+		var href = safeHref( card.url || '' );
+
+		if ( card.image && safeHref( card.image ) ) {
+			var img = el( 'img', 'sai-card-img' );
+			img.src = card.image;
+			img.alt = card.name || '';
+			img.loading = 'lazy';
+			box.appendChild( img );
+		}
+
+		var body = el( 'div', 'sai-card-body' );
+		body.appendChild( el( 'div', 'sai-card-title', card.name ) );
+		if ( card.price ) {
+			var price = el( 'div', 'sai-card-price', card.price );
+			if ( card.was ) {
+				price.appendChild( document.createTextNode( ' ' ) );
+				price.appendChild( el( 's', 'sai-card-was', card.was ) );
+			}
+			body.appendChild( price );
+		}
+		if ( card.stock ) {
+			body.appendChild( el( 'div', 'sai-card-stock' + ( card.in_stock ? '' : ' is-out' ), card.stock ) );
+		}
+
+		var actions = el( 'div', 'sai-card-actions' );
+		if ( href ) {
+			var view = link( href, i18n.view );
+			view.className = 'sai-card-btn sai-card-btn-ghost';
+			view.target = '_self';
+			actions.appendChild( view );
+		}
+		if ( card.cart ) {
+			actions.appendChild( cartButton( card ) );
+		}
+		body.appendChild( actions );
+		box.appendChild( body );
+
+		return box;
+	}
+
+	function cartButton( card ) {
+		if ( card.cart.mode === 'link' || ! config.woo ) {
+			var go = link( safeHref( card.cart.url || card.url || '' ) || '#', card.cart.label );
+			go.className = 'sai-card-btn';
+			go.target = '_self';
+			return go;
+		}
+
+		var button = el( 'button', 'sai-card-btn', card.cart.label );
+		button.type = 'button';
+		button.addEventListener( 'click', function () {
+			addToCart( card, button );
+		} );
+		return button;
+	}
+
+	/**
+	 * Add to the real WooCommerce cart through its own AJAX endpoint, so the
+	 * shopper stays in the chat. Themes listening for "added_to_cart" update
+	 * their mini-cart as if the shop's own button had been used.
+	 */
+	function addToCart( card, button ) {
+		button.disabled = true;
+		button.textContent = i18n.adding;
+
+		var form = new FormData();
+		form.append( 'product_id', card.id );
+		form.append( 'quantity', 1 );
+
+		fetch( config.woo.addToCart, { method: 'POST', credentials: 'same-origin', body: form } )
+			.then( function ( r ) {
+				return r.json();
+			} )
+			.then( function ( data ) {
+				if ( ! data || data.error ) {
+					// WooCommerce refused (options needed, sold out): let the
+					// product page explain.
+					window.location.href = ( data && data.product_url ) || card.url;
+					return;
+				}
+
+				button.textContent = i18n.added;
+				var cart = link( config.woo.cartUrl, i18n.viewCart );
+				cart.className = 'sai-card-btn sai-card-btn-ghost';
+				cart.target = '_self';
+				button.parentNode.appendChild( cart );
+
+				if ( window.jQuery ) {
+					window.jQuery( document.body ).trigger( 'added_to_cart', [ data.fragments, data.cart_hash ] );
+				}
+			} )
+			.catch( function () {
+				window.location.href = card.url;
+			} );
+	}
+
+	function orderCard( card ) {
+		var box = el( 'div', 'sai-card sai-order' );
+		var head = el( 'div', 'sai-order-head' );
+		head.appendChild( el( 'strong', null, i18n.order + ' #' + card.number ) );
+		head.appendChild( el( 'span', 'sai-order-status sai-status-' + String( card.status_key || '' ).replace( /[^a-z-]/g, '' ), card.status ) );
+		box.appendChild( head );
+
+		var meta = [ card.date, card.total, card.items ? card.items + ' ' + i18n.itemsCount : '' ].filter( Boolean ).join( ' · ' );
+		box.appendChild( el( 'div', 'sai-order-meta', meta ) );
+
+		var actions = el( 'div', 'sai-card-actions' );
+		if ( card.tracking_url && safeHref( card.tracking_url ) ) {
+			var track = link( card.tracking_url, i18n.track );
+			track.className = 'sai-card-btn';
+			actions.appendChild( track );
+		}
+		if ( card.url && safeHref( card.url ) ) {
+			var view = link( card.url, i18n.viewOrder );
+			view.className = 'sai-card-btn sai-card-btn-ghost';
+			view.target = '_self';
+			actions.appendChild( view );
+		}
+		if ( actions.childNodes.length ) {
+			box.appendChild( actions );
+		}
+
+		return box;
 	}
 
 	var typingRow = null;
@@ -343,27 +533,15 @@
 		autoGrow();
 		setBusy( true );
 
-		fetch( endpoint( 'chat' ), {
+		api( 'chat', {
 			method: 'POST',
-			credentials: 'omit',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify( {
+			body: {
 				message: text,
 				conversation_id: conversationId(),
 				visitor_token: visitorToken(),
 				page_url: window.location.href.split( '#' )[ 0 ]
-			} )
+			}
 		} )
-			.then( function ( response ) {
-				return response.json().then(
-					function ( body ) {
-						return { ok: response.ok, body: body || {} };
-					},
-					function () {
-						return { ok: false, body: {} };
-					}
-				);
-			} )
 			.then( function ( result ) {
 				setBusy( false );
 
@@ -371,7 +549,7 @@
 					if ( result.body.conversation_id ) {
 						write( local, KEY_CONVERSATION, result.body.conversation_id );
 					}
-					addMessage( 'bot', result.body.reply, result.body.sources, true );
+					addMessage( 'bot', result.body.reply, result.body.sources, true, result.body.cards );
 					if ( result.body.offer_lead && leadCfg && ! leadDone() ) {
 						showLeadForm( 'fallback' );
 					}
@@ -557,22 +735,7 @@
 			body[ key ] = fields[ key ].value.trim();
 		} );
 
-		fetch( endpoint( 'lead' ), {
-			method: 'POST',
-			credentials: 'omit',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify( body )
-		} )
-			.then( function ( response ) {
-				return response.json().then(
-					function ( data ) {
-						return { ok: response.ok, body: data || {} };
-					},
-					function () {
-						return { ok: false, body: {} };
-					}
-				);
-			} )
+		api( 'lead', { method: 'POST', body: body } )
 			.then( function ( result ) {
 				if ( result.ok ) {
 					write( local, KEY_LEAD, '1' );
@@ -611,7 +774,7 @@
 
 		if ( messages.length ) {
 			messages.forEach( function ( m ) {
-				renderMessage( m.role, m.content, m.sources );
+				renderMessage( m.role, m.content, m.sources, m.cards );
 			} );
 			updateSuggestions();
 			return;
@@ -625,11 +788,9 @@
 
 		// The local log is gone (cleared storage, another tab wrote over it)
 		// but the conversation still exists server-side.
-		fetch( endpoint( 'history', { conversation_id: id, visitor_token: visitorToken() } ), {
-			credentials: 'omit'
-		} )
-			.then( function ( r ) {
-				return r.ok ? r.json() : null;
+		api( 'history', {}, { conversation_id: id, visitor_token: visitorToken() } )
+			.then( function ( result ) {
+				return result.ok ? result.body : null;
 			} )
 			.then( function ( body ) {
 				if ( ! body || ! Array.isArray( body.messages ) ) {
@@ -638,8 +799,8 @@
 				}
 				body.messages.forEach( function ( m ) {
 					var role = m.role === 'user' ? 'user' : 'bot';
-					messages.push( { role: role, content: m.content, sources: m.sources || [] } );
-					renderMessage( role, m.content, m.sources );
+					messages.push( { role: role, content: m.content, sources: m.sources || [], cards: m.cards || [] } );
+					renderMessage( role, m.content, m.sources, m.cards );
 				} );
 				saveLog();
 				updateSuggestions();

@@ -23,6 +23,7 @@ final class LlmResponse {
 	 * @param int    $input_tokens  Prompt tokens billed.
 	 * @param int    $output_tokens Completion tokens billed.
 	 * @param bool   $truncated     Whether the answer hit the token limit.
+	 * @param array<int, ToolCall> $tool_calls Tools the model wants run before it answers.
 	 */
 	public function __construct(
 		public readonly string $text,
@@ -31,7 +32,15 @@ final class LlmResponse {
 		public readonly int $input_tokens = 0,
 		public readonly int $output_tokens = 0,
 		public readonly bool $truncated = false,
+		public readonly array $tool_calls = array(),
 	) {
+	}
+
+	/**
+	 * Whether the model asked for tools instead of (or before) answering.
+	 */
+	public function wants_tools(): bool {
+		return array() !== $this->tool_calls;
 	}
 
 	/**

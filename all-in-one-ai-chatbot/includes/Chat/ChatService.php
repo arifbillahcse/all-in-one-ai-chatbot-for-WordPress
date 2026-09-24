@@ -12,6 +12,8 @@ use Softorio\AiAssistant\Llm\LlmException;
 use Softorio\AiAssistant\Llm\Router;
 use Softorio\AiAssistant\Settings;
 use Softorio\AiAssistant\Support\Events;
+use Softorio\AiAssistant\Tools\ToolContext;
+use Softorio\AiAssistant\Tools\ToolRegistry;
 use Softorio\AiAssistant\Support\RateLimiter;
 use Softorio\AiAssistant\Support\Visitor;
 
@@ -32,6 +34,8 @@ defined( 'ABSPATH' ) || exit;
  */
 final class ChatService {
 
+	private const MAX_TOOL_ROUNDS = 4;
+
 	/**
 	 * Constructor.
 	 *
@@ -43,6 +47,7 @@ final class ChatService {
 		private readonly ?ConversationStore $store = null,
 		private readonly ?Retriever $retriever = null,
 		private readonly ?Router $router = null,
+		private readonly ?ToolRegistry $tools = null,
 	) {
 	}
 
@@ -86,16 +91,17 @@ final class ChatService {
 			}
 		}
 
+		$context  = new ToolContext( get_current_user_id(), Visitor::ip(), $thread['id'], $page_url );
+		$registry = $this->tools ?? new ToolRegistry();
+		$tools    = $registry->definitions( $context );
+
 		$passages = ( $this->retriever ?? new Retriever() )->search( $query );
-		$system   = ( new PromptBuilder() )->build( $passages, $page_url );
+		$system   = ( new PromptBuilder() )->build( $passages, $page_url, array_map( static fn( $t ): string => $t->name, $tools ), $context );
 		$messages = array_merge( $history, array( array( 'role' => 'user', 'content' => $message ) ) );
 
 		try {
-			$response = ( $this->router ?? new Router() )->complete(
-				$system,
-				$messages,
-				max( 128, (int) Settings::get( 'max_tokens', 1024 ) )
-			);
+			$outcome  = $this->generate( $system, $messages, $tools, $registry, $context );
+			$response = $outcome['response'];
 		} catch ( LlmException $e ) {
 			throw new ChatError(
 				'generation_failed',
@@ -108,8 +114,11 @@ final class ChatService {
 		$reply      = '' !== $parsed['text'] ? $parsed['text'] : __( 'Sorry, I do not have that information.', 'all-in-one-ai-chatbot' );
 		$unanswered = $parsed['unanswered'];
 
-		// Pages the model could not use to answer are not "related".
-		$sources = $unanswered ? array() : self::sources( $passages, $reply );
+		// Pages the model could not use to answer are not "related", and an
+		// answer built from live tool data (an order, products) has its own
+		// cards; page links would only distract.
+		$sources = $unanswered || $outcome['used_tools'] ? array() : self::sources( $passages, $reply );
+		$cards   = self::relevant_cards( $outcome['cards'], $reply );
 
 		$store->add_exchange(
 			$thread['id'],
@@ -119,10 +128,11 @@ final class ChatService {
 			array(
 				'provider'      => $response->provider,
 				'model'         => $response->model,
-				'input_tokens'  => $response->input_tokens,
-				'output_tokens' => $response->output_tokens,
-				'cost'          => $response->cost(),
+				'input_tokens'  => $outcome['input_tokens'],
+				'output_tokens' => $outcome['output_tokens'],
+				'cost'          => $outcome['cost'],
 				'unanswered'    => $unanswered,
+				'cards'         => $cards,
 			)
 		);
 
@@ -158,11 +168,142 @@ final class ChatService {
 			'reply'           => $reply,
 			'conversation_id' => $thread['public_id'],
 			'sources'         => Settings::get( 'show_sources', true ) ? $sources : array(),
+			'cards'           => $cards,
 			'unanswered'      => $unanswered,
 			// Offer the lead form once per conversation, when it would help.
 			'offer_lead'      => $unanswered
 				&& 'fallback' === Settings::get( 'leads_mode', 'off' )
 				&& 0 === (int) ( $conversation['lead_id'] ?? 0 ),
+		);
+	}
+
+	/**
+	 * Call the model, running the tools it asks for, until it answers.
+	 *
+	 * Each round is a paid request, so the number of rounds is capped. If the
+	 * model still wants tools at the cap, its text (or an honest "could not
+	 * finish") is used rather than looping on.
+	 *
+	 * @param string                                  $system   System prompt.
+	 * @param array<int, array<string, mixed>>        $messages Conversation so far.
+	 * @param array<int, \Softorio\AiAssistant\Llm\ToolDefinition> $tools Offered tools.
+	 * @param ToolRegistry                            $registry Tool runner.
+	 * @param ToolContext                             $context  Who is asking.
+	 * @return array{response: \Softorio\AiAssistant\Llm\LlmResponse, cost: float, input_tokens: int, output_tokens: int, cards: array<int, array<string, mixed>>, used_tools: bool}
+	 * @throws LlmException When the provider fails.
+	 */
+	private function generate( string $system, array $messages, array $tools, ToolRegistry $registry, ToolContext $context ): array {
+		$router     = $this->router ?? new Router();
+		$max_tokens = max( 128, (int) Settings::get( 'max_tokens', 1024 ) );
+		$cost       = 0.0;
+		$in         = 0;
+		$out        = 0;
+		$cards      = array();
+		$used_tools = false;
+
+		for ( $round = 1; $round <= self::MAX_TOOL_ROUNDS; $round++ ) {
+			$response = $router->complete( $system, $messages, $max_tokens, $tools );
+			$cost    += $response->cost();
+			$in      += $response->input_tokens;
+			$out     += $response->output_tokens;
+
+			if ( ! $response->wants_tools() || self::MAX_TOOL_ROUNDS === $round ) {
+				if ( $response->wants_tools() && '' === $response->text ) {
+					$response = new \Softorio\AiAssistant\Llm\LlmResponse(
+						__( 'Sorry, I could not finish looking that up. Please try asking in a different way, or contact us.', 'all-in-one-ai-chatbot' ),
+						$response->provider,
+						$response->model
+					);
+				}
+
+				break;
+			}
+
+			// The tool_use blocks must be echoed back before their results,
+			// or the provider rejects the next turn.
+			$assistant = array();
+
+			if ( '' !== $response->text ) {
+				$assistant[] = array(
+					'type' => 'text',
+					'text' => $response->text,
+				);
+			}
+
+			$results    = array();
+			$used_tools = true;
+
+			foreach ( $response->tool_calls as $call ) {
+				$assistant[] = array(
+					'type'  => 'tool_use',
+					'id'    => $call->id,
+					'name'  => $call->name,
+					'input' => (object) $call->arguments,
+				);
+
+				$result = $registry->execute( $call, $context );
+
+				foreach ( $result->cards as $card ) {
+					$cards[ (string) ( $card['key'] ?? count( $cards ) ) ] = $card;
+				}
+
+				$results[] = array(
+					'type'        => 'tool_result',
+					'tool_use_id' => $call->id,
+					'content'     => $result->content(),
+					'is_error'    => $result->is_error,
+				);
+			}
+
+			$messages[] = array(
+				'role'    => 'assistant',
+				'content' => $assistant,
+			);
+			$messages[] = array(
+				'role'    => 'user',
+				'content' => $results,
+			);
+		}
+
+		return array(
+			'response'      => $response,
+			'cost'          => $cost,
+			'input_tokens'  => $in,
+			'output_tokens' => $out,
+			'cards'         => array_slice( array_values( $cards ), 0, 6 ),
+			'used_tools'    => $used_tools,
+		);
+	}
+
+	/**
+	 * Keep the product cards for products the answer actually talks about.
+	 *
+	 * A search may return five products while the reply recommends two;
+	 * showing all five would contradict the answer. When the reply names
+	 * none of them (a generic "here are some options"), all are kept.
+	 * Non-product cards (orders) are always kept.
+	 *
+	 * @param array<int, array<string, mixed>> $cards Cards from tools.
+	 * @param string                           $reply Final answer.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function relevant_cards( array $cards, string $reply ): array {
+		$reply     = mb_strtolower( $reply );
+		$products  = array_filter( $cards, static fn( array $c ): bool => 'product' === ( $c['type'] ?? '' ) );
+		$mentioned = array_filter(
+			$products,
+			static fn( array $c ): bool => '' !== (string) ( $c['name'] ?? '' ) && str_contains( $reply, mb_strtolower( (string) $c['name'] ) )
+		);
+
+		if ( array() === $mentioned ) {
+			return $cards;
+		}
+
+		return array_values(
+			array_filter(
+				$cards,
+				static fn( array $c ): bool => 'product' !== ( $c['type'] ?? '' ) || in_array( $c, $mentioned, true )
+			)
 		);
 	}
 

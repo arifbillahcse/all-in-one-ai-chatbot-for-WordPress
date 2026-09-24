@@ -207,11 +207,20 @@ final class ConversationStore {
 		return array_map(
 			static function ( array $row ): array {
 				$sources = json_decode( (string) ( $row['sources'] ?? '' ), true );
+				$sources = is_array( $sources ) ? $sources : array();
+				$cards   = array();
+
+				// Answers with cards store {sources, cards}; plain ones a list.
+				if ( isset( $sources['sources'] ) || isset( $sources['cards'] ) ) {
+					$cards   = (array) ( $sources['cards'] ?? array() );
+					$sources = (array) ( $sources['sources'] ?? array() );
+				}
 
 				return array(
 					'role'          => (string) $row['role'],
 					'content'       => (string) $row['content'],
-					'sources'       => is_array( $sources ) ? $sources : array(),
+					'sources'       => $sources,
+					'cards'         => $cards,
 					'provider'      => (string) ( $row['provider'] ?? '' ),
 					'model'         => (string) ( $row['model'] ?? '' ),
 					'input_tokens'  => (int) ( $row['input_tokens'] ?? 0 ),
@@ -256,7 +265,7 @@ final class ConversationStore {
 				'conversation_id' => $conversation_id,
 				'role'            => 'assistant',
 				'content'         => $answer,
-				'sources'         => wp_json_encode( $sources ),
+				'sources'         => wp_json_encode( array() === ( $usage['cards'] ?? array() ) ? $sources : array( 'sources' => $sources, 'cards' => $usage['cards'] ) ),
 				'provider'        => (string) ( $usage['provider'] ?? '' ),
 				'model'           => (string) ( $usage['model'] ?? '' ),
 				'input_tokens'    => (int) ( $usage['input_tokens'] ?? 0 ),

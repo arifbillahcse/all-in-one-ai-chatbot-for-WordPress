@@ -145,6 +145,7 @@ final class ChatController {
 				'role'    => $m['role'],
 				'content' => $m['content'],
 				'sources' => $m['sources'],
+				'cards'   => $m['cards'],
 			),
 			$store->transcript( (int) $row['id'] )
 		);
