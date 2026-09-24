@@ -90,14 +90,170 @@
 
     var STORAGE_KEY = 'hoai_conversation_id';
     var STORAGE_KEY_OPEN = 'hoai_widget_open';
+    var STORAGE_KEY_FORM = 'hoai_form_data';
+    var STORAGE_KEY_TOKEN = 'hoai_identity_token';
+    var STORAGE_KEY_LOG = 'hoai_chat_log';
+    var LOCAL_LOG_LIMIT = 100;
     var conversationId = null;
+    var formData = null;
+    var messageLog = [];
+
+    /*
+     * Redisplaying a resumed chat should not depend on the backend ever having
+     * handed back a conversation_id — that field can be null for reasons that
+     * have nothing to do with whether the turn was answered (a transient
+     * storage error, a provider hiccup after the id was minted, and so on).
+     * The visible log is instead rebuilt straight from what this browser sent
+     * and received, which is available immediately and never blocked on a
+     * network round trip.
+     */
+    function loadLocalLog() {
+        try {
+            var stored = window.localStorage.getItem(STORAGE_KEY_LOG);
+            var parsed = stored ? JSON.parse(stored) : [];
+            messageLog = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            messageLog = [];
+        }
+    }
+
+    function saveLocalLog() {
+        try {
+            window.localStorage.setItem(STORAGE_KEY_LOG, JSON.stringify(messageLog.slice(-LOCAL_LOG_LIMIT)));
+        } catch (e) { /* storage unavailable or full; this turn just won't survive a reload */ }
+    }
+
+    function recordMessage(role, text, sources) {
+        messageLog.push({ role: role, content: String(text || ''), sources: sources || null });
+        if (messageLog.length > LOCAL_LOG_LIMIT) {
+            messageLog = messageLog.slice(-LOCAL_LOG_LIMIT);
+        }
+        saveLocalLog();
+    }
+
+    var STORAGE_KEY_SESSION = 'hoai_session_key';
+
+    /*
+     * A stable id for "this visitor's browser", independent of whatever
+     * conversation_id the backend does or does not hand back. Cross-tab sync
+     * used to be keyed on the backend id, which meant a null id (storage
+     * down, a slow first save) silently disabled it — every sibling tab
+     * dropped the turn instead of just not knowing which backend thread it
+     * belonged to. Every tab sharing this localStorage key is the same
+     * visitor by definition, so that is what ties them together instead.
+     */
+    function getSessionKey() {
+        try {
+            var existing = window.localStorage.getItem(STORAGE_KEY_SESSION);
+            if (existing) {
+                return existing;
+            }
+            var created = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+            window.localStorage.setItem(STORAGE_KEY_SESSION, created);
+            return created;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    var sessionKey = getSessionKey();
 
     try {
-        conversationId = window.sessionStorage.getItem(STORAGE_KEY);
+        // localStorage rather than sessionStorage: the conversation, the
+        // pre-chat form answers and the identity token all need to survive
+        // opening the site in a new tab, not just navigating within one.
+        conversationId = window.localStorage.getItem(STORAGE_KEY);
     } catch (e) {
         // Private browsing or a blocked storage partition. The chat still
         // works; it just starts a new thread each page load.
         conversationId = null;
+    }
+
+    /**
+     * Live cross-tab messaging.
+     *
+     * BroadcastChannel, not a `storage` event on localStorage: it is the API
+     * actually designed for tab-to-tab messages (an explicit payload per
+     * post, no "did the value actually change" edge cases to reason about),
+     * and it lets a sibling tab render the exact two bubbles that were just
+     * exchanged instead of wiping its whole log and re-fetching history for
+     * every single turn.
+     *
+     * Every tab on the same origin gets its own channel handle; posting on
+     * one never delivers to that same handle, only to every other open tab
+     * — so there is no risk of a tab reacting to its own message.
+     *
+     * Support is universal in current browsers but not in very old ones
+     * (pre-2020 Safari); where it is unavailable, `syncChannel` stays null
+     * and each tab simply does not get live pushes from its siblings. The
+     * localStorage-backed persistence above is unaffected either way.
+     */
+    var syncChannel = null;
+
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            syncChannel = new BroadcastChannel('hoai_chat_sync');
+        }
+    } catch (e) {
+        syncChannel = null;
+    }
+
+    /**
+     * Push a just-completed turn (the visitor's message and the assistant's
+     * reply) to every other open tab on this origin.
+     *
+     * Keyed on `sessionKey`, not the backend conversation id — the id can be
+     * null (storage hiccup, first message not saved yet) without that having
+     * any bearing on whether sibling tabs should see the turn. Every tab
+     * reading the same `sessionKey` from localStorage is this same visitor.
+     */
+    function broadcastTurn(userText, botText, sources) {
+        if (!syncChannel || !sessionKey) {
+            return;
+        }
+
+        try {
+            syncChannel.postMessage({
+                sessionKey: sessionKey,
+                userText: userText,
+                botText: botText,
+                sources: sources || null
+            });
+        } catch (e) { /* channel unusable mid-flight; this turn just won't push live */ }
+    }
+
+    if (syncChannel) {
+        syncChannel.onmessage = function (event) {
+            var data = event && event.data;
+
+            // `log` only exists once build() has run; a message that
+            // arrives before this tab has finished booting is simply
+            // covered instead by the local-log restore a few lines below.
+            if (!data || !data.sessionKey || !log) {
+                return;
+            }
+
+            if (data.sessionKey !== sessionKey) {
+                // A different visitor's browser (should not happen on the
+                // same localStorage origin, but keyed defensively anyway).
+                return;
+            }
+
+            if (!formSubmitted) {
+                formSubmitted = true;
+                hideForm();
+            }
+
+            if (data.userText) {
+                addMessage('user', data.userText);
+                recordMessage('user', data.userText);
+            }
+
+            if (data.botText) {
+                addMessage('bot', data.botText, { sources: data.sources });
+                recordMessage('bot', data.botText, data.sources);
+            }
+        };
     }
 
     /**
@@ -124,10 +280,14 @@
         } catch (e) { /* storage unavailable; state just won't survive navigation */ }
     }
 
-    var host, root, panel, launcher, log, input, form, sendButton, statusLine;
+    var host, root, panel, launcher, log, input, form, sendButton, statusLine, formOverlay,
+        formNameInput, formEmailInput, formDepartmentSelect, formPasswordGroup, formPasswordInput,
+        formError, formSubmitBtn;
     var isOpen = false;
     var isBusy = false;
     var hasMessages = false;
+    var formSubmitted = false;
+    var formBusy = false;
 
     var reduceMotion = window.matchMedia
         ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -210,6 +370,44 @@
             '  padding: 7px 12px; color: #374151;',
             '}',
             '.suggestions button:hover { border-color: var(--accent); color: var(--accent); }',
+            '.form-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.3); border-radius: 16px; z-index: 1000; }',
+            '.form-overlay.show { display: flex; align-items: center; justify-content: center; }',
+            '.form-card {',
+            '  background: #fff; border-radius: 12px; padding: 24px; max-width: 90%; width: 340px;',
+            '  box-shadow: 0 10px 40px rgba(0,0,0,.3); flex: none;',
+            '}',
+            '.form-card h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; }',
+            '.form-card p { margin: 0 0 20px; font-size: 13px; color: #6b7280; }',
+            '.form-group { margin-bottom: 16px; }',
+            '.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }',
+            '.form-group input, .form-group select {',
+            '  width: 100%; padding: 10px 12px; font: inherit; font-size: 14px;',
+            '  border: 1px solid #d1d5db; border-radius: 8px; background: #fff;',
+            '}',
+            '.form-group input:focus, .form-group select:focus {',
+            '  outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent;',
+            '}',
+            '.form-actions { display: flex; gap: 10px; justify-content: flex-end; }',
+            '.form-actions button {',
+            '  padding: 10px 16px; border: 0; border-radius: 8px; font: inherit; font-weight: 600;',
+            '  cursor: pointer; font-size: 13px;',
+            '}',
+            '.form-actions .btn-primary {',
+            '  background: var(--accent); color: var(--accent-text);',
+            '}',
+            '.form-actions .btn-primary:hover { opacity: .9; }',
+            '.form-actions .btn-secondary {',
+            '  background: #f3f4f6; color: #374151;',
+            '}',
+            '.form-actions .btn-secondary:hover { background: #e5e7eb; }',
+            '.form-actions button[disabled] { opacity: .6; cursor: not-allowed; }',
+            '.form-hint { font-size: 12px; color: #6b7280; margin: -10px 0 16px; }',
+            '.form-hint a { color: var(--accent); }',
+            '.form-error {',
+            '  display: none; font-size: 13px; color: #991b1b; background: #fef2f2;',
+            '  border: 1px solid #fecaca; border-radius: 8px; padding: 8px 10px; margin-bottom: 16px;',
+            '}',
+            '.form-error.show { display: block; }',
             '.composer { flex: none; border-top: 1px solid #e5e7eb; background: #fff; padding: 10px; }',
             '.composer form { display: flex; gap: 8px; align-items: flex-end; }',
             '.composer textarea {',
@@ -491,6 +689,7 @@
         }
 
         addMessage('user', text);
+        recordMessage('user', text);
         input.value = '';
         autoGrow();
         setBusy(true);
@@ -501,6 +700,13 @@
 
         if (conversationId) {
             payload.conversation_id = conversationId;
+        }
+
+        // Include form data on first message only
+        if (formData && !conversationId) {
+            payload.visitor_name = formData.name;
+            payload.visitor_email = formData.email;
+            payload.visitor_department = formData.department;
         }
 
         var headers = { 'Content-Type': 'application/json' };
@@ -524,10 +730,15 @@
             setBusy(false);
 
             if (result.body && result.body.ok) {
+                // A missing conversation_id (a transient storage hiccup on the
+                // server) no longer costs the visitor their history — the
+                // local log below is what persistence actually relies on.
+                // This is still saved when present, since it lets the server
+                // rebuild LLM context for the next turn.
                 if (result.body.conversation_id) {
                     conversationId = result.body.conversation_id;
                     try {
-                        window.sessionStorage.setItem(STORAGE_KEY, conversationId);
+                        window.localStorage.setItem(STORAGE_KEY, conversationId);
                     } catch (e) { /* storage unavailable; carry on */ }
                 }
 
@@ -535,7 +746,9 @@
                     progressive: true,
                     sources: result.body.sources
                 });
+                recordMessage('bot', result.body.answer || '', result.body.sources);
 
+                broadcastTurn(text, result.body.answer || '', result.body.sources);
                 announce('Reply received.');
                 return;
             }
@@ -595,6 +808,11 @@
         launcher.style.display = 'none';
         rememberOpenState(true);
 
+        if (!formSubmitted) {
+            showForm();
+            return;
+        }
+
         if (!hasMessages) {
             addMessage('bot', config.welcome);
             showSuggestions();
@@ -615,6 +833,183 @@
     function autoGrow() {
         input.style.height = 'auto';
         input.style.height = Math.min(120, input.scrollHeight) + 'px';
+    }
+
+    function loadFormData() {
+        try {
+            var stored = window.localStorage.getItem(STORAGE_KEY_FORM);
+            formData = stored ? JSON.parse(stored) : null;
+        } catch (e) {
+            formData = null;
+        }
+    }
+
+    function saveFormData(data) {
+        try {
+            window.localStorage.setItem(STORAGE_KEY_FORM, JSON.stringify(data));
+        } catch (e) { /* storage unavailable */ }
+        formData = data;
+    }
+
+    /**
+     * A token obtained by signing in from inside the widget has to survive a
+     * page navigation the same way the WHMCS-hook token would, or the visitor
+     * would be asked to sign in again on every page. The token's own expiry
+     * (readable — see IdentityToken's documented wire format) is checked
+     * before trusting a stored one, since the server would reject an expired
+     * one anyway and there is no point sending it.
+     */
+    function loadStoredToken() {
+        try {
+            var stored = window.localStorage.getItem(STORAGE_KEY_TOKEN);
+
+            if (!stored) {
+                return;
+            }
+
+            var parsed = JSON.parse(stored);
+            var expiresAt = Number(parsed && parsed.expiresAt);
+
+            if (parsed && parsed.token && expiresAt > Date.now() / 1000) {
+                settings.token = parsed.token;
+            } else {
+                window.localStorage.removeItem(STORAGE_KEY_TOKEN);
+            }
+        } catch (e) { /* storage unavailable or corrupt; carry on signed out */ }
+    }
+
+    function saveToken(token, expiresIn) {
+        settings.token = token;
+
+        try {
+            window.localStorage.setItem(STORAGE_KEY_TOKEN, JSON.stringify({
+                token: token,
+                expiresAt: Math.floor(Date.now() / 1000) + Number(expiresIn || 0)
+            }));
+        } catch (e) { /* storage unavailable; token still works for this page load */ }
+    }
+
+    function showForm() {
+        if (formSubmitted || !formOverlay) {
+            return;
+        }
+        formOverlay.classList.add('show');
+        formNameInput.focus();
+    }
+
+    function hideForm() {
+        if (formOverlay) {
+            formOverlay.classList.remove('show');
+        }
+    }
+
+    function setFormError(message) {
+        if (!formError) {
+            return;
+        }
+        if (message) {
+            formError.textContent = message;
+            formError.classList.add('show');
+        } else {
+            formError.textContent = '';
+            formError.classList.remove('show');
+        }
+    }
+
+    function setFormBusy(busy) {
+        formBusy = busy;
+        formSubmitBtn.disabled = busy;
+    }
+
+    function isServicesDepartment() {
+        return formDepartmentSelect.value === 'services';
+    }
+
+    /** Toggle the password field and button label for the selected department. */
+    function syncFormForDepartment() {
+        var needsLogin = isServicesDepartment() && !settings.token;
+
+        formPasswordGroup.style.display = needsLogin ? '' : 'none';
+        formPasswordInput.required = needsLogin;
+        formSubmitBtn.textContent = needsLogin ? 'Sign In & Start Chat' : 'Start Chat';
+        setFormError('');
+    }
+
+    function finishFormSubmit(name, email, dept) {
+        saveFormData({ name: name, email: email, department: dept });
+        formSubmitted = true;
+        hideForm();
+
+        if (!hasMessages) {
+            addMessage('bot', config.welcome);
+            showSuggestions();
+        }
+
+        input.focus();
+    }
+
+    function submitForm() {
+        if (formBusy) {
+            return;
+        }
+
+        var name = formNameInput.value.trim();
+        var email = formEmailInput.value.trim();
+        var dept = isServicesDepartment() ? 'services' : 'sales';
+
+        if (name === '' || email === '') {
+            setFormError('Please fill in your name and email.');
+            return;
+        }
+
+        // Sales never needs proof of identity — start the chat right away.
+        if (dept !== 'services' || settings.token) {
+            finishFormSubmit(name, email, dept);
+            return;
+        }
+
+        var password = formPasswordInput.value;
+
+        if (password === '') {
+            setFormError('Please enter your WHMCS password.');
+            return;
+        }
+
+        setFormError('');
+        setFormBusy(true);
+
+        var loginUrl = settings.endpoint.replace(/\/chat$/, '/identity/login');
+
+        fetch(loginUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+        }).then(function (response) {
+            return response.json().then(function (body) {
+                return { status: response.status, body: body };
+            }).catch(function () {
+                return { status: response.status, body: null };
+            });
+        }).then(function (result) {
+            setFormBusy(false);
+
+            if (result.body && result.body.ok && result.body.token) {
+                saveToken(result.body.token, result.body.expires_in);
+                formPasswordInput.value = '';
+                finishFormSubmit(name, email, 'services');
+                return;
+            }
+
+            formPasswordInput.value = '';
+            formPasswordInput.focus();
+
+            var message = (result.body && result.body.error && result.body.error.message)
+                || 'Sign-in failed. Please check your email and password and try again.';
+            setFormError(message);
+        }).catch(function () {
+            setFormBusy(false);
+            setFormError('Could not reach the server. Please check your connection and try again.');
+        });
     }
 
     // ── Build ────────────────────────────────────────────────────────────────
@@ -730,6 +1125,139 @@
         panel.appendChild(log);
         panel.appendChild(composer);
 
+        // Form overlay
+        formOverlay = document.createElement('div');
+        formOverlay.className = 'form-overlay';
+        formOverlay.setAttribute('role', 'dialog');
+        formOverlay.setAttribute('aria-modal', 'true');
+        formOverlay.setAttribute('aria-label', 'Pre-chat form');
+
+        var formCard = document.createElement('div');
+        formCard.className = 'form-card';
+
+        var formTitle = document.createElement('h3');
+        formTitle.textContent = 'Please tell us about yourself';
+        formCard.appendChild(formTitle);
+
+        var formIntro = document.createElement('p');
+        formIntro.textContent = 'Fill in a few details to help us assist you better.';
+        formCard.appendChild(formIntro);
+
+        // Name field
+        var nameGroup = document.createElement('div');
+        nameGroup.className = 'form-group';
+        var nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Your Name *';
+        formNameInput = document.createElement('input');
+        formNameInput.type = 'text';
+        formNameInput.placeholder = 'e.g., John Doe';
+        formNameInput.required = true;
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(formNameInput);
+        formCard.appendChild(nameGroup);
+
+        // Email field
+        var emailGroup = document.createElement('div');
+        emailGroup.className = 'form-group';
+        var emailLabel = document.createElement('label');
+        emailLabel.textContent = 'Your Email *';
+        formEmailInput = document.createElement('input');
+        formEmailInput.type = 'email';
+        formEmailInput.placeholder = 'e.g., john@example.com';
+        formEmailInput.required = true;
+        emailGroup.appendChild(emailLabel);
+        emailGroup.appendChild(formEmailInput);
+        formCard.appendChild(emailGroup);
+
+        // Department field
+        var deptGroup = document.createElement('div');
+        deptGroup.className = 'form-group';
+        var deptLabel = document.createElement('label');
+        deptLabel.textContent = 'Department *';
+        formDepartmentSelect = document.createElement('select');
+        formDepartmentSelect.required = true;
+
+        var salesOption = document.createElement('option');
+        salesOption.value = 'sales';
+        salesOption.textContent = 'Sales';
+        formDepartmentSelect.appendChild(salesOption);
+
+        var servicesOption = document.createElement('option');
+        servicesOption.value = 'services';
+        servicesOption.textContent = 'Services';
+        formDepartmentSelect.appendChild(servicesOption);
+
+        deptGroup.appendChild(deptLabel);
+        deptGroup.appendChild(formDepartmentSelect);
+        formCard.appendChild(deptGroup);
+
+        // Password field — only shown for Services, and only until a token
+        // (from a prior in-widget sign-in or a WHMCS-hook data-token) exists.
+        formPasswordGroup = document.createElement('div');
+        formPasswordGroup.className = 'form-group';
+        var passwordLabel = document.createElement('label');
+        passwordLabel.textContent = 'WHMCS Password *';
+        formPasswordInput = document.createElement('input');
+        formPasswordInput.type = 'password';
+        formPasswordInput.placeholder = 'Your WHMCS account password';
+        formPasswordInput.autocomplete = 'current-password';
+        formPasswordGroup.appendChild(passwordLabel);
+        formPasswordGroup.appendChild(formPasswordInput);
+        formCard.appendChild(formPasswordGroup);
+
+        var formHint = document.createElement('p');
+        formHint.className = 'form-hint';
+        var forgotLink = document.createElement('a');
+        forgotLink.href = 'https://my.hostorio.com/clientarea.php?action=login';
+        forgotLink.target = '_blank';
+        forgotLink.rel = 'noopener noreferrer';
+        forgotLink.textContent = 'Forgot your password, or need to sign in another way?';
+        formHint.appendChild(forgotLink);
+        formCard.appendChild(formHint);
+
+        formError = document.createElement('div');
+        formError.className = 'form-error';
+        formError.setAttribute('role', 'alert');
+        formCard.appendChild(formError);
+
+        formDepartmentSelect.addEventListener('change', syncFormForDepartment);
+
+        [formNameInput, formEmailInput, formPasswordInput].forEach(function (field) {
+            field.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    submitForm();
+                }
+            });
+        });
+
+        // Form buttons
+        var formActions = document.createElement('div');
+        formActions.className = 'form-actions';
+
+        formSubmitBtn = document.createElement('button');
+        formSubmitBtn.type = 'button';
+        formSubmitBtn.className = 'btn-primary';
+        formSubmitBtn.textContent = 'Start Chat';
+        formSubmitBtn.addEventListener('click', submitForm);
+
+        formActions.appendChild(formSubmitBtn);
+        formCard.appendChild(formActions);
+
+        formOverlay.appendChild(formCard);
+        panel.appendChild(formOverlay);
+
+        // Pre-fill from a previous fill-in on this same page (e.g. a Services
+        // visitor being asked to re-authenticate because their token expired
+        // mid-session) — no reason to make them retype their name and email.
+        if (formData) {
+            formNameInput.value = formData.name || '';
+            formEmailInput.value = formData.email || '';
+            formDepartmentSelect.value = formData.department === 'services' ? 'services' : 'sales';
+        }
+
+        syncFormForDepartment();
+
         wrap.appendChild(panel);
         wrap.appendChild(launcher);
         root.appendChild(wrap);
@@ -748,13 +1276,26 @@
     }
 
     /**
-     * Redisplay a resumed conversation's messages after a page navigation.
-     *
-     * The conversation itself already continues server-side purely from the
-     * id stored in sessionStorage — the model sees the prior turns regardless
-     * of this. What is missing without it is the visible log: without
-     * re-rendering, every new page looks like the chat forgot everything,
-     * even though it did not.
+     * Redisplay a resumed conversation from what this browser already has in
+     * localStorage — instant, and independent of the backend ever having
+     * returned a conversation_id for any given turn.
+     */
+    function restoreLocalLog() {
+        if (!messageLog.length) {
+            return;
+        }
+
+        messageLog.forEach(function (message) {
+            addMessage(message.role === 'user' ? 'user' : 'bot', String(message.content || ''), {
+                sources: message.sources
+            });
+        });
+    }
+
+    /**
+     * Fallback path when there is nothing in the local log to show (a fresh
+     * browser profile, or localStorage was cleared) but a conversation_id is
+     * still on file — ask the backend for that thread's history instead.
      *
      * Always resolves; a failed or empty fetch just leaves the log empty,
      * same as a first-ever visit.
@@ -781,7 +1322,10 @@
                 }
 
                 body.messages.forEach(function (message) {
-                    addMessage(message.role === 'user' ? 'user' : 'bot', String(message.content || ''));
+                    var role = message.role === 'user' ? 'user' : 'bot';
+                    var content = String(message.content || '');
+                    addMessage(role, content);
+                    recordMessage(role, content);
                 });
             })
             .catch(function () {
@@ -805,6 +1349,24 @@
     }
 
     function boot() {
+        // Load stored form data if it exists from a previous session
+        loadFormData();
+        loadLocalLog();
+
+        // A token from a prior in-widget sign-in takes precedence unless the
+        // page itself supplied one (e.g. the WHMCS template hook) — either
+        // way, having one means Services no longer needs a password prompt.
+        if (!settings.token) {
+            loadStoredToken();
+        }
+
+        if (formData) {
+            // A Services visitor whose token has since expired is no longer
+            // proven — re-show the form (which will ask to sign in again)
+            // rather than quietly continuing as if they still were.
+            formSubmitted = formData.department !== 'services' || !!settings.token;
+        }
+
         // Server config first, data- attributes on top: central branding with a
         // per-page escape hatch.
         fetch(settings.configEndpoint, { method: 'GET' })
@@ -826,7 +1388,17 @@
                 applyOverrides();
                 build();
 
-                return loadHistory();
+                // The local log is what persistence actually relies on now —
+                // instant, and unaffected by whether the backend ever handed
+                // back a conversation_id for any given turn. The backend
+                // fetch only runs as a fallback when there is nothing local
+                // to show (e.g. a cleared localStorage) but a conversation_id
+                // is still on file.
+                restoreLocalLog();
+
+                if (!messageLog.length) {
+                    return loadHistory();
+                }
             })
             .then(function () {
                 if (settings.openOnLoad || wasOpenBefore()) {

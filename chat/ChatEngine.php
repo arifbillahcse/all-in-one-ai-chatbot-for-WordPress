@@ -47,6 +47,9 @@ final class ChatEngine
     private readonly SystemPrompt $systemPrompt;
     private readonly QueryClassifier $classifier;
     private readonly ?ConversationStore $conversations;
+    private readonly string $visitorName;
+    private readonly string $visitorEmail;
+    private readonly string $visitorDepartment;
 
     public function __construct(
         ?LlmRouter $router = null,
@@ -55,6 +58,9 @@ final class ChatEngine
         ?ConversationStore $conversations = null,
         ?SystemPrompt $systemPrompt = null,
         ?QueryClassifier $classifier = null,
+        string $visitorName = '',
+        string $visitorEmail = '',
+        string $visitorDepartment = '',
     ) {
         $this->router         = $router ?? new LlmRouter();
         $this->contextBuilder = $contextBuilder ?? new ContextBuilder();
@@ -62,6 +68,9 @@ final class ChatEngine
         $this->systemPrompt   = $systemPrompt ?? new SystemPrompt();
         $this->classifier     = $classifier ?? new QueryClassifier();
         $this->conversations  = $conversations;
+        $this->visitorName = $visitorName;
+        $this->visitorEmail = $visitorEmail;
+        $this->visitorDepartment = $visitorDepartment;
     }
 
     /**
@@ -104,10 +113,6 @@ final class ChatEngine
 
                 $conversationId = $conversation['id'];
                 $publicId       = $conversation['public_id'];
-
-                if ($conversation['resumed']) {
-                    $history = $this->conversations->history($conversationId);
-                }
             } catch (Throwable $e) {
                 // Persistence is an enhancement, not a prerequisite. A database
                 // that is down should cost the customer their history, not their
@@ -119,6 +124,36 @@ final class ChatEngine
                 $conversationId = null;
                 $publicId       = null;
                 $history        = [];
+            }
+
+            /*
+             * Metadata and history are best-effort extras on top of an already
+             * -resolved conversation id. Either one throwing must not discard
+             * the id itself — that would make the reply un-resumable over a
+             * failure that has nothing to do with identifying the thread.
+             */
+            if ($conversationId !== null) {
+                if (!$conversation['resumed'] && ($this->visitorName || $this->visitorEmail)) {
+                    try {
+                        $this->conversations->setVisitorMetadata(
+                            $conversationId,
+                            $this->visitorName,
+                            $this->visitorEmail,
+                            $this->visitorDepartment
+                        );
+                    } catch (Throwable $e) {
+                        Logger::error('Storing visitor metadata failed', ['error' => $e->getMessage()]);
+                    }
+                }
+
+                if ($conversation['resumed']) {
+                    try {
+                        $history = $this->conversations->history($conversationId);
+                    } catch (Throwable $e) {
+                        Logger::error('Loading conversation history failed', ['error' => $e->getMessage()]);
+                        $history = [];
+                    }
+                }
             }
         }
 

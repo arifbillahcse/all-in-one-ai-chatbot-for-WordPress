@@ -73,6 +73,39 @@ final class Metrics
     }
 
     /**
+     * Headline numbers for the current calendar day (UTC), for a small live
+     * strip above the conversation list — distinct from summary()'s rolling
+     * N-day window, which is the wrong shape for "how's today going".
+     *
+     * @return array<string, mixed>
+     */
+    public function today(): array
+    {
+        $since = gmdate('Y-m-d 00:00:00');
+
+        $row = $this->one(
+            sprintf(
+                'SELECT COUNT(*) AS conversations,
+                        SUM(message_count) AS messages,
+                        SUM(total_cost_usd) AS cost
+                   FROM `%s` WHERE created_at >= :since',
+                $this->db->table('conversations')
+            ),
+            ['since' => $since]
+        );
+
+        $conversations = (int) ($row['conversations'] ?? 0);
+        $messages      = (int) ($row['messages'] ?? 0);
+
+        return [
+            'conversations' => $conversations,
+            'messages'      => $messages,
+            'cost'          => (float) ($row['cost'] ?? 0),
+            'avg_messages'  => $conversations > 0 ? $messages / $conversations : 0.0,
+        ];
+    }
+
+    /**
      * Spend and volume per provider — the evidence for whether the routing
      * rules are earning their keep.
      *
@@ -192,7 +225,7 @@ final class Metrics
         return $this->many(
             sprintf(
                 'SELECT c.id, c.public_id, c.customer_id, c.title, c.message_count,
-                        c.total_cost_usd, c.created_at, c.updated_at
+                        c.total_cost_usd, c.created_at, c.updated_at, c.metadata
                    FROM `%s` c
                    %s
                   ORDER BY c.updated_at DESC

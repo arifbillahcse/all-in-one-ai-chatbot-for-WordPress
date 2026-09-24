@@ -96,14 +96,22 @@ final class View
             'routing'       => 'Routing',
             'settings'      => 'Settings',
             'diagnostics'   => 'Diagnostics',
+            'widget-demo'   => 'Widget demo',
         ];
 
         $links = '';
 
         foreach ($nav as $path => $label) {
-            $href = $base . ($path === '' ? '' : '/' . $path);
-            $class = $active === $path ? ' class="on"' : '';
-            $links .= '<a href="' . $e($href) . '"' . $class . '>' . $e($label) . '</a>';
+            // Widget demo is not an admin page; link to the public demo instead
+            if ($path === 'widget-demo') {
+                $href = '/widget/demo.html';
+                $class = '';
+                $links .= '<a href="' . $e($href) . '" target="_blank"' . $class . '>' . $e($label) . '</a>';
+            } else {
+                $href = $base . ($path === '' ? '' : '/' . $path);
+                $class = $active === $path ? ' class="on"' : '';
+                $links .= '<a href="' . $e($href) . '"' . $class . '>' . $e($label) . '</a>';
+            }
         }
 
         return '<!DOCTYPE html>
@@ -211,7 +219,7 @@ button.btn.danger:hover{background:#b91c1c}
 .bubble{padding:10px 13px;border-radius:12px;margin-bottom:10px;max-width:80%;white-space:pre-wrap;
 overflow-wrap:anywhere}
 .bubble.user{background:#2563eb;color:#fff;margin-left:auto;border-bottom-right-radius:4px}
-.bubble.assistant{background:#fff;border:1px solid #e5e7eb;border-bottom-left-radius:4px}
+.bubble.assistant,.bubble.bot{background:#fff;border:1px solid #e5e7eb;border-bottom-left-radius:4px}
 .meta{font-size:12px;color:#6b7280;margin:-6px 0 12px}
 .bar{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:6px}
 .bar span{display:block;height:100%;background:#2563eb}
@@ -219,6 +227,36 @@ overflow-wrap:anywhere}
 .login{max-width:380px;margin:12vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:26px}
 .login h1{font-size:20px;text-align:center}
 code{background:#f3f4f6;padding:2px 5px;border-radius:4px;font-size:13px}
+
+/* ── Conversations split console ─────────────────────────────────────────── */
+.mock{border:1px solid #e5e7eb;border-radius:12px;background:#fff;overflow:hidden}
+.stats-strip{display:flex;flex-wrap:wrap}
+.strip-stat{flex:1 1 140px;padding:12px 16px;border-right:1px solid #e5e7eb;font-size:12px;color:#6b7280}
+.strip-stat:last-child{border-right:0}
+.strip-stat b{display:block;font-size:18px;font-weight:700;color:#111827;margin-top:2px}
+.console{display:grid;grid-template-columns:300px 1fr;min-height:420px}
+@media (max-width:720px){.console{grid-template-columns:1fr}}
+.clist{border-right:1px solid #e5e7eb;max-height:640px;overflow-y:auto}
+@media (max-width:720px){.clist{max-height:320px;border-right:0;border-bottom:1px solid #e5e7eb}}
+.crow{display:flex;gap:9px;align-items:flex-start;padding:11px 13px;border-bottom:1px solid #f3f4f6;
+text-decoration:none;color:inherit}
+.crow:hover{background:#f9fafb}
+.crow.sel{background:#eff6ff}
+.dept-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none}
+.dept-dot.sales{background:#2563eb}
+.dept-dot.services{background:#7c3aed}
+.crow-body{min-width:0}
+.crow .who{display:block;font-weight:600;font-size:13px}
+.crow .prev{display:block;color:#6b7280;font-size:12px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .meta{display:block;color:#9ca3af;font-size:11px;margin-top:3px}
+.transcript{padding:16px;max-height:640px;overflow-y:auto}
+.t-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;
+margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f3f4f6}
+.t-head .who{font-size:15px;font-weight:700}
+.t-head .sub{color:#6b7280;font-size:12px;margin-top:2px}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.pill.sales{background:#dbeafe;color:#2563eb}
+.pill.services{background:#ede9fe;color:#7c3aed}
 CSS;
     }
 }
