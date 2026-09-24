@@ -11,6 +11,7 @@ use Softorio\AiAssistant\Knowledge\Retriever;
 use Softorio\AiAssistant\Llm\LlmException;
 use Softorio\AiAssistant\Llm\Router;
 use Softorio\AiAssistant\Settings;
+use Softorio\AiAssistant\Support\Events;
 use Softorio\AiAssistant\Support\RateLimiter;
 use Softorio\AiAssistant\Support\Visitor;
 
@@ -129,6 +130,18 @@ final class ChatService {
 		 * @param string $public_id Conversation id.
 		 */
 		do_action( 'softorio_ai_answered', $message, $response->text, $thread['public_id'] );
+
+		Events::emit(
+			Events::MESSAGE_ANSWERED,
+			array(
+				'conversation_id' => $thread['public_id'],
+				'question'        => $message,
+				'answer'          => $response->text,
+				'page_url'        => $page_url,
+				'provider'        => $response->provider,
+				'model'           => $response->model,
+			)
+		);
 
 		return array(
 			'reply'           => $response->text,

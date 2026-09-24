@@ -16,6 +16,7 @@ $softorio_ai_settings = get_option( 'softorio_ai_settings', array() );
 wp_clear_scheduled_hook( 'softorio_ai_daily' );
 wp_clear_scheduled_hook( 'softorio_ai_build_index' );
 wp_clear_scheduled_hook( 'softorio_ai_index_post' );
+wp_clear_scheduled_hook( 'softorio_ai_queue' );
 
 if ( empty( $softorio_ai_settings['delete_on_uninstall'] ) ) {
 	return;
@@ -23,7 +24,7 @@ if ( empty( $softorio_ai_settings['delete_on_uninstall'] ) ) {
 
 global $wpdb;
 
-foreach ( array( 'softorio_ai_chunks', 'softorio_ai_conversations', 'softorio_ai_messages', 'softorio_ai_limits' ) as $softorio_ai_table ) {
+foreach ( array( 'softorio_ai_chunks', 'softorio_ai_conversations', 'softorio_ai_messages', 'softorio_ai_limits', 'softorio_ai_jobs', 'softorio_ai_logs' ) as $softorio_ai_table ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange -- removing the plugin's own tables.
 	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $wpdb->prefix . $softorio_ai_table ) );
 }
@@ -43,7 +44,7 @@ foreach ( $softorio_ai_docs as $softorio_ai_doc ) {
 
 delete_post_meta_by_key( '_softorio_ai_exclude' );
 
-foreach ( array( 'softorio_ai_settings', 'softorio_ai_db_version', 'softorio_ai_index_state', 'softorio_ai_last_error' ) as $softorio_ai_option ) {
+foreach ( array( 'softorio_ai_settings', 'softorio_ai_db_version', 'softorio_ai_index_state', 'softorio_ai_last_error', 'softorio_ai_queue_lock' ) as $softorio_ai_option ) {
 	delete_option( $softorio_ai_option );
 }
 

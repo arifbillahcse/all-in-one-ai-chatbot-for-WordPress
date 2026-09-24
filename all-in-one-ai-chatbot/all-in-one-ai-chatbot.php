@@ -40,6 +40,24 @@ if ( PHP_VERSION_ID < 80100 ) {
 	return;
 }
 
+/*
+ * mbstring handles Bangla and every other non-Latin script. It is on almost
+ * every host, but a minimal server without it would otherwise fail with a
+ * fatal error in the middle of a visitor's chat.
+ */
+if ( ! extension_loaded( 'mbstring' ) ) {
+	add_action(
+		'admin_notices',
+		static function () {
+			echo '<div class="notice notice-error"><p>';
+			echo esc_html__( 'All in One AI Chatbot needs the PHP "mbstring" extension. Ask your host to enable it (in cPanel: Select PHP Version → Extensions), then reload this page.', 'all-in-one-ai-chatbot' );
+			echo '</p></div>';
+		}
+	);
+
+	return;
+}
+
 require_once SOFTORIO_AI_DIR . 'includes/autoload.php';
 
 register_activation_hook( __FILE__, array( \Softorio\AiAssistant\Installer::class, 'activate' ) );

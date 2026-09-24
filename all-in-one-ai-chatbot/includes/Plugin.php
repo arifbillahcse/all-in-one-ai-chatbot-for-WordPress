@@ -23,6 +23,13 @@ final class Plugin {
 		PostTypes::init();
 		Knowledge\Indexer::init();
 		Cron::init();
+		Support\Queue::init();
+
+		/**
+		 * Fires once the core is loaded: feature modules register their
+		 * settings, event listeners and queue handlers here.
+		 */
+		do_action( 'softorio_ai_loaded' );
 
 		add_action( 'rest_api_init', array( Rest\ChatController::class, 'register' ) );
 

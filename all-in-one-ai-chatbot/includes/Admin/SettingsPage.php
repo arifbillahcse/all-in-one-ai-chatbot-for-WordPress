@@ -9,14 +9,19 @@ namespace Softorio\AiAssistant\Admin;
 
 use Softorio\AiAssistant\Cron;
 use Softorio\AiAssistant\Knowledge\Indexer;
-use Softorio\AiAssistant\PostTypes;
 use Softorio\AiAssistant\Settings;
+use Softorio\AiAssistant\SettingsSchema;
 use Softorio\AiAssistant\Support\Crypto;
+use Softorio\AiAssistant\PostTypes;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * One settings form, grouped into sections, saved through the Settings API.
+ * Tabbed settings, rendered and validated from SettingsSchema.
+ *
+ * Each tab is its own form and posts only its own fields. The sanitizer
+ * updates just that tab's fields and keeps everything else as saved, so an
+ * unticked checkbox on one tab can never switch off a setting on another.
  */
 final class SettingsPage {
 
@@ -38,12 +43,12 @@ final class SettingsPage {
 	}
 
 	/**
-	 * Validate and normalise submitted settings.
+	 * Validate a submission.
 	 *
-	 * Starts from the saved values so a field missing from the form never
-	 * resets a setting, and API key fields left blank keep the saved key —
-	 * keys are never sent back to the browser, so a blank field means
-	 * "unchanged", not "delete".
+	 * A form post carries `_tab` (one tab's fields) or `_tab = *` (every
+	 * field, used by tests and imports). Without it the value is a complete
+	 * settings array written from code — activation, WP-CLI — and is only
+	 * merged over what is saved.
 	 *
 	 * @param mixed $input Submitted values.
 	 * @return array<string, mixed>
@@ -52,96 +57,62 @@ final class SettingsPage {
 		$old   = Settings::all();
 		$input = is_array( $input ) ? $input : array();
 
-		// register_setting also runs this on add_option/update_option calls
-		// made in code (activation, tests). Those pass complete, already clean
-		// arrays and must not be treated as a form post with every checkbox off.
-		if ( ! isset( $input['_form'] ) ) {
+		if ( ! isset( $input['_tab'] ) ) {
 			return array_merge( $old, $input );
 		}
 
+		$tab = (string) $input['_tab'];
 		$out = $old;
 
-		$text = static fn( string $key, int $max = 200 ): string => mb_substr( sanitize_text_field( (string) ( $input[ $key ] ?? '' ) ), 0, $max, 'UTF-8' );
-		$area = static fn( string $key, int $max = 4000 ): string => mb_substr( sanitize_textarea_field( (string) ( $input[ $key ] ?? '' ) ), 0, $max, 'UTF-8' );
-		$int  = static fn( string $key, int $min, int $max ): int => min( $max, max( $min, (int) ( $input[ $key ] ?? $min ) ) );
-		$bool = static fn( string $key ): bool => ! empty( $input[ $key ] );
-
-		// General.
-		$out['enabled']        = $bool( 'enabled' );
-		$out['assistant_name'] = $text( 'assistant_name', 60 );
-		$out['company_name']   = $text( 'company_name', 120 );
-		$out['greeting']       = $area( 'greeting', 500 );
-		$out['instructions']   = $area( 'instructions', 4000 );
-
-		// Provider.
-		$providers = array_keys( Settings::providers() );
-
-		$out['provider']          = in_array( $input['provider'] ?? '', $providers, true ) ? $input['provider'] : 'openai';
-		$out['fallback_provider'] = in_array( $input['fallback_provider'] ?? '', $providers, true ) ? $input['fallback_provider'] : '';
-
-		foreach ( $providers as $id ) {
-			$new_key = trim( sanitize_text_field( (string) ( $input[ $id . '_key' ] ?? '' ) ) );
-
-			if ( ! empty( $input[ $id . '_key_clear' ] ) ) {
-				$out[ $id . '_key' ] = '';
-			} elseif ( '' !== $new_key ) {
-				$out[ $id . '_key' ] = Crypto::encrypt( $new_key );
+		foreach ( SettingsSchema::fields() as $key => $field ) {
+			if ( '*' !== $tab && ( $field['tab'] ?? '' ) !== $tab ) {
+				continue;
 			}
 
-			$model = preg_replace( '/[^A-Za-z0-9._:\-\/]/', '', (string) ( $input[ $id . '_model' ] ?? '' ) );
-
-			$out[ $id . '_model' ] = '' !== $model ? mb_substr( $model, 0, 100 ) : Settings::providers()[ $id ]['default_model'];
+			$out[ $key ] = SettingsSchema::sanitize_value( $field, $input[ $key ] ?? null, $old[ $key ] ?? null, $input, $key );
 		}
 
-		$out['openai_reasoning'] = in_array( $input['openai_reasoning'] ?? '', array( '', 'minimal', 'low', 'medium' ), true ) ? $input['openai_reasoning'] : 'minimal';
-		$out['max_tokens']       = $int( 'max_tokens', 128, 8000 );
-		$out['history_turns']    = $int( 'history_turns', 0, 20 );
+		self::after_save( $old, $out );
 
-		// Knowledge.
-		$types = array_filter(
-			array_map( 'sanitize_key', (array) ( $input['post_types'] ?? array() ) ),
-			'post_type_exists'
-		);
+		return $out;
+	}
 
-		$out['post_types']      = array_values( array_unique( array_merge( array_values( $types ), array( PostTypes::DOC ) ) ) );
-		$out['results']         = $int( 'results', 1, 10 );
-		$out['semantic_search'] = $bool( 'semantic_search' );
-
-		// Hand-off.
-		$out['whatsapp']      = preg_replace( '/[^0-9+\s\-]/', '', $text( 'whatsapp', 30 ) );
-		$out['contact_email'] = sanitize_email( (string) ( $input['contact_email'] ?? '' ) );
-		$out['contact_url']   = esc_url_raw( (string) ( $input['contact_url'] ?? '' ) );
-
-		// Appearance.
-		$color = sanitize_hex_color( (string) ( $input['color'] ?? '' ) );
-
-		$out['color']           = $color ? $color : '#2563eb';
-		$out['position']        = 'left' === ( $input['position'] ?? '' ) ? 'left' : 'right';
-		$out['suggestions']     = $area( 'suggestions', 600 );
-		$out['show_sources']    = $bool( 'show_sources' );
-		$out['hide_for_admins'] = $bool( 'hide_for_admins' );
-
-		// Limits and privacy.
-		$out['max_message_length']   = $int( 'max_message_length', 100, 4000 );
-		$out['visitor_hourly_limit'] = $int( 'visitor_hourly_limit', 0, 1000 );
-		$out['daily_message_cap']    = $int( 'daily_message_cap', 0, 100000 );
-		$out['daily_budget']         = round( min( 1000, max( 0, (float) ( $input['daily_budget'] ?? 0 ) ) ), 2 );
-		$out['trust_cloudflare']     = $bool( 'trust_cloudflare' );
-		$out['retention_days']       = $int( 'retention_days', 0, 3650 );
-		$out['delete_on_uninstall']  = $bool( 'delete_on_uninstall' );
+	/**
+	 * Side effects of particular changes.
+	 *
+	 * @param array<string, mixed> $old Previous settings.
+	 * @param array<string, mixed> $new New settings.
+	 */
+	private static function after_save( array $old, array $new ): void {
+		$old_types = (array) $old['post_types'];
+		$new_types = (array) $new['post_types'];
+		sort( $old_types );
+		sort( $new_types );
 
 		// What gets indexed changed: rebuild in the background so the index
 		// matches without the owner having to know to press a button.
-		sort( $old['post_types'] );
-		$new_types = $out['post_types'];
-		sort( $new_types );
-
-		if ( $old['post_types'] !== $new_types || ( ! $old['semantic_search'] && $out['semantic_search'] ) ) {
+		if ( $old_types !== $new_types || ( empty( $old['semantic_search'] ) && ! empty( $new['semantic_search'] ) ) ) {
 			update_option( Indexer::STATE_OPTION, array( 'status' => 'pending' ), false );
 			Cron::queue_build( 0 );
 		}
 
-		return $out;
+		/**
+		 * Fires after settings are validated, before they are saved.
+		 *
+		 * @param array $old Previous settings.
+		 * @param array $new New settings.
+		 */
+		do_action( 'softorio_ai_settings_changed', $old, $new );
+	}
+
+	/**
+	 * The tab being viewed.
+	 */
+	private static function current_tab(): string {
+		$tabs = SettingsSchema::tabs();
+		$tab  = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- navigation only.
+
+		return isset( $tabs[ $tab ] ) ? $tab : (string) array_key_first( $tabs );
 	}
 
 	/**
@@ -152,9 +123,16 @@ final class SettingsPage {
 			return;
 		}
 
-		$s = Settings::all();
+		$current  = self::current_tab();
+		$settings = Settings::all();
+		$sections = SettingsSchema::sections();
+		$grouped  = array();
 
-		$name = static fn( string $key ): string => Settings::OPTION . '[' . $key . ']';
+		foreach ( SettingsSchema::fields() as $key => $field ) {
+			if ( ( $field['tab'] ?? '' ) === $current ) {
+				$grouped[ (string) ( $field['section'] ?? 'main' ) ][ $key ] = $field;
+			}
+		}
 		?>
 		<div class="wrap sai-admin">
 			<h1><?php esc_html_e( 'AI Chatbot Settings', 'all-in-one-ai-chatbot' ); ?></h1>
@@ -165,246 +143,205 @@ final class SettingsPage {
 			settings_errors();
 			?>
 
+			<nav class="nav-tab-wrapper sai-tabs">
+				<?php foreach ( SettingsSchema::tabs() as $slug => $label ) : ?>
+					<a href="<?php echo esc_url( Menu::url( 'settings', array( 'tab' => $slug ) ) ); ?>" class="nav-tab <?php echo $slug === $current ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endforeach; ?>
+			</nav>
+
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP ); ?>
-				<input type="hidden" name="<?php echo esc_attr( $name( '_form' ) ); ?>" value="1">
+				<input type="hidden" name="<?php echo esc_attr( self::name( '_tab' ) ); ?>" value="<?php echo esc_attr( $current ); ?>">
 
-				<div class="sai-card">
-					<h2><?php esc_html_e( 'AI provider', 'all-in-one-ai-chatbot' ); ?></h2>
-					<p class="description">
-						<?php esc_html_e( 'The assistant uses your own account with an AI provider. You pay the provider directly for what the assistant uses. API keys are stored encrypted.', 'all-in-one-ai-chatbot' ); ?>
-					</p>
+				<?php foreach ( $grouped as $section => $fields ) : ?>
+					<?php $meta = $sections[ $current . '.' . $section ] ?? array(); ?>
+					<div class="sai-card">
+						<?php if ( ! empty( $meta['title'] ) ) : ?>
+							<h2><?php echo esc_html( $meta['title'] ); ?></h2>
+						<?php endif; ?>
+						<?php if ( ! empty( $meta['desc'] ) ) : ?>
+							<p class="description"><?php echo esc_html( $meta['desc'] ); ?></p>
+						<?php endif; ?>
 
-					<table class="form-table" role="presentation">
-						<tr>
-							<th scope="row"><label for="sai-provider"><?php esc_html_e( 'Main provider', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td>
-								<select id="sai-provider" name="<?php echo esc_attr( $name( 'provider' ) ); ?>">
-									<?php foreach ( Settings::providers() as $id => $p ) : ?>
-										<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $s['provider'], $id ); ?>><?php echo esc_html( $p['label'] ); ?></option>
-									<?php endforeach; ?>
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-fallback"><?php esc_html_e( 'Backup provider', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td>
-								<select id="sai-fallback" name="<?php echo esc_attr( $name( 'fallback_provider' ) ); ?>">
-									<option value=""><?php esc_html_e( 'None', 'all-in-one-ai-chatbot' ); ?></option>
-									<?php foreach ( Settings::providers() as $id => $p ) : ?>
-										<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $s['fallback_provider'], $id ); ?>><?php echo esc_html( $p['label'] ); ?></option>
-									<?php endforeach; ?>
-								</select>
-								<p class="description"><?php esc_html_e( 'Used automatically if the main provider fails. Needs its own API key below.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-
-						<?php foreach ( Settings::providers() as $id => $p ) : ?>
-							<?php $hint = Crypto::hint( (string) $s[ $id . '_key' ] ); ?>
-							<tr class="sai-provider-row">
-								<th scope="row"><?php echo esc_html( $p['label'] ); ?></th>
-								<td>
-									<label class="sai-inline">
-										<span><?php esc_html_e( 'API key', 'all-in-one-ai-chatbot' ); ?></span>
-										<input type="password" class="regular-text" autocomplete="new-password"
-											name="<?php echo esc_attr( $name( $id . '_key' ) ); ?>"
-											placeholder="<?php echo esc_attr( '' !== $hint ? sprintf( /* translators: %s: last characters of the saved key */ __( 'Saved (%s) — leave blank to keep', 'all-in-one-ai-chatbot' ), $hint ) : __( 'Paste your API key', 'all-in-one-ai-chatbot' ) ); ?>">
-									</label>
-									<?php if ( '' !== $hint ) : ?>
-										<label class="sai-clear">
-											<input type="checkbox" name="<?php echo esc_attr( $name( $id . '_key_clear' ) ); ?>" value="1">
-											<?php esc_html_e( 'Remove saved key', 'all-in-one-ai-chatbot' ); ?>
-										</label>
-									<?php elseif ( '' !== (string) $s[ $id . '_key' ] ) : ?>
-										<p class="sai-warn"><?php esc_html_e( 'A key was saved but can no longer be read (the site security keys changed). Please enter it again.', 'all-in-one-ai-chatbot' ); ?></p>
-									<?php endif; ?>
-									<label class="sai-inline">
-										<span><?php esc_html_e( 'Model', 'all-in-one-ai-chatbot' ); ?></span>
-										<input type="text" class="regular-text code" name="<?php echo esc_attr( $name( $id . '_model' ) ); ?>" value="<?php echo esc_attr( (string) $s[ $id . '_model' ] ); ?>">
-									</label>
-									<p class="description">
-										<a href="<?php echo esc_url( $p['key_url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Get an API key', 'all-in-one-ai-chatbot' ); ?></a>
-										· <button type="button" class="button-link sai-test" data-provider="<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Test connection', 'all-in-one-ai-chatbot' ); ?></button>
-										<span class="sai-test-result" data-for="<?php echo esc_attr( $id ); ?>"></span>
-									</p>
-								</td>
-							</tr>
-						<?php endforeach; ?>
-
-						<tr>
-							<th scope="row"><label for="sai-reasoning"><?php esc_html_e( 'OpenAI reasoning effort', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td>
-								<select id="sai-reasoning" name="<?php echo esc_attr( $name( 'openai_reasoning' ) ); ?>">
-									<?php foreach ( array( 'minimal', 'low', 'medium', '' ) as $effort ) : ?>
-										<option value="<?php echo esc_attr( $effort ); ?>" <?php selected( $s['openai_reasoning'], $effort ); ?>><?php echo esc_html( '' === $effort ? __( 'Model default', 'all-in-one-ai-chatbot' ) : $effort ); ?></option>
-									<?php endforeach; ?>
-								</select>
-								<p class="description"><?php esc_html_e( 'For GPT-5 models only. "minimal" is fastest and cheapest, and is plenty for support answers.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-max-tokens"><?php esc_html_e( 'Max answer length (tokens)', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-max-tokens" type="number" min="128" max="8000" name="<?php echo esc_attr( $name( 'max_tokens' ) ); ?>" value="<?php echo esc_attr( (string) $s['max_tokens'] ); ?>" class="small-text"></td>
-						</tr>
-					</table>
-				</div>
-
-				<div class="sai-card">
-					<h2><?php esc_html_e( 'Assistant', 'all-in-one-ai-chatbot' ); ?></h2>
-					<table class="form-table" role="presentation">
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Status', 'all-in-one-ai-chatbot' ); ?></th>
-							<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'enabled' ) ); ?>" value="1" <?php checked( $s['enabled'] ); ?>> <?php esc_html_e( 'Show the chat widget on the website', 'all-in-one-ai-chatbot' ); ?></label></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-name"><?php esc_html_e( 'Assistant name', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-name" type="text" class="regular-text" name="<?php echo esc_attr( $name( 'assistant_name' ) ); ?>" value="<?php echo esc_attr( (string) $s['assistant_name'] ); ?>"></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-company"><?php esc_html_e( 'Business name', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-company" type="text" class="regular-text" name="<?php echo esc_attr( $name( 'company_name' ) ); ?>" value="<?php echo esc_attr( (string) $s['company_name'] ); ?>" placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>"></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-greeting"><?php esc_html_e( 'Welcome message', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><textarea id="sai-greeting" class="large-text" rows="2" name="<?php echo esc_attr( $name( 'greeting' ) ); ?>"><?php echo esc_textarea( (string) $s['greeting'] ); ?></textarea></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-instructions"><?php esc_html_e( 'Extra instructions', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td>
-								<textarea id="sai-instructions" class="large-text" rows="5" name="<?php echo esc_attr( $name( 'instructions' ) ); ?>" placeholder="<?php esc_attr_e( 'e.g. Always answer in Bangla unless the visitor writes in English. Never discuss competitors. Mention that delivery inside Dhaka takes 1–2 days.', 'all-in-one-ai-chatbot' ); ?>"><?php echo esc_textarea( (string) $s['instructions'] ); ?></textarea>
-								<p class="description"><?php esc_html_e( 'Tone, language and rules for the assistant. Put facts and answers in Knowledge Articles instead, so they can be searched.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-					</table>
-				</div>
-
-				<div class="sai-card">
-					<h2><?php esc_html_e( 'Knowledge', 'all-in-one-ai-chatbot' ); ?></h2>
-					<table class="form-table" role="presentation">
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Content the assistant reads', 'all-in-one-ai-chatbot' ); ?></th>
-							<td>
-								<?php foreach ( self::selectable_post_types() as $type => $label ) : ?>
-									<label class="sai-block">
-										<input type="checkbox" name="<?php echo esc_attr( $name( 'post_types' ) ); ?>[]" value="<?php echo esc_attr( $type ); ?>" <?php checked( in_array( $type, (array) $s['post_types'], true ) ); ?>>
-										<?php echo esc_html( $label ); ?>
-									</label>
-								<?php endforeach; ?>
-								<p class="description"><?php esc_html_e( 'Knowledge Articles are always included. Only published, non-password-protected content is used. Hide a single page with the "AI Chatbot" box in the editor.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-results"><?php esc_html_e( 'Passages per answer', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td>
-								<input id="sai-results" type="number" min="1" max="10" class="small-text" name="<?php echo esc_attr( $name( 'results' ) ); ?>" value="<?php echo esc_attr( (string) $s['results'] ); ?>">
-								<p class="description"><?php esc_html_e( 'More passages give the AI more to work with but cost more per answer. 4–6 suits most sites.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Semantic search', 'all-in-one-ai-chatbot' ); ?></th>
-							<td>
-								<label><input type="checkbox" name="<?php echo esc_attr( $name( 'semantic_search' ) ); ?>" value="1" <?php checked( $s['semantic_search'] ); ?>> <?php esc_html_e( 'Match meaning, not only words (uses OpenAI embeddings)', 'all-in-one-ai-chatbot' ); ?></label>
-								<p class="description"><?php esc_html_e( 'Finds answers phrased differently from the question — e.g. "money back" finds your refund policy. Needs an OpenAI API key even if another provider writes the answers. Costs a fraction of a cent per question.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-					</table>
-				</div>
-
-				<div class="sai-card">
-					<h2><?php esc_html_e( 'Talk to a person', 'all-in-one-ai-chatbot' ); ?></h2>
-					<p class="description"><?php esc_html_e( 'Shown in the widget and offered by the assistant when it cannot help.', 'all-in-one-ai-chatbot' ); ?></p>
-					<table class="form-table" role="presentation">
-						<tr>
-							<th scope="row"><label for="sai-whatsapp"><?php esc_html_e( 'WhatsApp number', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-whatsapp" type="text" class="regular-text" name="<?php echo esc_attr( $name( 'whatsapp' ) ); ?>" value="<?php echo esc_attr( (string) $s['whatsapp'] ); ?>" placeholder="+8801XXXXXXXXX"></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-email"><?php esc_html_e( 'Support email', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-email" type="email" class="regular-text" name="<?php echo esc_attr( $name( 'contact_email' ) ); ?>" value="<?php echo esc_attr( (string) $s['contact_email'] ); ?>"></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-contact"><?php esc_html_e( 'Contact page URL', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-contact" type="url" class="regular-text" name="<?php echo esc_attr( $name( 'contact_url' ) ); ?>" value="<?php echo esc_attr( (string) $s['contact_url'] ); ?>"></td>
-						</tr>
-					</table>
-				</div>
-
-				<div class="sai-card">
-					<h2><?php esc_html_e( 'Appearance', 'all-in-one-ai-chatbot' ); ?></h2>
-					<table class="form-table" role="presentation">
-						<tr>
-							<th scope="row"><label for="sai-color"><?php esc_html_e( 'Colour', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-color" type="color" name="<?php echo esc_attr( $name( 'color' ) ); ?>" value="<?php echo esc_attr( (string) $s['color'] ); ?>"></td>
-						</tr>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Position', 'all-in-one-ai-chatbot' ); ?></th>
-							<td>
-								<label><input type="radio" name="<?php echo esc_attr( $name( 'position' ) ); ?>" value="right" <?php checked( $s['position'], 'right' ); ?>> <?php esc_html_e( 'Bottom right', 'all-in-one-ai-chatbot' ); ?></label>
-								&nbsp;
-								<label><input type="radio" name="<?php echo esc_attr( $name( 'position' ) ); ?>" value="left" <?php checked( $s['position'], 'left' ); ?>> <?php esc_html_e( 'Bottom left', 'all-in-one-ai-chatbot' ); ?></label>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-suggestions"><?php esc_html_e( 'Suggested questions', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td>
-								<textarea id="sai-suggestions" class="large-text" rows="3" name="<?php echo esc_attr( $name( 'suggestions' ) ); ?>" placeholder="<?php esc_attr_e( "What are your delivery charges?\nHow do I return an item?", 'all-in-one-ai-chatbot' ); ?>"><?php echo esc_textarea( (string) $s['suggestions'] ); ?></textarea>
-								<p class="description"><?php esc_html_e( 'One per line, up to four. Shown as buttons before the first message.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Options', 'all-in-one-ai-chatbot' ); ?></th>
-							<td>
-								<label class="sai-block"><input type="checkbox" name="<?php echo esc_attr( $name( 'show_sources' ) ); ?>" value="1" <?php checked( $s['show_sources'] ); ?>> <?php esc_html_e( 'Show links to related pages under answers', 'all-in-one-ai-chatbot' ); ?></label>
-								<label class="sai-block"><input type="checkbox" name="<?php echo esc_attr( $name( 'hide_for_admins' ) ); ?>" value="1" <?php checked( $s['hide_for_admins'] ); ?>> <?php esc_html_e( 'Hide the widget from administrators', 'all-in-one-ai-chatbot' ); ?></label>
-							</td>
-						</tr>
-					</table>
-				</div>
-
-				<div class="sai-card">
-					<h2><?php esc_html_e( 'Limits and privacy', 'all-in-one-ai-chatbot' ); ?></h2>
-					<table class="form-table" role="presentation">
-						<tr>
-							<th scope="row"><label for="sai-hourly"><?php esc_html_e( 'Messages per visitor per hour', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-hourly" type="number" min="0" class="small-text" name="<?php echo esc_attr( $name( 'visitor_hourly_limit' ) ); ?>" value="<?php echo esc_attr( (string) $s['visitor_hourly_limit'] ); ?>"> <span class="description"><?php esc_html_e( 'Per network address. 0 = no limit (not recommended).', 'all-in-one-ai-chatbot' ); ?></span></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-cap"><?php esc_html_e( 'Answers per day (whole site)', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-cap" type="number" min="0" class="small-text" name="<?php echo esc_attr( $name( 'daily_message_cap' ) ); ?>" value="<?php echo esc_attr( (string) $s['daily_message_cap'] ); ?>"> <span class="description"><?php esc_html_e( '0 = no limit.', 'all-in-one-ai-chatbot' ); ?></span></td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-budget"><?php esc_html_e( 'Daily budget (USD)', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td>
-								<input id="sai-budget" type="number" min="0" step="0.01" class="small-text" name="<?php echo esc_attr( $name( 'daily_budget' ) ); ?>" value="<?php echo esc_attr( (string) $s['daily_budget'] ); ?>">
-								<p class="description"><?php esc_html_e( 'The assistant pauses for the rest of the day once estimated spend reaches this. Estimates only — your provider\'s bill is authoritative. 0 = no limit.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-maxlen"><?php esc_html_e( 'Longest visitor message (characters)', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-maxlen" type="number" min="100" max="4000" class="small-text" name="<?php echo esc_attr( $name( 'max_message_length' ) ); ?>" value="<?php echo esc_attr( (string) $s['max_message_length'] ); ?>"></td>
-						</tr>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Cloudflare', 'all-in-one-ai-chatbot' ); ?></th>
-							<td>
-								<label><input type="checkbox" name="<?php echo esc_attr( $name( 'trust_cloudflare' ) ); ?>" value="1" <?php checked( $s['trust_cloudflare'] ); ?>> <?php esc_html_e( 'This site is behind Cloudflare', 'all-in-one-ai-chatbot' ); ?></label>
-								<p class="description"><?php esc_html_e( 'Only tick this if it is true. It lets the per-visitor limit see real visitor addresses; on a site not behind Cloudflare it would let anyone bypass the limit.', 'all-in-one-ai-chatbot' ); ?></p>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row"><label for="sai-retention"><?php esc_html_e( 'Keep conversations for (days)', 'all-in-one-ai-chatbot' ); ?></label></th>
-							<td><input id="sai-retention" type="number" min="0" class="small-text" name="<?php echo esc_attr( $name( 'retention_days' ) ); ?>" value="<?php echo esc_attr( (string) $s['retention_days'] ); ?>"> <span class="description"><?php esc_html_e( '0 = keep forever.', 'all-in-one-ai-chatbot' ); ?></span></td>
-						</tr>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Uninstall', 'all-in-one-ai-chatbot' ); ?></th>
-							<td><label><input type="checkbox" name="<?php echo esc_attr( $name( 'delete_on_uninstall' ) ); ?>" value="1" <?php checked( $s['delete_on_uninstall'] ); ?>> <?php esc_html_e( 'Delete all plugin data, including Knowledge Articles and conversations, when the plugin is deleted', 'all-in-one-ai-chatbot' ); ?></label></td>
-						</tr>
-					</table>
-				</div>
+						<table class="form-table" role="presentation">
+							<?php foreach ( $fields as $key => $field ) : ?>
+								<tr>
+									<th scope="row">
+										<?php if ( in_array( $field['type'], array( 'checkbox', 'radio', 'post_types' ), true ) ) : ?>
+											<?php echo esc_html( (string) $field['label'] ); ?>
+										<?php else : ?>
+											<label for="sai-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( (string) $field['label'] ); ?></label>
+										<?php endif; ?>
+									</th>
+									<td><?php self::field( $key, $field, $settings[ $key ] ?? ( $field['default'] ?? null ) ); ?></td>
+								</tr>
+							<?php endforeach; ?>
+						</table>
+					</div>
+				<?php endforeach; ?>
 
 				<?php submit_button(); ?>
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Input name for a setting.
+	 *
+	 * @param string $key Setting key.
+	 */
+	private static function name( string $key ): string {
+		return Settings::OPTION . '[' . $key . ']';
+	}
+
+	/**
+	 * Render one input.
+	 *
+	 * @param string               $key   Setting key.
+	 * @param array<string, mixed> $field Definition.
+	 * @param mixed                $value Current value.
+	 */
+	private static function field( string $key, array $field, mixed $value ): void {
+		$id   = 'sai-' . $key;
+		$name = self::name( $key );
+		$desc = (string) ( $field['desc'] ?? '' );
+		$ph   = (string) ( $field['placeholder'] ?? '' );
+
+		switch ( $field['type'] ) {
+			case 'checkbox':
+				printf(
+					'<label><input type="checkbox" id="%s" name="%s" value="1" %s> %s</label>',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					checked( (bool) $value, true, false ),
+					esc_html( $desc )
+				);
+				$desc = '';
+				break;
+
+			case 'select':
+				printf( '<select id="%s" name="%s">', esc_attr( $id ), esc_attr( $name ) );
+				foreach ( (array) $field['options'] as $option => $label ) {
+					printf( '<option value="%s" %s>%s</option>', esc_attr( (string) $option ), selected( (string) $value, (string) $option, false ), esc_html( (string) $label ) );
+				}
+				echo '</select>';
+				break;
+
+			case 'radio':
+				foreach ( (array) $field['options'] as $option => $label ) {
+					printf(
+						'<label class="sai-radio"><input type="radio" name="%s" value="%s" %s> %s</label>',
+						esc_attr( $name ),
+						esc_attr( (string) $option ),
+						checked( (string) $value, (string) $option, false ),
+						esc_html( (string) $label )
+					);
+				}
+				break;
+
+			case 'textarea':
+				printf(
+					'<textarea id="%s" name="%s" rows="%d" class="large-text" placeholder="%s">%s</textarea>',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					(int) ( $field['rows'] ?? 4 ),
+					esc_attr( $ph ),
+					esc_textarea( (string) $value )
+				);
+				break;
+
+			case 'number':
+			case 'float':
+				printf(
+					'<input type="number" id="%s" name="%s" value="%s" class="small-text" %s %s %s>',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value ),
+					isset( $field['min'] ) ? 'min="' . esc_attr( (string) $field['min'] ) . '"' : '',
+					isset( $field['max'] ) ? 'max="' . esc_attr( (string) $field['max'] ) . '"' : '',
+					'float' === $field['type'] ? 'step="0.01"' : ''
+				);
+				break;
+
+			case 'color':
+				printf( '<input type="color" id="%s" name="%s" value="%s">', esc_attr( $id ), esc_attr( $name ), esc_attr( (string) $value ) );
+				break;
+
+			case 'secret':
+				$hint = Crypto::hint( (string) $value );
+				printf(
+					'<input type="password" id="%s" name="%s" class="regular-text" autocomplete="new-password" placeholder="%s">',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					esc_attr(
+						'' !== $hint
+							/* translators: %s: last characters of the saved key */
+							? sprintf( __( 'Saved (%s) — leave blank to keep', 'all-in-one-ai-chatbot' ), $hint )
+							: __( 'Paste your key', 'all-in-one-ai-chatbot' )
+					)
+				);
+				if ( '' !== $hint ) {
+					printf(
+						'<label class="sai-clear"><input type="checkbox" name="%s" value="1"> %s</label>',
+						esc_attr( self::name( $key . '_clear' ) ),
+						esc_html__( 'Remove saved key', 'all-in-one-ai-chatbot' )
+					);
+				} elseif ( '' !== (string) $value ) {
+					printf( '<p class="sai-warn">%s</p>', esc_html__( 'A key was saved but can no longer be read (the site security keys changed). Please enter it again.', 'all-in-one-ai-chatbot' ) );
+				}
+				if ( ! empty( $field['key_url'] ) || ! empty( $field['provider'] ) ) {
+					echo '<p class="description">';
+					if ( ! empty( $field['key_url'] ) ) {
+						printf( '<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>', esc_url( (string) $field['key_url'] ), esc_html__( 'Get a key', 'all-in-one-ai-chatbot' ) );
+					}
+					if ( ! empty( $field['provider'] ) ) {
+						printf(
+							' · <button type="button" class="button-link sai-test" data-provider="%1$s">%2$s</button> <span class="sai-test-result" data-for="%1$s"></span>',
+							esc_attr( (string) $field['provider'] ),
+							esc_html__( 'Test connection', 'all-in-one-ai-chatbot' )
+						);
+					}
+					echo '</p>';
+				}
+				break;
+
+			case 'post_types':
+				foreach ( self::selectable_post_types() as $type => $label ) {
+					printf(
+						'<label class="sai-block"><input type="checkbox" name="%s[]" value="%s" %s> %s</label>',
+						esc_attr( $name ),
+						esc_attr( $type ),
+						checked( in_array( $type, (array) $value, true ), true, false ),
+						esc_html( $label )
+					);
+				}
+				break;
+
+			case 'model':
+				printf( '<input type="text" id="%s" name="%s" value="%s" class="regular-text code">', esc_attr( $id ), esc_attr( $name ), esc_attr( (string) $value ) );
+				break;
+
+			default:
+				$type = match ( $field['type'] ) {
+					'email' => 'email',
+					'url'   => 'url',
+					'phone' => 'tel',
+					default => 'text',
+				};
+				printf(
+					'<input type="%s" id="%s" name="%s" value="%s" class="regular-text" placeholder="%s">',
+					esc_attr( $type ),
+					esc_attr( $id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value ),
+					esc_attr( $ph )
+				);
+		}
+
+		if ( '' !== $desc ) {
+			printf( '<p class="description">%s</p>', esc_html( $desc ) );
+		}
 	}
 
 	/**

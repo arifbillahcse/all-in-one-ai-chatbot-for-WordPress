@@ -51,6 +51,7 @@ final class Cron {
 		wp_clear_scheduled_hook( self::DAILY );
 		wp_clear_scheduled_hook( self::BUILD );
 		wp_clear_scheduled_hook( 'softorio_ai_index_post' );
+		wp_clear_scheduled_hook( Support\Queue::HOOK );
 	}
 
 	/**
@@ -83,5 +84,7 @@ final class Cron {
 	public static function daily(): void {
 		( new ConversationStore() )->purge_older_than( (int) Settings::get( 'retention_days', 90 ) );
 		RateLimiter::prune();
+		Support\Log::prune( (int) Settings::get( 'log_retention_days', 30 ) );
+		Support\Queue::housekeeping();
 	}
 }

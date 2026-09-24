@@ -79,6 +79,24 @@ final class DashboardPage {
 				</div>
 			<?php endif; ?>
 
+			<?php $queue = \Softorio\AiAssistant\Support\Queue::counts(); ?>
+			<?php if ( $queue['failed'] > 0 ) : ?>
+				<div class="notice notice-warning">
+					<p>
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: %d: number of failed jobs */
+								_n( '%d background task (email, notification or integration) failed.', '%d background tasks (emails, notifications or integrations) failed.', $queue['failed'], 'all-in-one-ai-chatbot' ),
+								$queue['failed']
+							)
+						);
+						?>
+						<a href="<?php echo esc_url( Menu::url( 'log', array( 'level' => 'error' ) ) ); ?>"><?php esc_html_e( 'See the activity log', 'all-in-one-ai-chatbot' ); ?></a>
+					</p>
+				</div>
+			<?php endif; ?>
+
 			<div class="sai-grid">
 				<div class="sai-card">
 					<h2><?php esc_html_e( 'Setup', 'all-in-one-ai-chatbot' ); ?></h2>

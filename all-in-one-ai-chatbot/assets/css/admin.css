@@ -47,7 +47,7 @@
 .sai-inline { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .sai-inline span { min-width: 60px; }
 .sai-block { display: block; margin-bottom: 4px; }
-.sai-clear { display: block; margin: 0 0 8px 68px; color: #646970; }
+.sai-clear { display: block; margin: 6px 0 0; color: #646970; }
 .sai-warn { color: #b32d2e; margin: 0 0 8px; }
 .sai-provider-row td { padding-bottom: 20px; }
 
@@ -65,3 +65,14 @@
 .sai-turn-meta { font-size: 12px; color: #646970; margin-bottom: 4px; }
 .sai-turn-sources { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; }
 .sai-actions { display: flex; gap: 12px; align-items: center; }
+
+.sai-tabs { margin-bottom: 4px; max-width: 1100px; }
+.sai-radio { margin-right: 16px; }
+.sai-queue { display: flex; align-items: center; gap: 12px; padding: 12px 20px; }
+.sai-inline-form { display: inline; margin: 0; }
+.sai-filters { margin: 12px 0; display: flex; gap: 8px; }
+.sai-nowrap { white-space: nowrap; }
+.sai-log-table pre { white-space: pre-wrap; font-size: 12px; margin: 6px 0 0; max-height: 240px; overflow: auto; }
+.sai-level { padding: 2px 8px; border-radius: 10px; font-size: 12px; background: #f0f0f1; }
+.sai-level-error { background: #fcf0f1; color: #b32d2e; }
+.sai-level-warning { background: #fcf9e8; color: #996800; }

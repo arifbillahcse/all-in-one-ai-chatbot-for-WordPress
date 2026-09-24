@@ -62,7 +62,7 @@ add_filter( 'pre_http_request', static function ( $pre, $args, $url ) {
 
 /** Save settings the same way the settings form does. */
 function sai_save_settings( array $changes ): void {
-	$form = array_merge( Settings::all(), array( '_form' => '1' ), $changes );
+	$form = array_merge( Settings::all(), array( '_tab' => '*' ), $changes );
 
 	// Keys in the form are plaintext; saved values are encrypted. Blank means keep.
 	foreach ( array_keys( Settings::providers() ) as $id ) {

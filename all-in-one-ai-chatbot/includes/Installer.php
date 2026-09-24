@@ -18,13 +18,13 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION        = '1';
+	public const DB_VERSION        = '2';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**
 	 * Table names, with the site's prefix applied.
 	 *
-	 * @return array{chunks: string, conversations: string, messages: string, limits: string}
+	 * @return array<string, string>
 	 */
 	public static function tables(): array {
 		global $wpdb;
@@ -34,6 +34,8 @@ final class Installer {
 			'conversations' => $wpdb->prefix . 'softorio_ai_conversations',
 			'messages'      => $wpdb->prefix . 'softorio_ai_messages',
 			'limits'        => $wpdb->prefix . 'softorio_ai_limits',
+			'jobs'          => $wpdb->prefix . 'softorio_ai_jobs',
+			'logs'          => $wpdb->prefix . 'softorio_ai_logs',
 		);
 	}
 
@@ -146,6 +148,31 @@ CREATE TABLE {$t['limits']} (
   expires_at bigint(20) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY  (bucket),
   KEY expires_at (expires_at)
+) $charset;
+
+CREATE TABLE {$t['jobs']} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  type varchar(64) NOT NULL,
+  payload longtext NOT NULL,
+  status varchar(16) NOT NULL DEFAULT 'pending',
+  attempts smallint(5) unsigned NOT NULL DEFAULT 0,
+  run_at bigint(20) unsigned NOT NULL DEFAULT 0,
+  last_error text NULL,
+  created_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  KEY status_run_at (status,run_at)
+) $charset;
+
+CREATE TABLE {$t['logs']} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  level varchar(10) NOT NULL,
+  channel varchar(32) NOT NULL,
+  message varchar(500) NOT NULL,
+  context longtext NULL,
+  created_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  KEY created_at (created_at),
+  KEY channel (channel)
 ) $charset;"
 		);
 

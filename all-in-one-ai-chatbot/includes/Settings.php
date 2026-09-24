@@ -53,58 +53,12 @@ final class Settings {
 	}
 
 	/**
-	 * Default value for every setting.
+	 * Default value for every setting, from the schema.
 	 *
 	 * @return array<string, mixed>
 	 */
 	public static function defaults(): array {
-		return array(
-			// General.
-			'enabled'              => true,
-			'assistant_name'       => __( 'Support Assistant', 'all-in-one-ai-chatbot' ),
-			'company_name'         => '',
-			'greeting'             => __( 'Hi! 👋 How can I help you today?', 'all-in-one-ai-chatbot' ),
-			'instructions'         => '',
-
-			// AI provider.
-			'provider'             => 'openai',
-			'fallback_provider'    => '',
-			'openai_key'           => '',
-			'openai_model'         => 'gpt-5-mini',
-			'openai_reasoning'     => 'minimal',
-			'claude_key'           => '',
-			'claude_model'         => 'claude-haiku-4-5',
-			'deepseek_key'         => '',
-			'deepseek_model'       => 'deepseek-chat',
-			'max_tokens'           => 1024,
-			'history_turns'        => 6,
-
-			// Knowledge.
-			'post_types'           => array( 'post', 'page', PostTypes::DOC ),
-			'results'              => 5,
-			'semantic_search'      => false,
-
-			// Hand-off to a human.
-			'whatsapp'             => '',
-			'contact_email'        => '',
-			'contact_url'          => '',
-
-			// Widget appearance.
-			'color'                => '#2563eb',
-			'position'             => 'right',
-			'suggestions'          => '',
-			'show_sources'         => true,
-			'hide_for_admins'      => false,
-
-			// Limits and privacy.
-			'max_message_length'   => 1000,
-			'visitor_hourly_limit' => 30,
-			'daily_message_cap'    => 500,
-			'daily_budget'         => 2.0,
-			'trust_cloudflare'     => false,
-			'retention_days'       => 90,
-			'delete_on_uninstall'  => false,
-		);
+		return SettingsSchema::defaults();
 	}
 
 	/**
