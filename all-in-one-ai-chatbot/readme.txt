@@ -108,7 +108,11 @@ Use the `softorio_ai_show_widget` filter, for example `add_filter( 'softorio_ai_
 
 = Does it support WooCommerce orders? =
 
-Not yet. Product and order tools are planned for a future version.
+Yes. Turn it on under AI Chatbot → Settings → WooCommerce. Logged-in customers can ask about their own orders. Guests need the order number plus the email or phone they used at checkout, or you can allow logged-in customers only.
+
+= Which AI providers work with the shop tools? =
+
+All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question may take 2–3 AI calls (search, then answer), so it costs a little more than a plain question.
 
 == Developer hooks ==
 
@@ -118,8 +122,20 @@ Not yet. Product and order tools are planned for a future version.
 * `softorio_ai_pricing` (filter): token prices used for cost estimates.
 * `softorio_ai_provider` (filter): replace or add an AI provider.
 * `softorio_ai_answered` (action): fires after each answer, with the question, reply and conversation id.
+* `softorio_ai_event` (action): every plugin event (lead.created, handoff.requested, question.unanswered, conversation.ended, message.answered) with its payload.
+* `softorio_ai_tools` (filter): add your own tools the AI can call (implement `Softorio\AiAssistant\Tools\Tool`).
+* `softorio_ai_prompt_parts` (filter): add instructions to the system prompt.
+* `softorio_ai_post_types` (filter): post types the assistant reads.
+* `softorio_ai_find_order` (filter): resolve custom or sequential order numbers to an order.
+* `softorio_ai_order_tracking` (filter): add shipment tracking from courier plugins (Pathao, Steadfast, RedX and others).
 
 == Changelog ==
+
+= 1.2.0 =
+* New: WooCommerce shop assistant, with product search and recommendations, product cards, add to cart from the chat, and order tracking with ownership checks.
+* New: AI tool calling for OpenAI, Claude and DeepSeek, with a safety cap on tool rounds.
+* New: logged-in visitors are recognised (their name, their orders).
+* Declares WooCommerce HPOS compatibility.
 
 = 1.1.0 =
 * New: lead capture (before the chat, or when the assistant can't answer), with a consent checkbox.
