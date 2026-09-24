@@ -1,5 +1,5 @@
 /**
- * Softorio AI Assistant — chat widget.
+ * All in One AI Chatbot — chat widget.
  *
  * Plain JavaScript, no dependencies, rendered inside a Shadow DOM so the
  * theme's CSS cannot break the widget and the widget's CSS cannot leak into
@@ -444,7 +444,7 @@
 
 	function build() {
 		var host = hostEl = el( 'div' );
-		host.id = 'softorio-ai-assistant';
+		host.id = 'all-in-one-ai-chatbot';
 		host.style.setProperty( '--sai-color', config.color || '#2563eb' );
 		document.body.appendChild( host );
 

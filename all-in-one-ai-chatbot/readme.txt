@@ -1,4 +1,4 @@
-=== Softorio AI Assistant ===
+=== All in One AI Chatbot ===
 Contributors: softorio
 Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
@@ -12,7 +12,7 @@ An AI support assistant that answers visitors from your own pages, posts and kno
 
 == Description ==
 
-Softorio AI Assistant adds a chat widget to your site that answers visitors' questions **using your own content**: your pages, posts, and Knowledge Articles you write just for the assistant, such as refund rules, delivery times, opening hours and how-to steps.
+All in One AI Chatbot adds a chat widget to your site that answers visitors' questions **using your own content**: your pages, posts, and Knowledge Articles you write just for the assistant, such as refund rules, delivery times, opening hours and how-to steps.
 
 It does not invent answers. When your content does not cover a question, it says so and offers your WhatsApp, email or contact page instead.
 
@@ -56,10 +56,10 @@ Suggested wording for your privacy policy is added under Settings → Privacy.
 == Installation ==
 
 1. Upload the plugin through **Plugins → Add New → Upload Plugin**, or install it from the plugin directory, and activate it.
-2. Go to **AI Assistant → Settings**, choose a provider, paste your API key and press **Test connection**.
+2. Go to **AI Chatbot → Settings**, choose a provider, paste your API key and press **Test connection**.
 3. Add your WhatsApp number, email or contact page under "Talk to a person".
-4. Go to **AI Assistant → Knowledge Articles** and add your FAQs, policies and anything else visitors ask about.
-5. Open **AI Assistant → Overview**: the setup checklist shows what is left, and "Test what the assistant finds" lets you check answers without spending anything.
+4. Go to **AI Chatbot → Knowledge Articles** and add your FAQs, policies and anything else visitors ask about.
+5. Open **AI Chatbot → Overview**: the setup checklist shows what is left, and "Test what the assistant finds" lets you check answers without spending anything.
 
 Your existing content is indexed in the background after activation. Press **Rebuild index now** on the Overview screen to do it immediately.
 

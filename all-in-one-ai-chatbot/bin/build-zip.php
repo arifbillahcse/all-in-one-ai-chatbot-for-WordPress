@@ -4,7 +4,7 @@
  *
  *     php bin/build-zip.php
  *
- * Writes dist/softorio-ai-assistant-<version>.zip (at the repository root),
+ * Writes dist/all-in-one-ai-chatbot-<version>.zip (at the repository root),
  * containing only what a site needs: tests and build tooling are left out.
  *
  * @package Softorio\AiAssistant
@@ -13,7 +13,7 @@
 // phpcs:disable
 
 $root    = dirname( __DIR__ );
-$slug    = 'softorio-ai-assistant';
+$slug    = 'all-in-one-ai-chatbot';
 $header  = (string) file_get_contents( $root . '/' . $slug . '.php' );
 $version = preg_match( '/^\s*\*\s*Version:\s*(\S+)/m', $header, $m ) ? $m[1] : 'dev';
 $exclude = array( 'tests', 'bin', '.git', '.DS_Store' );

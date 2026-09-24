@@ -60,7 +60,7 @@ final class T {
 	}
 }
 
-$plugin = 'softorio-ai-assistant/softorio-ai-assistant.php';
+$plugin = 'all-in-one-ai-chatbot/all-in-one-ai-chatbot.php';
 
 if ( ! is_plugin_active( $plugin ) ) {
 	$result = activate_plugin( $plugin );

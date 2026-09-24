@@ -61,9 +61,9 @@ final class Settings {
 		return array(
 			// General.
 			'enabled'              => true,
-			'assistant_name'       => __( 'Support Assistant', 'softorio-ai-assistant' ),
+			'assistant_name'       => __( 'Support Assistant', 'all-in-one-ai-chatbot' ),
 			'company_name'         => '',
-			'greeting'             => __( 'Hi! 👋 How can I help you today?', 'softorio-ai-assistant' ),
+			'greeting'             => __( 'Hi! 👋 How can I help you today?', 'all-in-one-ai-chatbot' ),
 			'instructions'         => '',
 
 			// AI provider.

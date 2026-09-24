@@ -1,5 +1,5 @@
 /**
- * Softorio AI Assistant — admin screens.
+ * All in One AI Chatbot — admin screens.
  */
 ( function () {
 	'use strict';

@@ -12,7 +12,7 @@ use Softorio\AiAssistant\Settings;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * The "AI Assistant" menu and its pages.
+ * The "AI Chatbot" menu and its pages.
  */
 final class Menu {
 
@@ -34,8 +34,8 @@ final class Menu {
 	 */
 	public static function register(): void {
 		add_menu_page(
-			__( 'AI Assistant', 'softorio-ai-assistant' ),
-			__( 'AI Assistant', 'softorio-ai-assistant' ),
+			__( 'AI Chatbot', 'all-in-one-ai-chatbot' ),
+			__( 'AI Chatbot', 'all-in-one-ai-chatbot' ),
 			'manage_options',
 			self::SLUG,
 			array( DashboardPage::class, 'render' ),
@@ -45,8 +45,8 @@ final class Menu {
 
 		add_submenu_page(
 			self::SLUG,
-			__( 'AI Assistant — Overview', 'softorio-ai-assistant' ),
-			__( 'Overview', 'softorio-ai-assistant' ),
+			__( 'AI Chatbot — Overview', 'all-in-one-ai-chatbot' ),
+			__( 'Overview', 'all-in-one-ai-chatbot' ),
 			'manage_options',
 			self::SLUG,
 			array( DashboardPage::class, 'render' )
@@ -54,8 +54,8 @@ final class Menu {
 
 		add_submenu_page(
 			self::SLUG,
-			__( 'AI Assistant — Conversations', 'softorio-ai-assistant' ),
-			__( 'Conversations', 'softorio-ai-assistant' ),
+			__( 'AI Chatbot — Conversations', 'all-in-one-ai-chatbot' ),
+			__( 'Conversations', 'all-in-one-ai-chatbot' ),
 			'manage_options',
 			self::SLUG . '-conversations',
 			array( ConversationsPage::class, 'render' )
@@ -63,8 +63,8 @@ final class Menu {
 
 		add_submenu_page(
 			self::SLUG,
-			__( 'AI Assistant — Settings', 'softorio-ai-assistant' ),
-			__( 'Settings', 'softorio-ai-assistant' ),
+			__( 'AI Chatbot — Settings', 'all-in-one-ai-chatbot' ),
+			__( 'Settings', 'all-in-one-ai-chatbot' ),
 			'manage_options',
 			self::SLUG . '-settings',
 			array( SettingsPage::class, 'render' )
@@ -91,12 +91,12 @@ final class Menu {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( Ajax::NONCE ),
 				'i18n'    => array(
-					'working'   => __( 'Working…', 'softorio-ai-assistant' ),
-					'indexing'  => __( 'Indexing %1$d of %2$d…', 'softorio-ai-assistant' ),
-					'indexed'   => __( 'Done. %d items are searchable.', 'softorio-ai-assistant' ),
-					'failed'    => __( 'Something went wrong. Please reload the page and try again.', 'softorio-ai-assistant' ),
-					'noResults' => __( 'Nothing matched. The assistant would say it does not know.', 'softorio-ai-assistant' ),
-					'confirm'   => __( 'Delete this conversation permanently?', 'softorio-ai-assistant' ),
+					'working'   => __( 'Working…', 'all-in-one-ai-chatbot' ),
+					'indexing'  => __( 'Indexing %1$d of %2$d…', 'all-in-one-ai-chatbot' ),
+					'indexed'   => __( 'Done. %d items are searchable.', 'all-in-one-ai-chatbot' ),
+					'failed'    => __( 'Something went wrong. Please reload the page and try again.', 'all-in-one-ai-chatbot' ),
+					'noResults' => __( 'Nothing matched. The assistant would say it does not know.', 'all-in-one-ai-chatbot' ),
+					'confirm'   => __( 'Delete this conversation permanently?', 'all-in-one-ai-chatbot' ),
 				),
 			)
 		);
@@ -118,9 +118,9 @@ final class Menu {
 
 		printf(
 			'<div class="notice notice-info"><p>%s <a href="%s">%s</a></p></div>',
-			esc_html__( 'Softorio AI Assistant is almost ready. Add an AI provider API key to switch on the chat widget.', 'softorio-ai-assistant' ),
+			esc_html__( 'All in One AI Chatbot is almost ready. Add an AI provider API key to switch on the chat widget.', 'all-in-one-ai-chatbot' ),
 			esc_url( admin_url( 'admin.php?page=' . self::SLUG . '-settings' ) ),
-			esc_html__( 'Open settings', 'softorio-ai-assistant' )
+			esc_html__( 'Open settings', 'all-in-one-ai-chatbot' )
 		);
 	}
 
@@ -136,7 +136,7 @@ final class Menu {
 			sprintf(
 				'<a href="%s">%s</a>',
 				esc_url( admin_url( 'admin.php?page=' . self::SLUG . '-settings' ) ),
-				esc_html__( 'Settings', 'softorio-ai-assistant' )
+				esc_html__( 'Settings', 'all-in-one-ai-chatbot' )
 			)
 		);
 

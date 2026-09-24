@@ -42,7 +42,7 @@ final class Ajax {
 		check_ajax_referer( self::NONCE, 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => __( 'You are not allowed to do that.', 'softorio-ai-assistant' ) ), 403 );
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to do that.', 'all-in-one-ai-chatbot' ) ), 403 );
 		}
 	}
 
@@ -96,17 +96,17 @@ final class Ajax {
 		$id = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in guard().
 
 		if ( ! array_key_exists( $id, Settings::providers() ) ) {
-			wp_send_json_error( array( 'message' => __( 'Unknown provider.', 'softorio-ai-assistant' ) ) );
+			wp_send_json_error( array( 'message' => __( 'Unknown provider.', 'all-in-one-ai-chatbot' ) ) );
 		}
 
 		if ( '' === Settings::api_key( $id ) ) {
-			wp_send_json_error( array( 'message' => __( 'Save an API key first.', 'softorio-ai-assistant' ) ) );
+			wp_send_json_error( array( 'message' => __( 'Save an API key first.', 'all-in-one-ai-chatbot' ) ) );
 		}
 
 		$provider = Router::make( $id );
 
 		if ( null === $provider ) {
-			wp_send_json_error( array( 'message' => __( 'Unknown provider.', 'softorio-ai-assistant' ) ) );
+			wp_send_json_error( array( 'message' => __( 'Unknown provider.', 'all-in-one-ai-chatbot' ) ) );
 		}
 
 		try {
@@ -118,7 +118,7 @@ final class Ajax {
 		wp_send_json_success(
 			array(
 				/* translators: %s: model id */
-				'message' => sprintf( __( 'Connected. Model %s replied.', 'softorio-ai-assistant' ), $response->model ),
+				'message' => sprintf( __( 'Connected. Model %s replied.', 'all-in-one-ai-chatbot' ), $response->model ),
 			)
 		);
 	}

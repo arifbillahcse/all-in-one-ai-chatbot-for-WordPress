@@ -1,17 +1,17 @@
 # Hostorio AI Chatbot
 
 > **Looking for the WordPress plugin?** It lives in
-> [`softorio-ai-assistant/`](softorio-ai-assistant/): a self-contained plugin
+> [`all-in-one-ai-chatbot/`](all-in-one-ai-chatbot/): a self-contained plugin
 > that answers visitors from a site's own pages, posts and Knowledge Articles,
 > with the site owner's own OpenAI, Claude or DeepSeek key. It installs like any
 > other plugin and needs no server setup.
 >
 > ```bash
-> php softorio-ai-assistant/bin/build-zip.php          # -> dist/softorio-ai-assistant-<version>.zip
-> WP_PATH=/path/to/test-wordpress php softorio-ai-assistant/tests/run.php
+> php all-in-one-ai-chatbot/bin/build-zip.php          # -> dist/all-in-one-ai-chatbot-<version>.zip
+> WP_PATH=/path/to/test-wordpress php all-in-one-ai-chatbot/tests/run.php
 > ```
 >
-> See [`softorio-ai-assistant/readme.txt`](softorio-ai-assistant/readme.txt) for
+> See [`all-in-one-ai-chatbot/readme.txt`](all-in-one-ai-chatbot/readme.txt) for
 > features, setup and developer hooks. The rest of this README describes the
 > standalone hosting-company app, which the plugin was derived from.
 

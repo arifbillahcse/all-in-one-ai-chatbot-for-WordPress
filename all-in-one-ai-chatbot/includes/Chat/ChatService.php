@@ -57,13 +57,13 @@ final class ChatService {
 	 */
 	public function ask( string $message, string $conversation_id, string $visitor_token, string $page_url ): array {
 		if ( ! Settings::get( 'enabled', true ) || ! Settings::is_ready() ) {
-			throw new ChatError( 'unavailable', __( 'The assistant is not available right now.', 'softorio-ai-assistant' ), 503 );
+			throw new ChatError( 'unavailable', __( 'The assistant is not available right now.', 'all-in-one-ai-chatbot' ), 503 );
 		}
 
 		$message = self::clean_message( $message, (int) Settings::get( 'max_message_length', 1000 ) );
 
 		if ( '' === $message ) {
-			throw new ChatError( 'empty', __( 'Please type a message.', 'softorio-ai-assistant' ), 422 );
+			throw new ChatError( 'empty', __( 'Please type a message.', 'all-in-one-ai-chatbot' ), 422 );
 		}
 
 		$this->enforce_limits();
@@ -98,7 +98,7 @@ final class ChatService {
 		} catch ( LlmException $e ) {
 			throw new ChatError(
 				'generation_failed',
-				__( 'Sorry, I could not answer just now. Please try again in a moment.', 'softorio-ai-assistant' ),
+				__( 'Sorry, I could not answer just now. Please try again in a moment.', 'all-in-one-ai-chatbot' ),
 				503
 			);
 		}
@@ -148,7 +148,7 @@ final class ChatService {
 		if ( ! $hourly['allowed'] ) {
 			throw new ChatError(
 				'rate_limited',
-				__( 'You have sent a lot of messages. Please wait a little and try again.', 'softorio-ai-assistant' ),
+				__( 'You have sent a lot of messages. Please wait a little and try again.', 'all-in-one-ai-chatbot' ),
 				429,
 				$hourly['retry_after']
 			);
@@ -161,7 +161,7 @@ final class ChatService {
 		if ( ! $burst['allowed'] ) {
 			throw new ChatError(
 				'rate_limited',
-				__( 'You are sending messages too quickly. Please wait a moment.', 'softorio-ai-assistant' ),
+				__( 'You are sending messages too quickly. Please wait a moment.', 'all-in-one-ai-chatbot' ),
 				429,
 				$burst['retry_after']
 			);
@@ -174,7 +174,7 @@ final class ChatService {
 		if ( ( $cap > 0 && $usage['answers'] >= $cap ) || ( $budget > 0 && $usage['cost'] >= $budget ) ) {
 			throw new ChatError(
 				'daily_limit',
-				__( 'The assistant has reached its limit for today. Please use the contact options, and we will get back to you.', 'softorio-ai-assistant' ),
+				__( 'The assistant has reached its limit for today. Please use the contact options, and we will get back to you.', 'all-in-one-ai-chatbot' ),
 				429
 			);
 		}

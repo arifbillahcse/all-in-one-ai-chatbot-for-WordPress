@@ -133,7 +133,7 @@ final class ChatController {
 				new \WP_REST_Response(
 					array(
 						'code'    => 'not_found',
-						'message' => __( 'Conversation not found.', 'softorio-ai-assistant' ),
+						'message' => __( 'Conversation not found.', 'all-in-one-ai-chatbot' ),
 					),
 					404
 				)

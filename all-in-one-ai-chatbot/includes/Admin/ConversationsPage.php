@@ -78,36 +78,36 @@ final class ConversationsPage {
 		$pages = (int) ceil( $total / self::PER_PAGE );
 		?>
 		<div class="wrap sai-admin">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Conversations', 'softorio-ai-assistant' ); ?></h1>
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'Conversations', 'all-in-one-ai-chatbot' ); ?></h1>
 
 			<form method="get" class="sai-list-search">
 				<input type="hidden" name="page" value="<?php echo esc_attr( Menu::SLUG . '-conversations' ); ?>">
 				<p class="search-box">
-					<label class="screen-reader-text" for="sai-conv-search"><?php esc_html_e( 'Search conversations', 'softorio-ai-assistant' ); ?></label>
+					<label class="screen-reader-text" for="sai-conv-search"><?php esc_html_e( 'Search conversations', 'all-in-one-ai-chatbot' ); ?></label>
 					<input type="search" id="sai-conv-search" name="s" value="<?php echo esc_attr( $search ); ?>">
-					<button class="button"><?php esc_html_e( 'Search messages', 'softorio-ai-assistant' ); ?></button>
+					<button class="button"><?php esc_html_e( 'Search messages', 'all-in-one-ai-chatbot' ); ?></button>
 				</p>
 			</form>
 
 			<table class="widefat striped sai-table">
 				<thead>
 					<tr>
-						<th><?php esc_html_e( 'First question', 'softorio-ai-assistant' ); ?></th>
-						<th><?php esc_html_e( 'Messages', 'softorio-ai-assistant' ); ?></th>
-						<th><?php esc_html_e( 'Cost', 'softorio-ai-assistant' ); ?></th>
-						<th><?php esc_html_e( 'Started on', 'softorio-ai-assistant' ); ?></th>
-						<th><?php esc_html_e( 'Last activity', 'softorio-ai-assistant' ); ?></th>
+						<th><?php esc_html_e( 'First question', 'all-in-one-ai-chatbot' ); ?></th>
+						<th><?php esc_html_e( 'Messages', 'all-in-one-ai-chatbot' ); ?></th>
+						<th><?php esc_html_e( 'Cost', 'all-in-one-ai-chatbot' ); ?></th>
+						<th><?php esc_html_e( 'Started on', 'all-in-one-ai-chatbot' ); ?></th>
+						<th><?php esc_html_e( 'Last activity', 'all-in-one-ai-chatbot' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="5"><?php echo '' !== $search ? esc_html__( 'No conversations match that search.', 'softorio-ai-assistant' ) : esc_html__( 'No conversations yet. They appear here as soon as visitors start chatting.', 'softorio-ai-assistant' ); ?></td></tr>
+						<tr><td colspan="5"><?php echo '' !== $search ? esc_html__( 'No conversations match that search.', 'all-in-one-ai-chatbot' ) : esc_html__( 'No conversations yet. They appear here as soon as visitors start chatting.', 'all-in-one-ai-chatbot' ); ?></td></tr>
 					<?php else : ?>
 						<?php foreach ( $rows as $row ) : ?>
 							<tr>
 								<td>
 									<a href="<?php echo esc_url( Menu::url( 'conversations', array( 'conversation' => (int) $row['id'] ) ) ); ?>">
-										<?php echo esc_html( '' !== $row['title'] ? $row['title'] : __( '(no messages)', 'softorio-ai-assistant' ) ); ?>
+										<?php echo esc_html( '' !== $row['title'] ? $row['title'] : __( '(no messages)', 'all-in-one-ai-chatbot' ) ); ?>
 									</a>
 								</td>
 								<td><?php echo esc_html( number_format_i18n( (int) $row['message_count'] ) ); ?></td>
@@ -154,10 +154,10 @@ final class ConversationsPage {
 		$back = Menu::url( 'conversations' );
 		?>
 		<div class="wrap sai-admin">
-			<p><a href="<?php echo esc_url( $back ); ?>">&larr; <?php esc_html_e( 'All conversations', 'softorio-ai-assistant' ); ?></a></p>
+			<p><a href="<?php echo esc_url( $back ); ?>">&larr; <?php esc_html_e( 'All conversations', 'all-in-one-ai-chatbot' ); ?></a></p>
 
 			<?php if ( ! is_array( $row ) ) : ?>
-				<p><?php esc_html_e( 'That conversation no longer exists.', 'softorio-ai-assistant' ); ?></p>
+				<p><?php esc_html_e( 'That conversation no longer exists.', 'all-in-one-ai-chatbot' ); ?></p>
 				</div>
 				<?php
 				return;
@@ -165,13 +165,13 @@ final class ConversationsPage {
 
 			$messages = ( new ConversationStore() )->transcript( $id, 500 );
 			?>
-			<h1><?php echo esc_html( '' !== $row['title'] ? $row['title'] : __( 'Conversation', 'softorio-ai-assistant' ) ); ?></h1>
+			<h1><?php echo esc_html( '' !== $row['title'] ? $row['title'] : __( 'Conversation', 'all-in-one-ai-chatbot' ) ); ?></h1>
 			<p class="description">
 				<?php
 				echo esc_html(
 					sprintf(
 						/* translators: 1: start time, 2: page URL, 3: cost */
-						__( 'Started %1$s on %2$s · estimated cost $%3$s', 'softorio-ai-assistant' ),
+						__( 'Started %1$s on %2$s · estimated cost $%3$s', 'all-in-one-ai-chatbot' ),
 						self::when( (string) $row['created_at'] ),
 						'' !== $row['page_url'] ? $row['page_url'] : '—',
 						number_format_i18n( (float) $row['total_cost'], 4 )
@@ -185,7 +185,7 @@ final class ConversationsPage {
 					<div class="sai-turn sai-turn-<?php echo 'user' === $message['role'] ? 'user' : 'bot'; ?>">
 						<div class="sai-turn-meta">
 							<?php
-							echo esc_html( 'user' === $message['role'] ? __( 'Visitor', 'softorio-ai-assistant' ) : __( 'Assistant', 'softorio-ai-assistant' ) );
+							echo esc_html( 'user' === $message['role'] ? __( 'Visitor', 'all-in-one-ai-chatbot' ) : __( 'Assistant', 'all-in-one-ai-chatbot' ) );
 							echo ' · ' . esc_html( self::when( $message['created_at'] ) );
 
 							if ( 'assistant' === $message['role'] && '' !== $message['model'] ) {
@@ -206,8 +206,8 @@ final class ConversationsPage {
 			</div>
 
 			<p class="sai-actions">
-				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=softorio_ai_doc' ) ); ?>"><?php esc_html_e( 'Add a Knowledge Article to improve answers', 'softorio-ai-assistant' ); ?></a>
-				<button type="button" class="button button-link-delete" id="sai-delete-conversation" data-id="<?php echo esc_attr( (string) $id ); ?>" data-back="<?php echo esc_url( $back ); ?>"><?php esc_html_e( 'Delete conversation', 'softorio-ai-assistant' ); ?></button>
+				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=softorio_ai_doc' ) ); ?>"><?php esc_html_e( 'Add a Knowledge Article to improve answers', 'all-in-one-ai-chatbot' ); ?></a>
+				<button type="button" class="button button-link-delete" id="sai-delete-conversation" data-id="<?php echo esc_attr( (string) $id ); ?>" data-back="<?php echo esc_url( $back ); ?>"><?php esc_html_e( 'Delete conversation', 'all-in-one-ai-chatbot' ); ?></button>
 			</p>
 		</div>
 		<?php

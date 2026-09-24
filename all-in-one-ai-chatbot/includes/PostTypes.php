@@ -39,19 +39,19 @@ final class PostTypes {
 			self::DOC,
 			array(
 				'labels'              => array(
-					'name'               => __( 'Knowledge Articles', 'softorio-ai-assistant' ),
-					'singular_name'      => __( 'Knowledge Article', 'softorio-ai-assistant' ),
-					'menu_name'          => __( 'Knowledge Articles', 'softorio-ai-assistant' ),
-					'add_new'            => __( 'Add Article', 'softorio-ai-assistant' ),
-					'add_new_item'       => __( 'Add Knowledge Article', 'softorio-ai-assistant' ),
-					'edit_item'          => __( 'Edit Knowledge Article', 'softorio-ai-assistant' ),
-					'new_item'           => __( 'New Knowledge Article', 'softorio-ai-assistant' ),
-					'search_items'       => __( 'Search Knowledge Articles', 'softorio-ai-assistant' ),
-					'not_found'          => __( 'No knowledge articles yet.', 'softorio-ai-assistant' ),
-					'not_found_in_trash' => __( 'No knowledge articles in the trash.', 'softorio-ai-assistant' ),
-					'all_items'          => __( 'Knowledge Articles', 'softorio-ai-assistant' ),
+					'name'               => __( 'Knowledge Articles', 'all-in-one-ai-chatbot' ),
+					'singular_name'      => __( 'Knowledge Article', 'all-in-one-ai-chatbot' ),
+					'menu_name'          => __( 'Knowledge Articles', 'all-in-one-ai-chatbot' ),
+					'add_new'            => __( 'Add Article', 'all-in-one-ai-chatbot' ),
+					'add_new_item'       => __( 'Add Knowledge Article', 'all-in-one-ai-chatbot' ),
+					'edit_item'          => __( 'Edit Knowledge Article', 'all-in-one-ai-chatbot' ),
+					'new_item'           => __( 'New Knowledge Article', 'all-in-one-ai-chatbot' ),
+					'search_items'       => __( 'Search Knowledge Articles', 'all-in-one-ai-chatbot' ),
+					'not_found'          => __( 'No knowledge articles yet.', 'all-in-one-ai-chatbot' ),
+					'not_found_in_trash' => __( 'No knowledge articles in the trash.', 'all-in-one-ai-chatbot' ),
+					'all_items'          => __( 'Knowledge Articles', 'all-in-one-ai-chatbot' ),
 				),
-				'description'         => __( 'Answers written for the AI assistant: policies, FAQs, how-to steps. Not shown on the website.', 'softorio-ai-assistant' ),
+				'description'         => __( 'Answers written for the AI assistant: policies, FAQs, how-to steps. Not shown on the website.', 'all-in-one-ai-chatbot' ),
 				'public'              => false,
 				'publicly_queryable'  => false,
 				'exclude_from_search' => true,
@@ -90,7 +90,7 @@ final class PostTypes {
 
 			add_meta_box(
 				'softorio-ai-exclude',
-				__( 'AI Assistant', 'softorio-ai-assistant' ),
+				__( 'AI Chatbot', 'all-in-one-ai-chatbot' ),
 				array( self::class, 'render_exclude_box' ),
 				(string) $post_type,
 				'side',
@@ -111,9 +111,9 @@ final class PostTypes {
 		?>
 		<label>
 			<input type="checkbox" name="softorio_ai_exclude" value="1" <?php checked( $checked ); ?>>
-			<?php esc_html_e( 'Hide this from the AI assistant', 'softorio-ai-assistant' ); ?>
+			<?php esc_html_e( 'Hide this from the AI assistant', 'all-in-one-ai-chatbot' ); ?>
 		</label>
-		<p class="description"><?php esc_html_e( 'The assistant will not use this content in its answers.', 'softorio-ai-assistant' ); ?></p>
+		<p class="description"><?php esc_html_e( 'The assistant will not use this content in its answers.', 'all-in-one-ai-chatbot' ); ?></p>
 		<?php
 	}
 

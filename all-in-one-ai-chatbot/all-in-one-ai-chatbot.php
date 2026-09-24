@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Softorio AI Assistant
+ * Plugin Name:       All in One AI Chatbot
  * Plugin URI:        https://softorio.com/
  * Description:       An AI support assistant that answers your visitors from your own posts, pages and knowledge articles. Bring your own OpenAI, Anthropic Claude or DeepSeek API key.
  * Version:           1.0.0
@@ -10,7 +10,7 @@
  * Author URI:        https://softorio.com/
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       softorio-ai-assistant
+ * Text Domain:       all-in-one-ai-chatbot
  *
  * @package Softorio\AiAssistant
  */
@@ -32,7 +32,7 @@ if ( PHP_VERSION_ID < 80100 ) {
 		'admin_notices',
 		static function () {
 			echo '<div class="notice notice-error"><p>';
-			echo esc_html__( 'Softorio AI Assistant needs PHP 8.1 or newer. Ask your host to upgrade PHP, then reactivate the plugin.', 'softorio-ai-assistant' );
+			echo esc_html__( 'All in One AI Chatbot needs PHP 8.1 or newer. Ask your host to upgrade PHP, then reactivate the plugin.', 'all-in-one-ai-chatbot' );
 			echo '</p></div>';
 		}
 	);
