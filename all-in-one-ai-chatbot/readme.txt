@@ -1,10 +1,10 @@
 === All in One AI Chatbot ===
 Contributors: softorio
 Tags: ai, chatbot, customer support, live chat, openai
-Requires at least: 6.2
+Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.8.0
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -107,6 +107,14 @@ It does not invent answers. When your content does not cover a question, it says
 * Embed the chat inside any page with the "AI Chatbot" block or the `[ai_chatbot height="520"]` shortcode.
 * Voice input: visitors can speak their question (Chrome, Edge and Safari), including in Bangla.
 
+**Easy to set up and look after**
+
+* A 2-minute setup wizard opens after activation: connect an AI (with a live key check), name your assistant, choose what it reads, and how visitors reach your team.
+* Checks in Tools → Site Health: AI key and recent provider errors, the knowledge index, background tasks (WP-Cron) and the PHP extensions some features need, with a plain-language fix for each. A section under Site Health → Info is ready to copy into a support request, without keys or personal data.
+* Translation ready, with Bangla (বাংলা) included for everything visitors see. A .pot file is included for other languages (Loco Translate, Poedit).
+* Fast on large sites: tested with 3,000 posts, 50,000 conversations and 200,000 messages (searches in under 10 ms; the Analytics screen in under half a second).
+* Clean removal: deleting the plugin removes its scheduled tasks. Tick "Delete all plugin data" first to also remove its tables, settings and Knowledge Articles, on every site of a multisite network.
+
 **Private and safe by default**
 
 * API keys are stored encrypted.
@@ -136,19 +144,20 @@ Suggested wording for your privacy policy is added under Settings → Privacy.
 
 == Installation ==
 
-1. Upload the plugin through **Plugins → Add New → Upload Plugin**, or install it from the plugin directory, and activate it.
-2. Go to **AI Chatbot → Settings**, choose a provider, paste your API key and press **Test connection**.
-3. Add your WhatsApp number, email or contact page under "Talk to a person".
-4. Go to **AI Chatbot → Knowledge Articles** and add your FAQs, policies and anything else visitors ask about.
-5. Open **AI Chatbot → Overview**: the setup checklist shows what is left, and "Test what the assistant finds" lets you check answers without spending anything.
+1. Go to **Plugins → Add New → Upload Plugin**, choose the `all-in-one-ai-chatbot.zip` file, install and activate it.
+2. The setup wizard opens. Choose an AI provider and paste your API key (the wizard checks it straight away), then name your assistant, choose which content it reads, and add your WhatsApp number or email for "Talk to a person". You can leave the wizard at any time and come back from AI Chatbot → Overview.
+3. Go to **AI Chatbot → Knowledge Articles** and add your FAQs, policies and anything else visitors ask about, or import documents and FAQ spreadsheets under **Knowledge Sources**.
+4. Open **AI Chatbot → Overview**: the checklist shows what is left, and "Test what the assistant finds" lets you check answers without spending anything.
 
 Your existing content is indexed in the background after activation. Press **Rebuild index now** on the Overview screen to do it immediately.
+
+**Updating:** upload the new zip the same way and choose "Replace current with uploaded". Settings, conversations and Knowledge Articles are kept.
 
 == Frequently Asked Questions ==
 
 = Which provider should I choose? =
 
-All three work well for support answers. DeepSeek is usually cheapest. OpenAI (gpt-5-mini) and Claude (Haiku) are fast and good at following your instructions in many languages. You can set one as a backup for the other.
+All five work well for support answers. DeepSeek is usually cheapest. OpenAI (gpt-5-mini), Claude (Haiku) and Gemini (Flash) are fast and good at following your instructions in many languages, including Bangla. OpenRouter gives you hundreds of models with one key. You can set one as a backup for another.
 
 = How much will it cost? =
 
@@ -196,7 +205,23 @@ Yes. Turn it on under AI Chatbot → Settings → WooCommerce. Logged-in custome
 
 = Which AI providers work with the shop tools? =
 
-All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question may take 2–3 AI calls (search, then answer), so it costs a little more than a plain question.
+All five support tool calling (with OpenRouter, choose a model that supports tools). Each shop question may take 2–3 AI calls (search, then answer), so it costs a little more than a plain question.
+
+= Is the plugin available in Bangla or other languages? =
+
+Everything visitors see (the chat widget, lead form, live chat and quick messages) comes translated into Bangla, and is used automatically when the site language is বাংলা (Settings → General → Site Language). The assistant's answers follow the visitor's own language whatever the site language is. To translate into another language, or to change the wording, use Loco Translate or Poedit with the included `languages/all-in-one-ai-chatbot.pot` file.
+
+= How do I check that everything is working? =
+
+Open Tools → Site Health. The plugin adds checks for the AI key, recent provider errors, the knowledge index, background tasks and the server's PHP extensions, each with what to do if it fails. If background tasks are overdue, WP-Cron is not running: ask your host to run `wp-cron.php` every minute from a real cron job.
+
+= What happens when I delete the plugin? =
+
+By default your settings, conversations, leads and Knowledge Articles are kept, so you can reinstall without losing anything; only the scheduled tasks are removed. To remove everything, tick AI Chatbot → Settings → Limits & Privacy → "Delete all plugin data" before deleting the plugin.
+
+= Will it slow down a big site? =
+
+No. The widget script loads after the page and only talks to the server when a visitor chats. Search uses the plugin's own indexed tables, and was tested with 3,000 posts and 200,000 chat messages.
 
 == Developer hooks ==
 
@@ -220,6 +245,17 @@ All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question 
 * `softorio_ai_crm_clients` (filter): add your own CRM connector (extend `Softorio\AiAssistant\Crm\CrmClient`).
 
 == Changelog ==
+
+= 2.0.0 =
+* New: setup wizard after activation (AI provider with a live key check, assistant name and greeting, content to read, contact options).
+* New: Site Health checks (AI key and provider errors, knowledge index, background tasks, PHP extensions) and a Site Health → Info section for support requests.
+* New: complete translation support: every string translatable, a .pot file, and Bangla translation of everything visitors see.
+* New: clean uninstall. Scheduled tasks are always removed; with "Delete all plugin data" ticked, the plugin's tables, settings, Knowledge Articles and per-page settings are removed on every site of a network.
+* Security: Knowledge Articles, including members-only ones, could be read by anyone through the WordPress REST API (/wp-json/wp/v2/softorio_ai_doc). They are now only readable by users who can edit them. Please update.
+* Fix: when a visitor lost their internet connection, the widget showed just "Offline" instead of the full message.
+* Improved: faster Analytics and conversation lists on large sites (new database index).
+* Improved: code checked against the WordPress coding and security standards; compatible with PHP 8.1 to 8.5.
+* Requires WordPress 6.4 or later.
 
 = 1.8.0 =
 * New: Analytics screen with KPIs and changes against the previous period, conversations and leads chart, AI cost chart, busiest-times heatmap, pages where chats start and most used knowledge.

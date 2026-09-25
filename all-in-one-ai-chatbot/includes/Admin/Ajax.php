@@ -99,18 +99,33 @@ final class Ajax {
 
 		$id = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in guard().
 
+		try {
+			wp_send_json_success( array( 'message' => self::check_provider( $id ) ) );
+		} catch ( \RuntimeException $e ) {
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * Send a tiny request with a provider's saved key and model.
+	 *
+	 * @param string $id Provider id.
+	 * @return string What happened, for the owner.
+	 * @throws \RuntimeException When the provider cannot be used.
+	 */
+	public static function check_provider( string $id ): string {
 		if ( ! array_key_exists( $id, Settings::providers() ) ) {
-			wp_send_json_error( array( 'message' => __( 'Unknown provider.', 'all-in-one-ai-chatbot' ) ) );
+			throw new \RuntimeException( __( 'Unknown provider.', 'all-in-one-ai-chatbot' ) );
 		}
 
 		if ( '' === Settings::api_key( $id ) ) {
-			wp_send_json_error( array( 'message' => __( 'Save an API key first.', 'all-in-one-ai-chatbot' ) ) );
+			throw new \RuntimeException( __( 'Save an API key first.', 'all-in-one-ai-chatbot' ) );
 		}
 
 		$provider = Router::make( $id );
 
 		if ( null === $provider ) {
-			wp_send_json_error( array( 'message' => __( 'Unknown provider.', 'all-in-one-ai-chatbot' ) ) );
+			throw new \RuntimeException( __( 'Unknown provider.', 'all-in-one-ai-chatbot' ) );
 		}
 
 		try {
@@ -125,15 +140,11 @@ final class Ajax {
 				256
 			);
 		} catch ( LlmException $e ) {
-			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+			throw new \RuntimeException( $e->getMessage(), 0, $e );
 		}
 
-		wp_send_json_success(
-			array(
-				/* translators: %s: model id */
-				'message' => sprintf( __( 'Connected. Model %s replied.', 'all-in-one-ai-chatbot' ), $response->model ),
-			)
-		);
+		/* translators: %s: model id */
+		return sprintf( __( 'Connected. Model %s replied.', 'all-in-one-ai-chatbot' ), $response->model );
 	}
 
 	/**

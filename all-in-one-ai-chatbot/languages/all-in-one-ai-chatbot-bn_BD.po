@@ -1,0 +1,277 @@
+# Bangla translation of All in One AI Chatbot (visitor-facing text).
+msgid ""
+msgstr ""
+"Project-Id-Version: All in One AI Chatbot\n"
+"Language: bn_BD\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: all-in-one-ai-chatbot\n"
+
+msgid "Please wait a little before asking again."
+msgstr "আবার জানতে চাওয়ার আগে একটু অপেক্ষা করুন।"
+
+msgid "Nobody from our team is online right now."
+msgstr "এই মুহূর্তে আমাদের টিমের কেউ অনলাইনে নেই।"
+
+msgid "Conversation not found."
+msgstr "কথোপকথনটি পাওয়া যায়নি।"
+
+msgid "Type a message first."
+msgstr "আগে একটি মেসেজ লিখুন।"
+
+msgid "Answer not found."
+msgstr "উত্তরটি পাওয়া যায়নি।"
+
+msgid "Name"
+msgstr "নাম"
+
+msgid "Email"
+msgstr "ইমেইল"
+
+msgid "Phone"
+msgstr "ফোন"
+
+msgid "Connecting you to our team. Someone will be with you shortly."
+msgstr "আপনাকে আমাদের টিমের সাথে যুক্ত করা হচ্ছে। কিছুক্ষণের মধ্যেই কেউ আপনার সাথে কথা বলবেন।"
+
+msgid "%s joined the chat."
+msgstr "%s চ্যাটে যোগ দিয়েছেন।"
+
+msgid "Sorry, our team is busy right now. The AI assistant can keep helping, or leave your details and we will get back to you."
+msgstr "দুঃখিত, আমাদের টিম এখন ব্যস্ত। AI সহকারী আপনাকে সাহায্য করতে পারবে, অথবা আপনার তথ্য রেখে যান — আমরা যোগাযোগ করব।"
+
+msgid "You left the live chat. The AI assistant is here if you need anything else."
+msgstr "আপনি লাইভ চ্যাট থেকে বেরিয়ে এসেছেন। আর কিছু দরকার হলে AI সহকারী আছে।"
+
+msgid "The chat with our team has ended. The AI assistant is here if you need anything else."
+msgstr "আমাদের টিমের সাথে চ্যাট শেষ হয়েছে। আর কিছু দরকার হলে AI সহকারী আছে।"
+
+msgid "You are chatting with the AI assistant again."
+msgstr "আপনি আবার AI সহকারীর সাথে কথা বলছেন।"
+
+msgid "Support"
+msgstr "সাপোর্ট"
+
+msgid "Visitor %s"
+msgstr "ভিজিটর %s"
+
+msgid "Send"
+msgstr "পাঠান"
+
+msgid "Sending…"
+msgstr "পাঠানো হচ্ছে…"
+
+msgid "Dismiss"
+msgstr "বন্ধ করুন"
+
+msgid "The assistant is not available right now."
+msgstr "সহকারী এই মুহূর্তে পাওয়া যাচ্ছে না।"
+
+msgid "Please type a message."
+msgstr "অনুগ্রহ করে একটি মেসেজ লিখুন।"
+
+msgid "Sorry, I could not answer just now. Please try again in a moment."
+msgstr "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না। একটু পরে আবার চেষ্টা করুন।"
+
+msgid "Sorry, I do not have that information."
+msgstr "দুঃখিত, এই তথ্যটি আমার কাছে নেই।"
+
+msgid "You are sending messages too quickly. Please wait a moment."
+msgstr "আপনি খুব দ্রুত মেসেজ পাঠাচ্ছেন। একটু অপেক্ষা করুন।"
+
+msgid "Sorry, I could not finish looking that up. Please try asking in a different way, or contact us."
+msgstr "দুঃখিত, তথ্যটি খুঁজে শেষ করতে পারিনি। অন্যভাবে জিজ্ঞেস করে দেখুন, অথবা আমাদের সাথে যোগাযোগ করুন।"
+
+msgid "You have sent a lot of messages. Please wait a little and try again."
+msgstr "আপনি অনেক মেসেজ পাঠিয়েছেন। একটু অপেক্ষা করে আবার চেষ্টা করুন।"
+
+msgid "The assistant has reached its limit for today. Please use the contact options, and we will get back to you."
+msgstr "আজকের জন্য সহকারীর সীমা শেষ হয়েছে। যোগাযোগের অপশনগুলো ব্যবহার করুন, আমরা আপনার সাথে যোগাযোগ করব।"
+
+msgid "Chat with our team"
+msgstr "আমাদের টিমের সাথে চ্যাট করুন"
+
+msgid "Open chat"
+msgstr "চ্যাট খুলুন"
+
+msgid "Close chat"
+msgstr "চ্যাট বন্ধ করুন"
+
+msgid "Type your question…"
+msgstr "আপনার প্রশ্ন লিখুন…"
+
+msgid "Assistant is typing"
+msgstr "সহকারী লিখছে"
+
+msgid "Sorry, something went wrong. Please try again."
+msgstr "দুঃখিত, কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।"
+
+msgid "You seem to be offline. Check your connection and try again."
+msgstr "মনে হচ্ছে আপনি অফলাইনে আছেন। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।"
+
+msgid "Related pages"
+msgstr "সম্পর্কিত পেজ"
+
+msgid "Talk to a person"
+msgstr "একজন মানুষের সাথে কথা বলুন"
+
+msgid "WhatsApp"
+msgstr "WhatsApp"
+
+msgid "Contact page"
+msgstr "যোগাযোগ পেজ"
+
+msgid "Start a new chat"
+msgstr "নতুন চ্যাট শুরু করুন"
+
+msgid "AI assistant — answers may be imperfect."
+msgstr "AI সহকারী — উত্তরে ভুল থাকতে পারে।"
+
+msgid "How can we help?"
+msgstr "আমরা কীভাবে সাহায্য করতে পারি?"
+
+msgid "Skip"
+msgstr "এড়িয়ে যান"
+
+msgid "Leave your details"
+msgstr "আপনার তথ্য দিন"
+
+msgid "optional"
+msgstr "ঐচ্ছিক"
+
+msgid "Privacy policy"
+msgstr "গোপনীয়তা নীতি"
+
+msgid "Please fill in the form above to start chatting."
+msgstr "চ্যাট শুরু করতে উপরের ফর্মটি পূরণ করুন।"
+
+msgid "View"
+msgstr "দেখুন"
+
+msgid "Waiting for our team…"
+msgstr "আমাদের টিমের জন্য অপেক্ষা করা হচ্ছে…"
+
+msgid "You are chatting with %s"
+msgstr "আপনি %s-এর সাথে কথা বলছেন"
+
+msgid "End chat"
+msgstr "চ্যাট শেষ করুন"
+
+msgid "Cancel"
+msgstr "বাতিল"
+
+msgid "%s is typing"
+msgstr "%s লিখছেন"
+
+msgid "Nobody from our team is online right now. You can keep chatting with me, or leave your details and we will get back to you."
+msgstr "এই মুহূর্তে আমাদের টিমের কেউ অনলাইনে নেই। আপনি আমার সাথে কথা চালিয়ে যেতে পারেন, অথবা আপনার তথ্য রেখে যান — আমরা যোগাযোগ করব।"
+
+msgid "Checking…"
+msgstr "দেখা হচ্ছে…"
+
+msgid "Online"
+msgstr "অনলাইন"
+
+msgid "Offline"
+msgstr "অফলাইন"
+
+msgid "back %s"
+msgstr "ফিরবে %s"
+
+msgid "⟲ Main menu"
+msgstr "⟲ মূল মেনু"
+
+msgid "Speak your question"
+msgstr "প্রশ্নটি বলুন"
+
+msgid "Listening…"
+msgstr "শুনছি…"
+
+msgid "Helpful"
+msgstr "উপকারী"
+
+msgid "Not helpful"
+msgstr "উপকারী নয়"
+
+msgid "Adding…"
+msgstr "যোগ করা হচ্ছে…"
+
+msgid "Added ✓"
+msgstr "যোগ হয়েছে ✓"
+
+msgid "View cart"
+msgstr "কার্ট দেখুন"
+
+msgid "Order"
+msgstr "অর্ডার"
+
+msgid "Track shipment"
+msgstr "শিপমেন্ট ট্র্যাক করুন"
+
+msgid "View order"
+msgstr "অর্ডার দেখুন"
+
+msgid "items"
+msgstr "টি পণ্য"
+
+msgid "This form is not available."
+msgstr "এই ফর্মটি এখন পাওয়া যাচ্ছে না।"
+
+msgid "Too many submissions. Please try again later."
+msgstr "অনেকবার জমা দেওয়া হয়েছে। পরে আবার চেষ্টা করুন।"
+
+msgid "Please enter your name."
+msgstr "অনুগ্রহ করে আপনার নাম লিখুন।"
+
+msgid "Please enter a valid email address."
+msgstr "সঠিক ইমেইল ঠিকানা লিখুন।"
+
+msgid "Please enter your email address."
+msgstr "অনুগ্রহ করে আপনার ইমেইল ঠিকানা লিখুন।"
+
+msgid "Please enter a valid phone number."
+msgstr "সঠিক ফোন নম্বর লিখুন।"
+
+msgid "Please enter your phone number."
+msgstr "অনুগ্রহ করে আপনার ফোন নম্বর লিখুন।"
+
+msgid "Please leave an email address or phone number so we can reach you."
+msgstr "যোগাযোগের জন্য একটি ইমেইল ঠিকানা বা ফোন নম্বর দিন।"
+
+msgid "Please tick the box to agree."
+msgstr "সম্মতি দিতে বক্সে টিক দিন।"
+
+msgid "Out of stock"
+msgstr "স্টকে নেই"
+
+msgid "Available on backorder"
+msgstr "অর্ডার করে আনা যাবে"
+
+msgid "Only %d left"
+msgstr "মাত্র %dটি বাকি"
+
+msgid "In stock"
+msgstr "স্টকে আছে"
+
+msgid "Hi! 👋 How can I help you today?"
+msgstr "হ্যালো! 👋 আজ আপনাকে কীভাবে সাহায্য করতে পারি?"
+
+msgid "Hi! 👋 Need help? Ask me anything."
+msgstr "হ্যালো! 👋 সাহায্য লাগবে? যেকোনো প্রশ্ন করুন।"
+
+msgid "Our team is offline right now. The assistant can still help, and we will reply to messages when we are back."
+msgstr "আমাদের টিম এখন অফলাইনে। সহকারী আপনাকে সাহায্য করতে পারবে, আর আমরা ফিরে এসে মেসেজের উত্তর দেব।"
+
+msgid "We will get back to you as soon as possible."
+msgstr "আমরা যত দ্রুত সম্ভব আপনার সাথে যোগাযোগ করব।"
+
+msgid "Thanks! We have received your details and will contact you soon."
+msgstr "ধন্যবাদ! আপনার তথ্য পেয়েছি, শিগগিরই যোগাযোগ করব।"
+
+msgid "I agree that my details are stored so the team can contact me."
+msgstr "টিম যেন যোগাযোগ করতে পারে, সে জন্য আমার তথ্য সংরক্ষণে আমি সম্মত।"
+
+msgid "Support Assistant"
+msgstr "সাপোর্ট সহকারী"

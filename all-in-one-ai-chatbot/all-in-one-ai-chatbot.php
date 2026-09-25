@@ -2,22 +2,23 @@
 /**
  * Plugin Name:       All in One AI Chatbot
  * Plugin URI:        https://softorio.com/
- * Description:       An AI support assistant that answers your visitors from your own posts, pages and knowledge articles. Bring your own OpenAI, Anthropic Claude or DeepSeek API key.
- * Version:           1.8.0
- * Requires at least: 6.2
+ * Description:       An AI support and sales assistant that answers visitors from your own content, captures leads, helps WooCommerce shoppers, and hands over to your team for live chat. Bring your own OpenAI, Claude, Gemini, DeepSeek or OpenRouter key.
+ * Version:           2.0.0
+ * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Softorio
  * Author URI:        https://softorio.com/
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       all-in-one-ai-chatbot
+ * Domain Path:       /languages
  *
  * @package Softorio\AiAssistant
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SOFTORIO_AI_VERSION', '1.8.0' );
+define( 'SOFTORIO_AI_VERSION', '2.0.0' );
 define( 'SOFTORIO_AI_FILE', __FILE__ );
 define( 'SOFTORIO_AI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SOFTORIO_AI_URL', plugin_dir_url( __FILE__ ) );
@@ -63,7 +64,19 @@ require_once SOFTORIO_AI_DIR . 'includes/autoload.php';
 register_activation_hook( __FILE__, array( \Softorio\AiAssistant\Installer::class, 'activate' ) );
 register_deactivation_hook( __FILE__, array( \Softorio\AiAssistant\Installer::class, 'deactivate' ) );
 
-add_action( 'plugins_loaded', array( \Softorio\AiAssistant\Plugin::class, 'boot' ) );
+/*
+ * Boot on init (early), not plugins_loaded: settings defaults and other
+ * strings are translated during boot, and WordPress 6.7+ warns when a
+ * plugin's translations are used before init.
+ */
+add_action(
+	'init',
+	static function () {
+		load_plugin_textdomain( 'all-in-one-ai-chatbot', false, dirname( plugin_basename( SOFTORIO_AI_FILE ) ) . '/languages' );
+		\Softorio\AiAssistant\Plugin::boot();
+	},
+	0
+);
 
 /*
  * Orders are only read through WooCommerce's CRUD API (wc_get_order,

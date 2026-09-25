@@ -61,11 +61,17 @@ final class SettingsPage {
 			return array_merge( $old, $input );
 		}
 
-		$tab = (string) $input['_tab'];
-		$out = $old;
+		$tab  = (string) $input['_tab'];
+		$out  = $old;
+		$only = isset( $input['_fields'] ) ? array_flip( array_map( 'sanitize_key', explode( ',', (string) $input['_fields'] ) ) ) : null;
 
 		foreach ( SettingsSchema::fields() as $key => $field ) {
-			if ( '*' !== $tab && ( $field['tab'] ?? '' ) !== $tab ) {
+			// The setup wizard posts a chosen set of fields from several tabs.
+			if ( null !== $only ) {
+				if ( ! isset( $only[ $key ] ) ) {
+					continue;
+				}
+			} elseif ( '*' !== $tab && ( $field['tab'] ?? '' ) !== $tab ) {
 				continue;
 			}
 
@@ -191,7 +197,7 @@ final class SettingsPage {
 	 *
 	 * @param string $key Setting key.
 	 */
-	private static function name( string $key ): string {
+	public static function name( string $key ): string {
 		return Settings::OPTION . '[' . $key . ']';
 	}
 
@@ -202,7 +208,7 @@ final class SettingsPage {
 	 * @param array<string, mixed> $field Definition.
 	 * @param mixed                $value Current value.
 	 */
-	private static function field( string $key, array $field, mixed $value ): void {
+	public static function field( string $key, array $field, mixed $value ): void {
 		$id   = 'sai-' . $key;
 		$name = self::name( $key );
 		$desc = (string) ( $field['desc'] ?? '' );

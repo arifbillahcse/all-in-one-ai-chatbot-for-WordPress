@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION         = '7';
+	public const DB_VERSION         = '8';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**
@@ -55,6 +55,12 @@ final class Installer {
 		// screens can point the owner at the "Build index" button, and let
 		// cron start on it in the background meanwhile.
 		update_option( 'softorio_ai_index_state', array( 'status' => 'pending' ), false );
+
+		// Open the setup wizard once, unless the plugin is already configured
+		// (a reactivation).
+		if ( ! Settings::is_ready() ) {
+			update_option( Admin\SetupWizard::REDIRECT, 1, false );
+		}
 
 		PostTypes::register();
 		flush_rewrite_rules();
@@ -132,6 +138,7 @@ CREATE TABLE {$t['conversations']} (
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),
   UNIQUE KEY public_id (public_id),
+  KEY created_at (created_at),
   KEY updated_at (updated_at),
   KEY status (status),
   KEY mode (mode)

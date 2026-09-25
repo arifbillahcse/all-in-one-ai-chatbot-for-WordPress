@@ -16,7 +16,7 @@ $root    = dirname( __DIR__ );
 $slug    = 'all-in-one-ai-chatbot';
 $header  = (string) file_get_contents( $root . '/' . $slug . '.php' );
 $version = preg_match( '/^\s*\*\s*Version:\s*(\S+)/m', $header, $m ) ? $m[1] : 'dev';
-$exclude = array( 'tests', 'bin', '.git', '.DS_Store' );
+$exclude = array( 'tests', 'bin', '.git', '.DS_Store', 'phpcs.xml.dist' );
 $dist    = dirname( $root ) . '/dist';
 $target  = "$dist/$slug-$version.zip";
 

@@ -205,3 +205,22 @@
 .sai-bars a { position: relative; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sai-bars .sai-count { position: relative; }
 .sai-bars-fill { position: absolute; inset: 0 auto 0 0; background: #eef4fb; }
+
+/* ── Setup wizard ────────────────────────────────────────────────────────── */
+
+.sai-wizard { max-width: 860px; }
+.sai-wizard-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0; padding: 0; list-style: none; counter-reset: step; }
+.sai-wizard-steps li { counter-increment: step; flex: 1 1 140px; padding: 8px 12px; border-radius: 8px; background: #f0f0f1; color: #646970; font-weight: 500; }
+.sai-wizard-steps li::before { content: counter(step) ". "; }
+.sai-wizard-steps li.is-current { background: #2271b1; color: #fff; }
+.sai-wizard-steps li.is-done { background: #edfaef; color: #008a20; }
+.sai-wizard-steps li.is-done a { color: inherit; text-decoration: none; }
+.sai-wizard-card h2 { margin-top: 0; font-size: 18px; }
+.sai-wizard-intro { font-size: 14px; color: #3c434a; max-width: 680px; }
+.sai-wizard-actions { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+.sai-wizard-index { background: #f6f7f7; border-radius: 8px; padding: 4px 14px; margin: 12px 0; }
+.sai-wizard-ready { font-size: 16px; }
+.sai-wizard-next li { margin-bottom: 8px; }
+.sai-wizard-skip { margin-top: 10px; }
+.sai-setup-card { border-left: 4px solid #2271b1; }
+.sai-setup-card h2 { margin-top: 0; }

@@ -74,6 +74,14 @@ final class DashboardPage {
 			<a class="page-title-action" href="<?php echo esc_url( Menu::url( 'analytics' ) ); ?>"><?php esc_html_e( 'Full analytics', 'all-in-one-ai-chatbot' ); ?></a>
 			<hr class="wp-header-end">
 
+			<?php if ( ! Settings::is_ready() ) : ?>
+				<div class="sai-card sai-setup-card">
+					<h2><?php esc_html_e( 'Let\'s get your chatbot running', 'all-in-one-ai-chatbot' ); ?></h2>
+					<p><?php esc_html_e( 'Five short steps: connect an AI, name your assistant, choose what it knows, and say how visitors reach you.', 'all-in-one-ai-chatbot' ); ?></p>
+					<p><a class="button button-primary button-hero" href="<?php echo esc_url( SetupWizard::url( 1 ) ); ?>"><?php esc_html_e( 'Start the setup', 'all-in-one-ai-chatbot' ); ?></a></p>
+				</div>
+			<?php endif; ?>
+
 			<?php if ( ! empty( $last_error['time'] ) && time() - (int) $last_error['time'] < DAY_IN_SECONDS ) : ?>
 				<div class="notice notice-warning">
 					<p>

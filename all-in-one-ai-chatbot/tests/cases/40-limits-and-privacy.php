@@ -111,7 +111,7 @@ T::test( 'uninstall keeps data unless the owner opted in', function () {
 	global $wpdb;
 	$source = file_get_contents( SOFTORIO_AI_DIR . 'uninstall.php' );
 
-	T::ok( str_contains( $source, "empty( \$softorio_ai_settings['delete_on_uninstall'] )" ), 'guarded by the opt-in setting' );
+	T::ok( str_contains( $source, 'empty( $settings[\'delete_on_uninstall\'] )' ), 'guarded by the opt-in setting (behaviour tested in 99-hardening)' );
 	T::ok( false === \Softorio\AiAssistant\Settings::defaults()['delete_on_uninstall'], 'opt-in is off by default' );
 	T::ok( null !== $wpdb->get_var( 'SELECT COUNT(*) FROM ' . Installer::tables()['chunks'] ), 'tables still present' );
 } );

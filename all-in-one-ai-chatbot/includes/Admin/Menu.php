@@ -27,11 +27,14 @@ final class Menu {
 		add_action( 'admin_init', array( SettingsPage::class, 'register' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'setup_notice' ) );
+		add_action( 'admin_head', array( self::class, 'hide_setup' ) );
 		LogPage::init();
 		LeadsPage::init();
 		FlowsPage::init();
 		SourcesPage::init();
 		AnalyticsPage::init();
+		SetupWizard::init();
+		Health::init();
 		LivePage::init();
 		add_filter( 'plugin_action_links_' . plugin_basename( SOFTORIO_AI_FILE ), array( self::class, 'action_links' ) );
 	}
@@ -80,6 +83,18 @@ final class Menu {
 			self::SLUG . '-sources',
 			array( SourcesPage::class, 'render' ),
 			1
+		);
+
+		// Reachable by URL and from the Overview; its menu entry is hidden
+		// with CSS (see hide_setup). It has to stay in $submenu: WordPress
+		// refuses pages missing from it, and uses it to highlight the menu.
+		add_submenu_page(
+			self::SLUG,
+			__( 'AI Chatbot — Setup', 'all-in-one-ai-chatbot' ),
+			__( 'Setup', 'all-in-one-ai-chatbot' ),
+			'manage_options',
+			SetupWizard::SLUG,
+			array( SetupWizard::class, 'render' )
 		);
 
 		add_submenu_page(
@@ -155,10 +170,9 @@ final class Menu {
 			default              => 3,
 		};
 
-		$items = array_values( $submenu[ self::SLUG ] );
 		$keyed = array();
 
-		foreach ( $items as $i => $item ) {
+		foreach ( array_values( $submenu[ self::SLUG ] ) as $i => $item ) {
 			$keyed[] = array( $rank( $item ), $i, $item );
 		}
 
@@ -166,6 +180,13 @@ final class Menu {
 
 		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- reordering our own submenu.
 		$submenu[ self::SLUG ] = array_column( $keyed, 2 );
+	}
+
+	/**
+	 * Hide the Setup entry from the menu on every admin screen.
+	 */
+	public static function hide_setup(): void {
+		printf( '<style>#adminmenu a[href$="page=%s"]{display:none}</style>', esc_attr( SetupWizard::SLUG ) );
 	}
 
 	/**
@@ -252,8 +273,8 @@ final class Menu {
 		printf(
 			'<div class="notice notice-info"><p>%s <a href="%s">%s</a></p></div>',
 			esc_html__( 'All in One AI Chatbot is almost ready. Add an AI provider API key to switch on the chat widget.', 'all-in-one-ai-chatbot' ),
-			esc_url( admin_url( 'admin.php?page=' . self::SLUG . '-settings' ) ),
-			esc_html__( 'Open settings', 'all-in-one-ai-chatbot' )
+			esc_url( SetupWizard::url( 1 ) ),
+			esc_html__( 'Run the 2-minute setup', 'all-in-one-ai-chatbot' )
 		);
 	}
 

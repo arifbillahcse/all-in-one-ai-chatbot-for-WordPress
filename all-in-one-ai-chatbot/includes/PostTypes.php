@@ -93,7 +93,7 @@ final class PostTypes {
 		register_post_type(
 			self::DOC,
 			array(
-				'labels'              => array(
+				'labels'                => array(
 					'name'               => __( 'Knowledge Articles', 'all-in-one-ai-chatbot' ),
 					'singular_name'      => __( 'Knowledge Article', 'all-in-one-ai-chatbot' ),
 					'menu_name'          => __( 'Knowledge Articles', 'all-in-one-ai-chatbot' ),
@@ -106,19 +106,21 @@ final class PostTypes {
 					'not_found_in_trash' => __( 'No knowledge articles in the trash.', 'all-in-one-ai-chatbot' ),
 					'all_items'          => __( 'Knowledge Articles', 'all-in-one-ai-chatbot' ),
 				),
-				'description'         => __( 'Answers written for the AI assistant: policies, FAQs, how-to steps. Not shown on the website.', 'all-in-one-ai-chatbot' ),
-				'public'              => false,
-				'publicly_queryable'  => false,
-				'exclude_from_search' => true,
-				'show_ui'             => true,
-				'show_in_menu'        => Admin\Menu::SLUG,
-				'show_in_rest'        => true,
-				'has_archive'         => false,
-				'rewrite'             => false,
-				'query_var'           => false,
-				'supports'            => array( 'title', 'editor', 'revisions' ),
-				'capability_type'     => 'post',
-				'map_meta_cap'        => true,
+				'description'           => __( 'Answers written for the AI assistant: policies, FAQs, how-to steps. Not shown on the website.', 'all-in-one-ai-chatbot' ),
+				'public'                => false,
+				'publicly_queryable'    => false,
+				'exclude_from_search'   => true,
+				'show_ui'               => true,
+				'show_in_menu'          => Admin\Menu::SLUG,
+				'show_in_rest'          => true,
+				// Readable in the REST API only by people who can edit it.
+				'rest_controller_class' => Rest\DocsController::class,
+				'has_archive'           => false,
+				'rewrite'               => false,
+				'query_var'             => false,
+				'supports'              => array( 'title', 'editor', 'revisions' ),
+				'capability_type'       => 'post',
+				'map_meta_cap'          => true,
 			)
 		);
 
