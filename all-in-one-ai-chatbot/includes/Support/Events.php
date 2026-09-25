@@ -27,6 +27,9 @@ final class Events {
 	public const CONVERSATION_ENDED = 'conversation.ended';
 	public const MESSAGE_ANSWERED   = 'message.answered';
 	public const ANSWER_RATED       = 'answer.rated';
+	public const LIVE_REQUESTED     = 'live.requested';
+	public const LIVE_STARTED       = 'live.started';
+	public const LIVE_ENDED         = 'live.ended';
 
 	/**
 	 * Every event name, with a label for admin screens (webhook pickers etc.).
@@ -41,6 +44,9 @@ final class Events {
 			self::CONVERSATION_ENDED  => __( 'Conversation ended', 'all-in-one-ai-chatbot' ),
 			self::MESSAGE_ANSWERED    => __( 'Every answered message', 'all-in-one-ai-chatbot' ),
 			self::ANSWER_RATED        => __( 'Visitor rated an answer (👍 / 👎)', 'all-in-one-ai-chatbot' ),
+			self::LIVE_REQUESTED      => __( 'Visitor is waiting for a live chat', 'all-in-one-ai-chatbot' ),
+			self::LIVE_STARTED        => __( 'An agent joined a live chat', 'all-in-one-ai-chatbot' ),
+			self::LIVE_ENDED          => __( 'A live chat went back to the AI', 'all-in-one-ai-chatbot' ),
 		);
 	}
 

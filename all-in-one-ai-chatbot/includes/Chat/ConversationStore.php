@@ -159,7 +159,7 @@ final class ConversationStore {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT role, content FROM %i WHERE conversation_id = %d ORDER BY id DESC LIMIT %d',
+				"SELECT role, content FROM %i WHERE conversation_id = %d AND role <> 'system' ORDER BY id DESC LIMIT %d",
 				$this->t['messages'],
 				$conversation_id,
 				$turns * 2
@@ -173,6 +173,13 @@ final class ConversationStore {
 		// Providers reject a history that does not alternate from a user turn,
 		// so anything out of step (a failed request's orphan) is skipped.
 		foreach ( array_reverse( (array) $rows ) as $row ) {
+			// A person's replies are part of what the visitor was told, so
+			// the AI sees them as the site's side of the conversation.
+			if ( 'agent' === $row['role'] ) {
+				$row['role']    = 'assistant';
+				$row['content'] = '[Reply from a human support agent] ' . $row['content'];
+			}
+
 			if ( $row['role'] !== $expected ) {
 				continue;
 			}
@@ -216,6 +223,13 @@ final class ConversationStore {
 				$sources = json_decode( (string) ( $row['sources'] ?? '' ), true );
 				$sources = is_array( $sources ) ? $sources : array();
 				$cards   = array();
+				$live    = array();
+
+				// Live-chat messages store who wrote them, not sources.
+				if ( isset( $sources['live'] ) ) {
+					$live    = (array) $sources['live'];
+					$sources = array();
+				}
 
 				// Answers with cards store {sources, cards}; plain ones a list.
 				if ( isset( $sources['sources'] ) || isset( $sources['cards'] ) ) {
@@ -236,6 +250,8 @@ final class ConversationStore {
 					'output_tokens' => (int) ( $row['output_tokens'] ?? 0 ),
 					'cost'          => (float) ( $row['cost'] ?? 0 ),
 					'created_at'    => (string) ( $row['created_at'] ?? '' ),
+					'agent'         => is_array( $live['agent'] ?? null ) ? $live['agent'] : null,
+					'event'         => (string) ( $live['event'] ?? '' ),
 				);
 			},
 			(array) $rows

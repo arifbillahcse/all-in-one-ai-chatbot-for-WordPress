@@ -3,7 +3,7 @@
  * Plugin Name:       All in One AI Chatbot
  * Plugin URI:        https://softorio.com/
  * Description:       An AI support assistant that answers your visitors from your own posts, pages and knowledge articles. Bring your own OpenAI, Anthropic Claude or DeepSeek API key.
- * Version:           1.5.0
+ * Version:           1.6.0
  * Requires at least: 6.2
  * Requires PHP:      8.1
  * Author:            Softorio
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SOFTORIO_AI_VERSION', '1.5.0' );
+define( 'SOFTORIO_AI_VERSION', '1.6.0' );
 define( 'SOFTORIO_AI_FILE', __FILE__ );
 define( 'SOFTORIO_AI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SOFTORIO_AI_URL', plugin_dir_url( __FILE__ ) );

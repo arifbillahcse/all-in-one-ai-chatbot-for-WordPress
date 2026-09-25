@@ -33,6 +33,11 @@
 	var LOG_LIMIT = 60;
 
 	var KEY_POPUP = 'softorioAi.popup';
+	var KEY_LIVE = 'softorioAi.live';
+	var live = { mode: 'ai', after: 0, agent: null, timer: null, available: null, checkedAt: 0, unread: 0, typingSent: 0 };
+	var liveBar = null;
+	var liveButton = null;
+	var liveBadge = null;
 	var inline = false;
 	var quiet = false;
 	var popupEl = null;
@@ -295,8 +300,29 @@
 	}
 
 	function renderMessage( role, text, sources, cards, meta ) {
-		var row = el( 'div', 'sai-msg sai-' + ( role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot' ) );
+		if ( role === 'system' ) {
+			log.appendChild( el( 'div', 'sai-system', text ) );
+			scrollDown();
+			return;
+		}
+
+		var row = el( 'div', 'sai-msg sai-' + ( role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot' ) + ( role === 'agent' ? ' sai-agent' : '' ) );
 		var bubble = el( 'div', 'sai-bubble' );
+
+		if ( role === 'agent' && meta && meta.agent && meta.agent.name ) {
+			var who = el( 'div', 'sai-agent-name' );
+			if ( meta.agent.avatar && safeHref( meta.agent.avatar ) ) {
+				var face = el( 'img', 'sai-agent-avatar' );
+				face.src = meta.agent.avatar;
+				face.alt = '';
+				face.onerror = function () {
+					face.remove();
+				};
+				who.appendChild( face );
+			}
+			who.appendChild( document.createTextNode( meta.agent.name ) );
+			row.appendChild( who );
+		}
 
 		if ( role === 'user' ) {
 			bubble.textContent = text;
@@ -332,6 +358,9 @@
 
 	function addMessage( role, text, sources, persist, cards, meta ) {
 		var entry = { role: role, content: text, sources: sources || [], cards: cards || [], id: meta && meta.id ? meta.id : 0, rating: 0 };
+		if ( meta && meta.agent ) {
+			entry.agent = meta.agent;
+		}
 		renderMessage( role, text, sources, cards, entry );
 		if ( persist ) {
 			messages.push( entry );
@@ -580,7 +609,8 @@
 			page_url: window.location.href.split( '#' )[ 0 ]
 		};
 
-		if ( config.streaming && window.ReadableStream && window.TextDecoder ) {
+		// A person is answering: nothing to stream.
+		if ( config.streaming && live.mode === 'ai' && window.ReadableStream && window.TextDecoder ) {
 			sendStreaming( payload, function () {
 				sendPlain( payload );
 			} );
@@ -673,6 +703,7 @@
 			showLeadForm( 'handoff' );
 		} else if ( node.action === 'human' || node.action === 'lead' ) {
 			contactBox.hidden = ! contactBox.childNodes.length;
+			refreshLiveButton();
 			scrollDown();
 		}
 	}
@@ -787,6 +818,31 @@
 
 	function onResult( result ) {
 		setBusy( false );
+
+		if ( result.ok && result.body.live ) {
+			// Stored for the team; their reply arrives through polling.
+			if ( result.body.conversation_id ) {
+				write( local, KEY_CONVERSATION, result.body.conversation_id );
+			}
+			if ( result.body.mode && result.body.mode !== live.mode ) {
+				setLiveMode( result.body.mode, live.agent );
+			}
+			liveSchedule();
+			input.focus();
+			return;
+		}
+
+		if ( result.ok && result.body.mode === 'ai' && live.mode !== 'ai' ) {
+			setLiveMode( 'ai', null );
+		}
+
+		if ( result.ok && result.body.reply && result.body.unanswered && config.live ) {
+			liveCheck().then( function ( available ) {
+				if ( available ) {
+					offerLive();
+				}
+			} );
+		}
 
 		if ( result.ok && result.body.reply ) {
 			if ( result.body.conversation_id ) {
@@ -1187,8 +1243,14 @@
 					return;
 				}
 				body.messages.forEach( function ( m ) {
-					var role = m.role === 'user' ? 'user' : 'bot';
+					var role = m.role === 'user' || m.role === 'agent' || m.role === 'system' ? m.role : 'bot';
 					var entry = { role: role, content: m.content, sources: m.sources || [], cards: m.cards || [], id: m.id || 0, rating: m.rating || 0 };
+					if ( m.agent ) {
+						entry.agent = m.agent;
+					}
+					if ( m.role === 'agent' || m.role === 'system' ) {
+						live.after = Math.max( live.after, m.id || 0 );
+					}
 					messages.push( entry );
 					renderMessage( role, m.content, m.sources, m.cards, entry );
 				} );
@@ -1205,6 +1267,11 @@
 	}
 
 	function newChat() {
+		if ( live.mode !== 'ai' ) {
+			leaveLive();
+		}
+		setLiveMode( 'ai', null );
+		live.after = 0;
 		write( local, KEY_CONVERSATION, null );
 		write( local, KEY_LOG, null );
 		messages = [];
@@ -1237,6 +1304,11 @@
 		launcher.setAttribute( 'aria-label', i18n.close );
 		hostEl.classList.add( 'sai-is-open' );
 		write( session, KEY_OPEN, '1' );
+		live.unread = 0;
+		if ( liveBadge ) {
+			liveBadge.hidden = true;
+		}
+		liveSchedule();
 		scrollDown();
 		input.focus();
 	}
@@ -1247,12 +1319,249 @@
 		launcher.setAttribute( 'aria-label', i18n.open );
 		hostEl.classList.remove( 'sai-is-open' );
 		write( session, KEY_OPEN, null );
+		liveSchedule();
 		launcher.focus();
 	}
 
 	function autoGrow() {
 		input.style.height = 'auto';
 		input.style.height = Math.min( input.scrollHeight, 120 ) + 'px';
+	}
+
+	// ── Live chat with a person ─────────────────────────────────────────────────
+
+	function liveSave() {
+		write( local, KEY_LIVE, JSON.stringify( { c: conversationId(), mode: live.mode, after: live.after } ) );
+	}
+
+	function liveLoad() {
+		try {
+			var saved = JSON.parse( read( local, KEY_LIVE ) || '{}' );
+			if ( saved && saved.c && saved.c === conversationId() ) {
+				live.mode = [ 'waiting', 'human' ].indexOf( saved.mode ) !== -1 ? saved.mode : 'ai';
+				live.after = Number( saved.after ) || 0;
+			}
+		} catch ( e ) {}
+	}
+
+	/** Is someone from the team online? Cached briefly: pages are not. */
+	function liveCheck() {
+		if ( ! config.live ) {
+			return Promise.resolve( false );
+		}
+		if ( live.available !== null && Date.now() - live.checkedAt < 30000 ) {
+			return Promise.resolve( live.available );
+		}
+		return api( 'live/status' ).then( function ( result ) {
+			live.available = !! ( result.ok && result.body.available );
+			live.checkedAt = Date.now();
+			return live.available;
+		}, function () {
+			return false;
+		} );
+	}
+
+	function refreshLiveButton() {
+		if ( ! liveButton ) {
+			return Promise.resolve( false );
+		}
+		return liveCheck().then( function ( available ) {
+			liveButton.hidden = ! available || live.mode !== 'ai';
+			return ! liveButton.hidden;
+		} );
+	}
+
+	/** "Chat with our team" offered under an answer the AI could not give. */
+	function offerLive() {
+		if ( live.mode !== 'ai' ) {
+			return;
+		}
+		var row = el( 'div', 'sai-flow-menu sai-live-offer' );
+		var chip = el( 'button', 'sai-chip', '💬 ' + config.live.label );
+		chip.type = 'button';
+		chip.addEventListener( 'click', function () {
+			row.remove();
+			requestLive();
+		} );
+		row.appendChild( chip );
+		log.appendChild( row );
+		scrollDown();
+	}
+
+	function requestLive() {
+		if ( busy || ! passGate() ) {
+			return;
+		}
+		if ( liveButton ) {
+			liveButton.disabled = true;
+		}
+
+		api( 'live/request', {
+			method: 'POST',
+			body: { conversation_id: conversationId(), visitor_token: visitorToken(), page_url: window.location.href.split( '#' )[ 0 ] }
+		} ).then( function ( result ) {
+			if ( liveButton ) {
+				liveButton.disabled = false;
+			}
+			contactBox.hidden = true;
+
+			if ( ! result.ok ) {
+				live.available = false;
+				live.checkedAt = Date.now();
+				addMessage( 'bot', result.body.message || i18n.liveNobody, null, false );
+				if ( leadCfg && ! leadDone() ) {
+					showLeadForm( 'handoff' );
+				}
+				return;
+			}
+
+			write( local, KEY_CONVERSATION, result.body.conversation_id );
+			setLiveMode( result.body.mode, null );
+			applyLiveMessages( result.body.messages || [] );
+			liveSchedule();
+		}, function () {
+			if ( liveButton ) {
+				liveButton.disabled = false;
+			}
+			addMessage( 'error', i18n.error, null, false );
+		} );
+	}
+
+	function leaveLive() {
+		var id = conversationId();
+		if ( ! id ) {
+			return;
+		}
+		api( 'live/leave', { method: 'POST', body: { conversation_id: id, visitor_token: visitorToken() } } )
+			.then( function () {
+				pollLive();
+			} )
+			.catch( function () {} );
+	}
+
+	function setLiveMode( mode, agent ) {
+		live.mode = mode;
+		live.agent = agent || null;
+		liveSave();
+
+		if ( liveButton ) {
+			liveButton.hidden = mode !== 'ai' || ! live.available;
+		}
+
+		if ( ! liveBar ) {
+			return;
+		}
+
+		liveBar.textContent = '';
+		liveBar.hidden = mode === 'ai';
+
+		if ( mode === 'ai' ) {
+			return;
+		}
+
+		if ( mode === 'human' && live.agent && live.agent.avatar && safeHref( live.agent.avatar ) ) {
+			var face = el( 'img', 'sai-agent-avatar' );
+			face.src = live.agent.avatar;
+			face.alt = '';
+			face.onerror = function () {
+				face.remove();
+			};
+			liveBar.appendChild( face );
+		}
+
+		liveBar.appendChild( el( 'span', 'sai-live-text', mode === 'human' ? i18n.liveWith.replace( '%s', live.agent ? live.agent.name : '' ) : i18n.liveWaiting ) );
+
+		var end = el( 'button', 'sai-live-end', mode === 'human' ? i18n.liveEnd : i18n.liveCancel );
+		end.type = 'button';
+		end.addEventListener( 'click', function () {
+			setLiveMode( 'ai', null );
+			leaveLive();
+		} );
+		liveBar.appendChild( end );
+	}
+
+	function applyLiveMessages( list ) {
+		list.forEach( function ( m ) {
+			if ( m.id <= live.after ) {
+				return;
+			}
+			live.after = m.id;
+
+			if ( m.role === 'system' ) {
+				addMessage( 'system', m.content, null, true );
+				if ( m.event === 'timeout' && leadCfg && ! leadDone() ) {
+					showLeadForm( 'handoff' );
+				}
+				return;
+			}
+
+			showTyping( false );
+			addMessage( 'agent', m.content, null, true, null, { agent: m.agent } );
+
+			if ( panel.hidden && liveBadge ) {
+				live.unread++;
+				liveBadge.textContent = String( live.unread );
+				liveBadge.hidden = false;
+			}
+		} );
+		liveSave();
+	}
+
+	function pollLive() {
+		clearTimeout( live.timer );
+		var id = conversationId();
+		if ( ! id || ! config.live ) {
+			return;
+		}
+
+		api( 'live/poll', {}, { conversation_id: id, visitor_token: visitorToken(), after: live.after } )
+			.then( function ( result ) {
+				if ( ! result.ok ) {
+					if ( result.status === 404 ) {
+						setLiveMode( 'ai', null );
+					}
+					return;
+				}
+				var body = result.body;
+				applyLiveMessages( body.messages || [] );
+
+				var agentChanged = body.agent && ( ! live.agent || live.agent.name !== body.agent.name );
+				if ( body.mode !== live.mode || agentChanged ) {
+					setLiveMode( body.mode, body.agent );
+				}
+
+				if ( body.typing && live.mode === 'human' ) {
+					showTyping( true, i18n.liveTyping.replace( '%s', body.typing ) );
+				} else if ( ! busy ) {
+					showTyping( false );
+				}
+			} )
+			.catch( function () {} )
+			.then( liveSchedule );
+	}
+
+	/**
+	 * Poll only when it matters: often during a live chat, rarely while the
+	 * panel is open (an agent may join an AI chat), never otherwise.
+	 */
+	function liveSchedule() {
+		clearTimeout( live.timer );
+		if ( ! config.live || ! conversationId() || ! panel ) {
+			return;
+		}
+		var visible = ! panel.hidden && ! document.hidden;
+		var delay = live.mode !== 'ai' ? ( visible ? 3000 : 10000 ) : ( visible ? 20000 : 0 );
+		if ( delay ) {
+			live.timer = setTimeout( pollLive, delay );
+		}
+	}
+
+	function liveTyping() {
+		if ( live.mode === 'ai' || Date.now() - live.typingSent < 4000 || ! input.value.trim() ) {
+			return;
+		}
+		live.typingSent = Date.now();
+		api( 'live/typing', { method: 'POST', body: { conversation_id: conversationId(), visitor_token: visitorToken() } } ).catch( function () {} );
 	}
 
 	// ── Build ───────────────────────────────────────────────────────────────────
@@ -1332,6 +1641,11 @@
 
 		panel.appendChild( header );
 
+		liveBar = el( 'div', 'sai-live-bar' );
+		liveBar.hidden = true;
+		liveBar.setAttribute( 'role', 'status' );
+		panel.appendChild( liveBar );
+
 		if ( hours && ! hours.open && hours.mode === 'notice' && hours.message ) {
 			panel.appendChild( el( 'div', 'sai-offline', hours.message ) );
 		}
@@ -1357,6 +1671,13 @@
 		panel.appendChild( suggestionsBox );
 
 		contactBox = el( 'div', 'sai-contact' );
+		if ( config.live ) {
+			liveButton = el( 'button', 'sai-contact-link sai-live-start', '💬 ' + config.live.label );
+			liveButton.type = 'button';
+			liveButton.hidden = true;
+			liveButton.addEventListener( 'click', requestLive );
+			contactBox.appendChild( liveButton );
+		}
 		var contact = config.contact || {};
 		[
 			[ contact.whatsapp, i18n.whatsapp ],
@@ -1387,6 +1708,15 @@
 			human.type = 'button';
 			human.addEventListener( 'click', function () {
 				contactBox.hidden = ! contactBox.hidden;
+				if ( ! contactBox.hidden && liveButton ) {
+					refreshLiveButton().then( function ( shown ) {
+						// Live chat was the only way to reach someone, and nobody is on.
+						if ( ! shown && contactBox.childNodes.length === 1 ) {
+							contactBox.hidden = true;
+							addMessage( 'bot', i18n.liveNobody, null, false );
+						}
+					} );
+				}
 			} );
 			panel.appendChild( human );
 		}
@@ -1400,6 +1730,7 @@
 		input.placeholder = i18n.placeholder;
 		input.setAttribute( 'aria-label', i18n.placeholder );
 		input.addEventListener( 'input', autoGrow );
+		input.addEventListener( 'input', liveTyping );
 		input.addEventListener( 'keydown', function ( event ) {
 			if ( event.key === 'Enter' && ! event.shiftKey && ! event.isComposing ) {
 				event.preventDefault();
@@ -1430,6 +1761,15 @@
 
 		greet();
 		restore();
+
+		if ( config.live ) {
+			liveLoad();
+			if ( live.mode !== 'ai' ) {
+				setLiveMode( live.mode, null );
+				pollLive();
+			}
+			document.addEventListener( 'visibilitychange', liveSchedule );
+		}
 
 		if ( inline ) {
 			panel.hidden = false;
@@ -1463,6 +1803,9 @@
 		if ( config.label ) {
 			launcher.appendChild( el( 'span', 'sai-launcher-label', config.label ) );
 		}
+		liveBadge = el( 'span', 'sai-launcher-badge' );
+		liveBadge.hidden = true;
+		launcher.appendChild( liveBadge );
 		launcher.addEventListener( 'click', function () {
 			if ( panel.hidden ) {
 				open();

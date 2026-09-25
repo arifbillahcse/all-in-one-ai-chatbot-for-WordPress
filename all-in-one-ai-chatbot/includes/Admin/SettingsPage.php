@@ -401,7 +401,13 @@ final class SettingsPage {
 			printf(
 				'<p><button type="button" class="button sai-test-integration" data-kind="%1$s">%2$s</button> <span class="sai-test-result" data-for="%1$s"></span></p>',
 				esc_attr( (string) $field['test'] ),
-				esc_html( 'telegram' === $field['test'] ? __( 'Find my chat ID / send test', 'all-in-one-ai-chatbot' ) : __( 'Send a test', 'all-in-one-ai-chatbot' ) )
+				esc_html(
+					match ( (string) $field['test'] ) {
+						'telegram'      => __( 'Find my chat ID / send test', 'all-in-one-ai-chatbot' ),
+						'telegram_live' => __( 'Connect Telegram replies', 'all-in-one-ai-chatbot' ),
+						default         => __( 'Send a test', 'all-in-one-ai-chatbot' ),
+					}
+				)
 			);
 		}
 	}

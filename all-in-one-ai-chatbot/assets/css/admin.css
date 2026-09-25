@@ -143,3 +143,6 @@
 .sai-audience label { line-height: 1.9; }
 .sai-audience-roles { display: block; margin: 2px 0 0 22px; }
 .sai-audience-roles label { display: inline-block; margin-right: 10px; }
+
+.sai-turn-agent { background: #edfaef; }
+.sai-turn-system { text-align: center; color: #8c8f94; font-style: italic; font-size: 12px; margin: 6px 0 12px; }

@@ -182,10 +182,21 @@ final class ConversationsPage {
 
 			<div class="sai-transcript">
 				<?php foreach ( $messages as $message ) : ?>
-					<div class="sai-turn sai-turn-<?php echo 'user' === $message['role'] ? 'user' : 'bot'; ?>">
+					<?php if ( 'system' === $message['role'] ) : ?>
+						<p class="sai-turn-system"><?php echo esc_html( $message['content'] ); ?></p>
+						<?php continue; ?>
+					<?php endif; ?>
+					<div class="sai-turn sai-turn-<?php echo 'user' === $message['role'] ? 'user' : ( 'agent' === $message['role'] ? 'agent' : 'bot' ); ?>">
 						<div class="sai-turn-meta">
 							<?php
-							echo esc_html( 'user' === $message['role'] ? __( 'Visitor', 'all-in-one-ai-chatbot' ) : __( 'Assistant', 'all-in-one-ai-chatbot' ) );
+							echo esc_html(
+								match ( $message['role'] ) {
+									'user'  => __( 'Visitor', 'all-in-one-ai-chatbot' ),
+									/* translators: %s: agent name */
+									'agent' => sprintf( __( '%s (team)', 'all-in-one-ai-chatbot' ), (string) ( $message['agent']['name'] ?? __( 'Agent', 'all-in-one-ai-chatbot' ) ) ),
+									default => __( 'Assistant', 'all-in-one-ai-chatbot' ),
+								}
+							);
 							echo ' · ' . esc_html( self::when( $message['created_at'] ) );
 
 							if ( 'assistant' === $message['role'] && '' !== $message['model'] ) {

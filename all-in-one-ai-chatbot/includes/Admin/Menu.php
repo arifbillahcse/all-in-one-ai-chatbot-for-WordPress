@@ -23,6 +23,7 @@ final class Menu {
 	 */
 	public static function init(): void {
 		add_action( 'admin_menu', array( self::class, 'register' ) );
+		add_action( 'admin_menu', array( self::class, 'order' ), 999 );
 		add_action( 'admin_init', array( SettingsPage::class, 'register' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 		add_action( 'admin_notices', array( self::class, 'setup_notice' ) );
@@ -30,6 +31,7 @@ final class Menu {
 		LeadsPage::init();
 		FlowsPage::init();
 		SourcesPage::init();
+		LivePage::init();
 		add_filter( 'plugin_action_links_' . plugin_basename( SOFTORIO_AI_FILE ), array( self::class, 'action_links' ) );
 	}
 
@@ -55,6 +57,19 @@ final class Menu {
 			self::SLUG,
 			array( DashboardPage::class, 'render' )
 		);
+
+		if ( \Softorio\AiAssistant\Live\LiveChat::enabled() ) {
+			$waiting = \Softorio\AiAssistant\Live\LiveChat::waiting_count();
+
+			add_submenu_page(
+				self::SLUG,
+				__( 'AI Chatbot — Live Chat', 'all-in-one-ai-chatbot' ),
+				__( 'Live Chat', 'all-in-one-ai-chatbot' ) . ' <span class="awaiting-mod sai-live-count' . ( 0 === $waiting ? ' count-0' : '' ) . '"><span class="pending-count">' . number_format_i18n( $waiting ) . '</span></span>',
+				\Softorio\AiAssistant\Live\LiveChat::CAP,
+				self::SLUG . '-live',
+				array( LivePage::class, 'render' )
+			);
+		}
 
 		add_submenu_page(
 			self::SLUG,
@@ -110,6 +125,36 @@ final class Menu {
 			self::SLUG . '-log',
 			array( LogPage::class, 'render' )
 		);
+	}
+
+	/**
+	 * Overview first (the top-level "AI Chatbot" link goes to the first
+	 * item), then Live Chat, then the rest in the order they were added.
+	 */
+	public static function order(): void {
+		global $submenu;
+
+		if ( empty( $submenu[ self::SLUG ] ) ) {
+			return;
+		}
+
+		$rank = static fn( array $item ): int => match ( (string) ( $item[2] ?? '' ) ) {
+			self::SLUG           => 0,
+			self::SLUG . '-live' => 1,
+			default              => 2,
+		};
+
+		$items = array_values( $submenu[ self::SLUG ] );
+		$keyed = array();
+
+		foreach ( $items as $i => $item ) {
+			$keyed[] = array( $rank( $item ), $i, $item );
+		}
+
+		sort( $keyed );
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- reordering our own submenu.
+		$submenu[ self::SLUG ] = array_column( $keyed, 2 );
 	}
 
 	/**

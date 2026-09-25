@@ -332,8 +332,9 @@ final class ChatController {
 				'content' => $m['content'],
 				'sources' => $m['sources'],
 				'cards'   => $m['cards'],
-				'id'      => 'assistant' === $m['role'] ? $m['id'] : 0,
+				'id'      => 'user' === $m['role'] ? 0 : $m['id'],
 				'rating'  => $m['rating'],
+				'agent'   => $m['agent'],
 			),
 			$store->transcript( (int) $row['id'] )
 		);
@@ -349,7 +350,7 @@ final class ChatController {
 	 *
 	 * @param string $url Claimed page URL.
 	 */
-	private static function same_site_url( string $url ): string {
+	public static function same_site_url( string $url ): string {
 		$url = esc_url_raw( $url );
 
 		if ( '' === $url ) {
@@ -371,7 +372,7 @@ final class ChatController {
 	 *
 	 * @param \WP_REST_Response $response Response.
 	 */
-	private static function no_cache( \WP_REST_Response $response ): \WP_REST_Response {
+	public static function no_cache( \WP_REST_Response $response ): \WP_REST_Response {
 		foreach ( wp_get_nocache_headers() as $name => $value ) {
 			$response->header( $name, (string) $value );
 		}

@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION        = '4';
+	public const DB_VERSION        = '5';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**
@@ -122,13 +122,18 @@ CREATE TABLE {$t['conversations']} (
   total_cost decimal(12,6) NOT NULL DEFAULT 0,
   lead_id bigint(20) unsigned NOT NULL DEFAULT 0,
   status varchar(16) NOT NULL DEFAULT 'open',
+  mode varchar(16) NOT NULL DEFAULT 'ai',
+  agent_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  mode_since datetime NULL,
+  agent_read_id bigint(20) unsigned NOT NULL DEFAULT 0,
   ended_at datetime NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),
   UNIQUE KEY public_id (public_id),
   KEY updated_at (updated_at),
-  KEY status (status)
+  KEY status (status),
+  KEY mode (mode)
 ) $charset;
 
 CREATE TABLE {$t['messages']} (
@@ -144,6 +149,7 @@ CREATE TABLE {$t['messages']} (
   cost decimal(12,6) NOT NULL DEFAULT 0,
   unanswered tinyint(1) NOT NULL DEFAULT 0,
   rating tinyint(1) NOT NULL DEFAULT 0,
+  agent_id bigint(20) unsigned NOT NULL DEFAULT 0,
   created_at datetime NOT NULL,
   PRIMARY KEY  (id),
   KEY conversation_id (conversation_id),

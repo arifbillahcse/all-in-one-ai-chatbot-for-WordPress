@@ -41,6 +41,7 @@ final class SettingsSchema {
 			'widget'    => __( 'Widget', 'all-in-one-ai-chatbot' ),
 			'leads'     => __( 'Leads', 'all-in-one-ai-chatbot' ),
 			'notify'    => __( 'Notifications', 'all-in-one-ai-chatbot' ),
+			'live'      => __( 'Live Chat', 'all-in-one-ai-chatbot' ),
 			'integrations' => __( 'Integrations', 'all-in-one-ai-chatbot' ),
 			'limits'    => __( 'Limits & Privacy', 'all-in-one-ai-chatbot' ),
 		);
@@ -88,6 +89,15 @@ final class SettingsSchema {
 				'desc'  => __( 'For membership sites, courses and customer portals: knowledge only logged-in users (or some roles) get, and a more personal chat for people with an account.', 'all-in-one-ai-chatbot' ),
 			),
 			'knowledge.web'     => array( 'title' => __( 'Imported web pages', 'all-in-one-ai-chatbot' ) ),
+			'live.main'         => array(
+				'title' => __( 'Live chat with your team', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'Let visitors chat with a person, and let your team take over any conversation from the AI. Answer from AI Chatbot → Live Chat (with sound and browser alerts) or from Telegram. Visitors are only offered a live chat while someone from your team has WP Admin open and is set to Available.', 'all-in-one-ai-chatbot' ),
+			),
+			'live.text'         => array( 'title' => __( 'Messages', 'all-in-one-ai-chatbot' ) ),
+			'live.telegram'     => array(
+				'title' => __( 'Answer from Telegram', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'Live-chat requests and visitor messages are posted to your Telegram chat (set up under Notifications). Reply to a post to answer that visitor; send /ai to hand back to the AI or /end to end the chat. Needs HTTPS.', 'all-in-one-ai-chatbot' ),
+			),
 			'widget.look'       => array( 'title' => __( 'Appearance', 'all-in-one-ai-chatbot' ) ),
 			'widget.behaviour'  => array( 'title' => __( 'Behaviour', 'all-in-one-ai-chatbot' ) ),
 			'widget.popup'      => array(
@@ -731,7 +741,7 @@ final class SettingsSchema {
 				'section' => 'email',
 				'type'    => 'multicheck',
 				'label'   => __( 'Email me when', 'all-in-one-ai-chatbot' ),
-				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true ) ),
+				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true, Support\Events::LIVE_STARTED => true, Support\Events::LIVE_ENDED => true ) ),
 				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
 			),
 			'transcript_to_visitor' => array(
@@ -763,8 +773,78 @@ final class SettingsSchema {
 				'section' => 'telegram',
 				'type'    => 'multicheck',
 				'label'   => __( 'Message me when', 'all-in-one-ai-chatbot' ),
-				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true ) ),
+				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true, Support\Events::LIVE_STARTED => true, Support\Events::LIVE_ENDED => true ) ),
 				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
+			),
+
+			// ── Live chat ──────────────────────────────────────────────────
+			'live_chat'            => array(
+				'tab'     => 'live',
+				'section' => 'main',
+				'type'    => 'checkbox',
+				'label'   => __( 'Live chat', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Switch on live chat and the AI Chatbot → Live Chat screen', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'live_agent_roles'     => array(
+				'tab'     => 'live',
+				'section' => 'main',
+				'type'    => 'multicheck',
+				'label'   => __( 'Who can answer', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Administrators always can. Tick other roles (e.g. Shop manager) to let them use the Live Chat screen without full admin access.', 'all-in-one-ai-chatbot' ),
+				'options' => self::agent_roles(),
+				'default' => array(),
+			),
+			'live_wait_timeout'    => array(
+				'tab'     => 'live',
+				'section' => 'main',
+				'type'    => 'number',
+				'label'   => __( 'Wait before giving up (minutes)', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'If nobody answers a waiting visitor in this time, the AI takes over again and offers the lead form.', 'all-in-one-ai-chatbot' ),
+				'default' => 3,
+				'min'     => 1,
+				'max'     => 30,
+			),
+			'live_sound'           => array(
+				'tab'     => 'live',
+				'section' => 'main',
+				'type'    => 'checkbox',
+				'label'   => __( 'Sound alerts', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Play a sound in WP Admin when a visitor is waiting or writes in a live chat', 'all-in-one-ai-chatbot' ),
+				'default' => true,
+			),
+			'live_button_label'    => array(
+				'tab'     => 'live',
+				'section' => 'text',
+				'type'    => 'text',
+				'label'   => __( 'Button text', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'Chat with our team', 'all-in-one-ai-chatbot' ),
+				'max'     => 40,
+			),
+			'live_waiting_message' => array(
+				'tab'     => 'live',
+				'section' => 'text',
+				'type'    => 'text',
+				'label'   => __( 'While waiting', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'Connecting you to our team. Someone will be with you shortly.', 'all-in-one-ai-chatbot' ),
+				'max'     => 300,
+			),
+			'live_timeout_message' => array(
+				'tab'     => 'live',
+				'section' => 'text',
+				'type'    => 'text',
+				'label'   => __( 'When nobody answers', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'Sorry, our team is busy right now. The AI assistant can keep helping, or leave your details and we will get back to you.', 'all-in-one-ai-chatbot' ),
+				'max'     => 300,
+			),
+			'live_telegram'        => array(
+				'tab'     => 'live',
+				'section' => 'telegram',
+				'type'    => 'checkbox',
+				'label'   => __( 'Telegram replies', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Post live chats to Telegram and send replies to the visitor. Save, then press Connect.', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+				'test'    => 'telegram_live',
 			),
 
 			// ── Integrations ───────────────────────────────────────────────
@@ -865,6 +945,18 @@ final class SettingsSchema {
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Roles that can be made live-chat agents (administrators always are).
+	 *
+	 * @return array<string, string>
+	 */
+	public static function agent_roles(): array {
+		$roles = function_exists( 'wp_roles' ) ? wp_roles()->get_names() : array();
+		unset( $roles['administrator'], $roles['subscriber'], $roles['customer'] );
+
+		return array_map( 'translate_user_role', $roles );
 	}
 
 	/**

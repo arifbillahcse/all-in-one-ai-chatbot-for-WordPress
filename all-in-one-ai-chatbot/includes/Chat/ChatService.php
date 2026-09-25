@@ -8,6 +8,7 @@
 namespace Softorio\AiAssistant\Chat;
 
 use Softorio\AiAssistant\Knowledge\Audience;
+use Softorio\AiAssistant\Live\LiveChat;
 use Softorio\AiAssistant\Knowledge\Retriever;
 use Softorio\AiAssistant\Llm\LlmException;
 use Softorio\AiAssistant\Llm\Router;
@@ -74,9 +75,20 @@ final class ChatService {
 			throw new ChatError( 'empty', __( 'Please type a message.', 'all-in-one-ai-chatbot' ), 422 );
 		}
 
+		$store = $this->store ?? new ConversationStore();
+
+		// A person is handling this conversation: store the message for them
+		// and keep the AI (and its costs and limits) out of it.
+		if ( '' !== $conversation_id && LiveChat::enabled() ) {
+			$row = $store->find_owned( $conversation_id, $visitor_token );
+
+			if ( null !== $row && ! LiveChat::maybe_timeout( $row ) && 'ai' !== LiveChat::mode( $row ) ) {
+				return self::live_message( $row, $message );
+			}
+		}
+
 		$this->enforce_limits();
 
-		$store   = $this->store ?? new ConversationStore();
 		$thread  = $store->resume_or_create( $conversation_id, $visitor_token, $page_url );
 		$history = $thread['resumed'] ? $store->history( $thread['id'], (int) Settings::get( 'history_turns', 6 ) ) : array();
 
@@ -167,6 +179,7 @@ final class ChatService {
 		$conversation = $store->find( $thread['id'] );
 
 		return array(
+			'mode'            => 'ai',
 			'reply'           => $reply,
 			'conversation_id' => $thread['public_id'],
 			'sources'         => Settings::get( 'show_sources', true ) ? $sources : array(),
@@ -177,6 +190,38 @@ final class ChatService {
 			'offer_lead'      => $unanswered
 				&& 'fallback' === Settings::get( 'leads_mode', 'off' )
 				&& 0 === (int) ( $conversation['lead_id'] ?? 0 ),
+		);
+	}
+
+	/**
+	 * A visitor message during a live chat.
+	 *
+	 * @param array<string, mixed> $row     Conversation.
+	 * @param string               $message Message.
+	 * @return array<string, mixed>
+	 * @throws ChatError When the visitor floods the chat.
+	 */
+	private static function live_message( array $row, string $message ): array {
+		// People type faster to people: a looser limit than for AI answers,
+		// but still one, since every message may notify an agent's phone.
+		$limit = RateLimiter::hit( 'live|' . (string) $row['public_id'], 30, MINUTE_IN_SECONDS );
+
+		if ( ! $limit['allowed'] ) {
+			throw new ChatError( 'rate_limited', __( 'You are sending messages too quickly. Please wait a moment.', 'all-in-one-ai-chatbot' ), 429, $limit['retry_after'] );
+		}
+
+		$id = LiveChat::visitor_message( (int) $row['id'], $message );
+
+		return array(
+			'mode'            => LiveChat::mode( $row ),
+			'live'            => true,
+			'reply'           => '',
+			'conversation_id' => (string) $row['public_id'],
+			'sources'         => array(),
+			'cards'           => array(),
+			'message_id'      => $id,
+			'unanswered'      => false,
+			'offer_lead'      => false,
 		);
 	}
 

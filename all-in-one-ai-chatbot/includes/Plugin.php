@@ -31,6 +31,8 @@ final class Plugin {
 		Woo\WooModule::init();
 		Frontend\Inline::init();
 		Sources\WebImporter::init();
+		Live\LiveChat::init();
+		Live\TelegramBridge::init();
 
 		/**
 		 * Fires once the core is loaded: feature modules register their
@@ -40,6 +42,7 @@ final class Plugin {
 
 		add_action( 'rest_api_init', array( Rest\ChatController::class, 'register' ) );
 		add_action( 'rest_api_init', array( Rest\LeadController::class, 'register' ) );
+		add_action( 'rest_api_init', array( Rest\LiveController::class, 'register' ) );
 
 		if ( is_admin() ) {
 			Admin\Menu::init();

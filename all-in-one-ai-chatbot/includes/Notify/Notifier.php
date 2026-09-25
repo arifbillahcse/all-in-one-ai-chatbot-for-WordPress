@@ -56,7 +56,10 @@ final class Notifier {
 			}
 		}
 
-		if ( self::telegram_ready() && in_array( $event, (array) Settings::get( 'telegram_events', array() ), true ) ) {
+		// With Telegram replies on, the live-chat bridge posts its own (replyable) message.
+		$bridged = Events::LIVE_REQUESTED === $event && \Softorio\AiAssistant\Live\TelegramBridge::enabled();
+
+		if ( ! $bridged && self::telegram_ready() && in_array( $event, (array) Settings::get( 'telegram_events', array() ), true ) ) {
 			$text = self::compose_telegram( $event, $payload );
 
 			if ( null !== $text ) {
@@ -100,6 +103,8 @@ final class Notifier {
 			Events::LEAD_CREATED        => sprintf( __( '[%1$s] New lead: %2$s', 'all-in-one-ai-chatbot' ), $site, $who ),
 			/* translators: %s: site name */
 			Events::HANDOFF_REQUESTED   => sprintf( __( '[%s] A visitor wants to talk to a person', 'all-in-one-ai-chatbot' ), $site ),
+			/* translators: %s: site name */
+			Events::LIVE_REQUESTED      => sprintf( __( '[%s] A visitor is waiting for a live chat', 'all-in-one-ai-chatbot' ), $site ),
 			/* translators: %s: site name */
 			Events::QUESTION_UNANSWERED => sprintf( __( '[%s] The chatbot could not answer a question', 'all-in-one-ai-chatbot' ), $site ),
 			/* translators: 1: site name, 2: conversation title */
@@ -183,6 +188,7 @@ final class Notifier {
 		$title = match ( $event ) {
 			Events::LEAD_CREATED        => '🟢 ' . __( 'New lead', 'all-in-one-ai-chatbot' ),
 			Events::HANDOFF_REQUESTED   => '🙋 ' . __( 'Visitor wants a person', 'all-in-one-ai-chatbot' ),
+			Events::LIVE_REQUESTED      => '🟠 ' . __( 'Visitor waiting for live chat', 'all-in-one-ai-chatbot' ),
 			Events::QUESTION_UNANSWERED => '❓ ' . __( 'Unanswered question', 'all-in-one-ai-chatbot' ),
 			Events::CONVERSATION_ENDED  => '💬 ' . __( 'Chat ended', 'all-in-one-ai-chatbot' ),
 			default                     => null,

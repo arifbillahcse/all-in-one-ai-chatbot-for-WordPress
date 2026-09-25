@@ -199,6 +199,9 @@ final class Widget {
 			// Only on pages rendered for a logged-in user (never cached for
 			// others): pre-fills their details in the lead form.
 			'user'        => self::user(),
+			// Whether anyone is online is asked at runtime (/live/status):
+			// this config may sit in a page cache for hours.
+			'live'        => \Softorio\AiAssistant\Live\LiveChat::enabled() ? array( 'label' => (string) Settings::get( 'live_button_label', '' ) ?: __( 'Chat with our team', 'all-in-one-ai-chatbot' ) ) : null,
 			'streaming'   => (bool) Settings::get( 'streaming', false ),
 			'feedback'    => (bool) Settings::get( 'feedback', false ),
 			// Only logged-in visitors get a nonce: their pages are not served
@@ -240,6 +243,14 @@ final class Widget {
 				'privacy'     => __( 'Privacy policy', 'all-in-one-ai-chatbot' ),
 				'formFirst'   => __( 'Please fill in the form above to start chatting.', 'all-in-one-ai-chatbot' ),
 				'view'        => __( 'View', 'all-in-one-ai-chatbot' ),
+				'liveWaiting' => __( 'Waiting for our team…', 'all-in-one-ai-chatbot' ),
+				/* translators: %s: agent's first name */
+				'liveWith'    => __( 'You are chatting with %s', 'all-in-one-ai-chatbot' ),
+				'liveEnd'     => __( 'End chat', 'all-in-one-ai-chatbot' ),
+				'liveCancel'  => __( 'Cancel', 'all-in-one-ai-chatbot' ),
+				/* translators: %s: agent's first name */
+				'liveTyping'  => __( '%s is typing', 'all-in-one-ai-chatbot' ),
+				'liveNobody'  => __( 'Nobody from our team is online right now. You can keep chatting with me, or leave your details and we will get back to you.', 'all-in-one-ai-chatbot' ),
 				'checking'    => __( 'Checking…', 'all-in-one-ai-chatbot' ),
 				'online'      => __( 'Online', 'all-in-one-ai-chatbot' ),
 				'offline'     => __( 'Offline', 'all-in-one-ai-chatbot' ),
