@@ -72,6 +72,14 @@ final class SettingsSchema {
 			'ai.openai'         => array( 'title' => 'OpenAI' ),
 			'ai.claude'         => array( 'title' => 'Anthropic Claude' ),
 			'ai.deepseek'       => array( 'title' => 'DeepSeek' ),
+			'ai.gemini'         => array(
+				'title' => 'Google Gemini',
+				'desc'  => __( 'Fast and low-cost, with a free tier for testing. Get a key in Google AI Studio.', 'all-in-one-ai-chatbot' ),
+			),
+			'ai.openrouter'     => array(
+				'title' => 'OpenRouter',
+				'desc'  => __( 'One key for hundreds of models from many vendors. Enter the model as vendor/model, e.g. openai/gpt-5-mini, anthropic/claude-haiku-4.5 or deepseek/deepseek-chat. Costs are reported by OpenRouter itself.', 'all-in-one-ai-chatbot' ),
+			),
 			'ai.answers'        => array( 'title' => __( 'Answers', 'all-in-one-ai-chatbot' ) ),
 			'knowledge.sources' => array( 'title' => __( 'Content the assistant reads', 'all-in-one-ai-chatbot' ) ),
 			'knowledge.search'  => array( 'title' => __( 'Search', 'all-in-one-ai-chatbot' ) ),
@@ -230,6 +238,14 @@ final class SettingsSchema {
 				'min'     => 128,
 				'max'     => 8000,
 			),
+			'streaming'            => array(
+				'tab'     => 'ai',
+				'section' => 'answers',
+				'type'    => 'checkbox',
+				'label'   => __( 'Live typing', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Show answers word by word as the AI writes them (streaming). If your hosting blocks streaming, the widget automatically falls back to normal replies.', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
 			'history_turns'        => array(
 				'tab'     => 'ai',
 				'section' => 'answers',
@@ -306,6 +322,14 @@ final class SettingsSchema {
 				'label'   => __( 'Related pages', 'all-in-one-ai-chatbot' ),
 				'desc'    => __( 'Show links to related pages under answers', 'all-in-one-ai-chatbot' ),
 				'default' => true,
+			),
+			'feedback'             => array(
+				'tab'     => 'widget',
+				'section' => 'behaviour',
+				'type'    => 'checkbox',
+				'label'   => __( 'Answer feedback', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Show 👍 / 👎 buttons under answers. Ratings appear in conversations and on the overview.', 'all-in-one-ai-chatbot' ),
+				'default' => false,
 			),
 			'hide_for_admins'      => array(
 				'tab'     => 'widget',
@@ -501,7 +525,7 @@ final class SettingsSchema {
 				'section' => 'email',
 				'type'    => 'multicheck',
 				'label'   => __( 'Email me when', 'all-in-one-ai-chatbot' ),
-				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true ) ),
+				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true ) ),
 				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
 			),
 			'transcript_to_visitor' => array(
@@ -533,7 +557,7 @@ final class SettingsSchema {
 				'section' => 'telegram',
 				'type'    => 'multicheck',
 				'label'   => __( 'Message me when', 'all-in-one-ai-chatbot' ),
-				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true ) ),
+				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true ) ),
 				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
 			),
 
@@ -586,6 +610,21 @@ final class SettingsSchema {
 				'default' => $p['default_model'],
 			);
 		}
+
+		$fields['gemini_reasoning'] = array(
+			'tab'     => 'ai',
+			'section' => 'gemini',
+			'type'    => 'select',
+			'label'   => __( 'Thinking', 'all-in-one-ai-chatbot' ),
+			'desc'    => __( 'Gemini 2.5 models think before answering, which is billed as output. "low" keeps support answers fast and cheap; "none" switches it off where the model allows.', 'all-in-one-ai-chatbot' ),
+			'options' => array(
+				'low'    => 'low',
+				'none'   => 'none',
+				'medium' => 'medium',
+				''       => __( 'Model default', 'all-in-one-ai-chatbot' ),
+			),
+			'default' => 'low',
+		);
 
 		$fields['openai_reasoning'] = array(
 			'tab'     => 'ai',

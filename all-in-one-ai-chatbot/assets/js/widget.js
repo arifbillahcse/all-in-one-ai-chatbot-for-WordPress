@@ -285,7 +285,7 @@
 		log.scrollTop = log.scrollHeight;
 	}
 
-	function renderMessage( role, text, sources, cards ) {
+	function renderMessage( role, text, sources, cards, meta ) {
 		var row = el( 'div', 'sai-msg sai-' + ( role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot' ) );
 		var bubble = el( 'div', 'sai-bubble' );
 
@@ -310,6 +310,10 @@
 		row.appendChild( bubble );
 		log.appendChild( row );
 
+		if ( role === 'bot' && config.feedback && meta && meta.id ) {
+			row.appendChild( feedbackButtons( meta ) );
+		}
+
 		if ( cards && cards.length ) {
 			renderCards( cards );
 		}
@@ -317,13 +321,44 @@
 		scrollDown();
 	}
 
-	function addMessage( role, text, sources, persist, cards ) {
-		renderMessage( role, text, sources, cards );
+	function addMessage( role, text, sources, persist, cards, meta ) {
+		var entry = { role: role, content: text, sources: sources || [], cards: cards || [], id: meta && meta.id ? meta.id : 0, rating: 0 };
+		renderMessage( role, text, sources, cards, entry );
 		if ( persist ) {
-			messages.push( { role: role, content: text, sources: sources || [], cards: cards || [] } );
+			messages.push( entry );
 			saveLog();
 		}
 		updateSuggestions();
+	}
+
+	/** 👍 / 👎 under an answer; clicking the active one again clears it. */
+	function feedbackButtons( entry ) {
+		var box = el( 'div', 'sai-feedback' );
+		var buttons = {};
+
+		[ [ 1, '👍', i18n.helpful ], [ -1, '👎', i18n.notHelpful ] ].forEach( function ( item ) {
+			var button = el( 'button', 'sai-rate', item[ 1 ] );
+			button.type = 'button';
+			button.title = item[ 2 ];
+			button.setAttribute( 'aria-label', item[ 2 ] );
+			button.setAttribute( 'aria-pressed', entry.rating === item[ 0 ] ? 'true' : 'false' );
+			button.addEventListener( 'click', function () {
+				var rating = entry.rating === item[ 0 ] ? 0 : item[ 0 ];
+				entry.rating = rating;
+				Object.keys( buttons ).forEach( function ( key ) {
+					buttons[ key ].setAttribute( 'aria-pressed', String( Number( key ) === rating ) );
+				} );
+				saveLog();
+				api( 'feedback', {
+					method: 'POST',
+					body: { conversation_id: conversationId(), visitor_token: visitorToken(), message_id: entry.id, rating: rating }
+				} ).catch( function () {} );
+			} );
+			buttons[ item[ 0 ] ] = button;
+			box.appendChild( button );
+		} );
+
+		return box;
 	}
 
 	// ── Cards (products, orders) ────────────────────────────────────────────────
@@ -473,14 +508,21 @@
 
 	var typingRow = null;
 
-	function showTyping( on ) {
+	function showTyping( on, status ) {
+		if ( on && typingRow && status ) {
+			var label = typingRow.querySelector( '.sai-typing-status' );
+			if ( label ) {
+				label.textContent = status;
+			}
+		}
 		if ( on && ! typingRow ) {
 			typingRow = el( 'div', 'sai-msg sai-bot' );
 			var bubble = el( 'div', 'sai-bubble sai-typing' );
-			bubble.setAttribute( 'aria-label', i18n.typing );
-			bubble.appendChild( el( 'span' ) );
-			bubble.appendChild( el( 'span' ) );
-			bubble.appendChild( el( 'span' ) );
+			bubble.setAttribute( 'aria-label', status || i18n.typing );
+			bubble.appendChild( el( 'span', 'sai-dot' ) );
+			bubble.appendChild( el( 'span', 'sai-dot' ) );
+			bubble.appendChild( el( 'span', 'sai-dot' ) );
+			bubble.appendChild( el( 'em', 'sai-typing-status', status || '' ) );
 			typingRow.appendChild( bubble );
 			log.appendChild( typingRow );
 			scrollDown();
@@ -533,40 +575,192 @@
 		autoGrow();
 		setBusy( true );
 
-		api( 'chat', {
-			method: 'POST',
-			body: {
-				message: text,
-				conversation_id: conversationId(),
-				visitor_token: visitorToken(),
-				page_url: window.location.href.split( '#' )[ 0 ]
-			}
-		} )
-			.then( function ( result ) {
-				setBusy( false );
+		var payload = {
+			message: text,
+			conversation_id: conversationId(),
+			visitor_token: visitorToken(),
+			page_url: window.location.href.split( '#' )[ 0 ]
+		};
 
-				if ( result.ok && result.body.reply ) {
-					if ( result.body.conversation_id ) {
-						write( local, KEY_CONVERSATION, result.body.conversation_id );
-					}
-					addMessage( 'bot', result.body.reply, result.body.sources, true, result.body.cards );
-					if ( result.body.offer_lead && leadCfg && ! leadDone() ) {
-						showLeadForm( 'fallback' );
-					}
+		if ( config.streaming && window.ReadableStream && window.TextDecoder ) {
+			sendStreaming( payload, function () {
+				sendPlain( payload );
+			} );
+		} else {
+			sendPlain( payload );
+		}
+	}
+
+	/** The regular request: one JSON answer when it is complete. */
+	function sendPlain( payload ) {
+		api( 'chat', { method: 'POST', body: payload } )
+			.then( onResult )
+			.catch( onFailure );
+	}
+
+	function onResult( result ) {
+		setBusy( false );
+
+		if ( result.ok && result.body.reply ) {
+			if ( result.body.conversation_id ) {
+				write( local, KEY_CONVERSATION, result.body.conversation_id );
+			}
+			addMessage( 'bot', result.body.reply, result.body.sources, true, result.body.cards, { id: result.body.message_id } );
+			if ( result.body.offer_lead && leadCfg && ! leadDone() ) {
+				showLeadForm( 'fallback' );
+			}
+		} else {
+			addMessage( 'error', result.body.message || i18n.error, null, false );
+			if ( result.body.code === 'daily_limit' || result.body.code === 'generation_failed' ) {
+				contactBox.hidden = ! contactBox.childNodes.length;
+			}
+		}
+
+		input.focus();
+	}
+
+	function onFailure() {
+		setBusy( false );
+		addMessage( 'error', navigator.onLine === false ? i18n.offline : i18n.error, null, false );
+		input.focus();
+	}
+
+	/**
+	 * Streamed request: words appear as the AI writes them.
+	 *
+	 * Anything that stops the stream from starting — a host or security
+	 * plugin blocking the endpoint, a proxy that turns it into a normal
+	 * response, an old browser — hands over to the regular request, so the
+	 * visitor always gets an answer.
+	 */
+	function sendStreaming( payload, fallback ) {
+		var headers = { 'Content-Type': 'application/json', Accept: 'text/event-stream' };
+		var signedIn = !! config.nonce;
+		if ( signedIn ) {
+			headers[ 'X-WP-Nonce' ] = config.nonce;
+		}
+
+		var row = null;
+		var bubble = null;
+		var text = '';
+		var started = false;
+		var finished = false;
+		var pending = false;
+
+		function draw() {
+			pending = false;
+			if ( ! bubble ) {
+				return;
+			}
+			while ( bubble.firstChild ) {
+				bubble.removeChild( bubble.firstChild );
+			}
+			renderText( bubble, text );
+			scrollDown();
+		}
+
+		function clear() {
+			if ( row ) {
+				row.remove();
+			}
+			row = null;
+			bubble = null;
+			text = '';
+		}
+
+		function handle( event, data ) {
+			if ( event === 'delta' ) {
+				if ( ! bubble ) {
+					showTyping( false );
+					row = el( 'div', 'sai-msg sai-bot sai-streaming' );
+					bubble = el( 'div', 'sai-bubble' );
+					row.appendChild( bubble );
+					log.appendChild( row );
+				}
+				text += data.t || '';
+				if ( ! pending ) {
+					pending = true;
+					( window.requestAnimationFrame || setTimeout )( draw );
+				}
+			} else if ( event === 'tool' ) {
+				clear();
+				showTyping( true, i18n.checking );
+			} else if ( event === 'reset' ) {
+				clear();
+				showTyping( true, i18n.checking );
+			} else if ( event === 'done' || event === 'error' ) {
+				finished = true;
+				clear();
+				onResult( { ok: event === 'done', body: data } );
+			}
+		}
+
+		fetch( endpoint( 'chat/stream' ), {
+			method: 'POST',
+			credentials: signedIn ? 'same-origin' : 'omit',
+			headers: headers,
+			body: JSON.stringify( payload )
+		} )
+			.then( function ( response ) {
+				var type = response.headers.get( 'Content-Type' ) || '';
+
+				if ( ! response.ok || type.indexOf( 'text/event-stream' ) === -1 || ! response.body ) {
+					fallback();
 					return;
 				}
 
-				addMessage( 'error', result.body.message || i18n.error, null, false );
-				if ( result.body.code === 'daily_limit' || result.body.code === 'generation_failed' ) {
-					contactBox.hidden = ! contactBox.childNodes.length;
+				started = true;
+				var reader = response.body.getReader();
+				var decoder = new TextDecoder();
+				var buffer = '';
+
+				function pump() {
+					return reader.read().then( function ( chunk ) {
+						if ( chunk.done ) {
+							if ( ! finished ) {
+								clear();
+								onFailure();
+							}
+							return;
+						}
+
+						buffer += decoder.decode( chunk.value, { stream: true } ).replace( /\r\n/g, '\n' );
+
+						var boundary;
+						while ( ( boundary = buffer.indexOf( '\n\n' ) ) !== -1 ) {
+							var block = buffer.slice( 0, boundary );
+							buffer = buffer.slice( boundary + 2 );
+
+							var event = 'message';
+							var data = [];
+							block.split( '\n' ).forEach( function ( line ) {
+								if ( line.indexOf( 'event:' ) === 0 ) {
+									event = line.slice( 6 ).trim();
+								} else if ( line.indexOf( 'data:' ) === 0 ) {
+									data.push( line.slice( 5 ).replace( /^ /, '' ) );
+								}
+							} );
+
+							if ( data.length ) {
+								try {
+									handle( event, JSON.parse( data.join( '\n' ) ) );
+								} catch ( e ) {}
+							}
+						}
+
+						return pump();
+					} );
 				}
+
+				return pump();
 			} )
 			.catch( function () {
-				setBusy( false );
-				addMessage( 'error', navigator.onLine === false ? i18n.offline : i18n.error, null, false );
-			} )
-			.then( function () {
-				input.focus();
+				if ( ! started ) {
+					fallback();
+				} else if ( ! finished ) {
+					clear();
+					onFailure();
+				}
 			} );
 	}
 
@@ -774,7 +968,7 @@
 
 		if ( messages.length ) {
 			messages.forEach( function ( m ) {
-				renderMessage( m.role, m.content, m.sources, m.cards );
+				renderMessage( m.role, m.content, m.sources, m.cards, m );
 			} );
 			updateSuggestions();
 			return;
@@ -799,8 +993,9 @@
 				}
 				body.messages.forEach( function ( m ) {
 					var role = m.role === 'user' ? 'user' : 'bot';
-					messages.push( { role: role, content: m.content, sources: m.sources || [], cards: m.cards || [] } );
-					renderMessage( role, m.content, m.sources, m.cards );
+					var entry = { role: role, content: m.content, sources: m.sources || [], cards: m.cards || [], id: m.id || 0, rating: m.rating || 0 };
+					messages.push( entry );
+					renderMessage( role, m.content, m.sources, m.cards, entry );
 				} );
 				saveLog();
 				updateSuggestions();

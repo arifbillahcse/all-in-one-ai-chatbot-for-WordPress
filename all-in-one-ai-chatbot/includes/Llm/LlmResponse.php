@@ -24,6 +24,7 @@ final class LlmResponse {
 	 * @param int    $output_tokens Completion tokens billed.
 	 * @param bool   $truncated     Whether the answer hit the token limit.
 	 * @param array<int, ToolCall> $tool_calls Tools the model wants run before it answers.
+	 * @param float|null           $reported_cost Exact cost reported by the provider, when it does.
 	 */
 	public function __construct(
 		public readonly string $text,
@@ -33,6 +34,7 @@ final class LlmResponse {
 		public readonly int $output_tokens = 0,
 		public readonly bool $truncated = false,
 		public readonly array $tool_calls = array(),
+		public readonly ?float $reported_cost = null,
 	) {
 	}
 
@@ -47,6 +49,12 @@ final class LlmResponse {
 	 * Estimated cost in USD.
 	 */
 	public function cost(): float {
+		// OpenRouter reports the exact charge; everyone else is estimated
+		// from token counts.
+		if ( null !== $this->reported_cost ) {
+			return $this->reported_cost;
+		}
+
 		return Pricing::cost( $this->provider, $this->model, $this->input_tokens, $this->output_tokens );
 	}
 }

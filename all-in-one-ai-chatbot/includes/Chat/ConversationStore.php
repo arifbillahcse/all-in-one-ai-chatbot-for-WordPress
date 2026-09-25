@@ -217,6 +217,8 @@ final class ConversationStore {
 				}
 
 				return array(
+					'id'            => (int) ( $row['id'] ?? 0 ),
+					'rating'        => (int) ( $row['rating'] ?? 0 ),
 					'role'          => (string) $row['role'],
 					'content'       => (string) $row['content'],
 					'sources'       => $sources,
@@ -242,7 +244,7 @@ final class ConversationStore {
 	 * @param array<int, array<string, string>> $sources         Links shown with the answer.
 	 * @param array<string, mixed>              $usage           provider, model, input_tokens, output_tokens, cost.
 	 */
-	public function add_exchange( int $conversation_id, string $question, string $answer, array $sources, array $usage ): void {
+	public function add_exchange( int $conversation_id, string $question, string $answer, array $sources, array $usage ): int {
 		global $wpdb;
 
 		$now = current_time( 'mysql', true );
@@ -277,6 +279,8 @@ final class ConversationStore {
 			array( '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%f', '%d', '%s' )
 		);
 
+		$answer_id = (int) $wpdb->insert_id;
+
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE %i SET message_count = message_count + 2, total_cost = total_cost + %f, updated_at = %s, ended_at = NULL,
@@ -290,6 +294,59 @@ final class ConversationStore {
 			)
 		);
 		// phpcs:enable
+
+		return $answer_id;
+	}
+
+	/**
+	 * Record a visitor's rating of one answer in their conversation.
+	 *
+	 * @param int $conversation_id Conversation the visitor owns.
+	 * @param int $message_id      Assistant message.
+	 * @param int $rating          1 (helpful), -1 (not helpful) or 0 (cleared).
+	 * @return bool Whether an answer in that conversation was updated.
+	 */
+	public function rate( int $conversation_id, int $message_id, int $rating ): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
+		$updated = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE %i SET rating = %d WHERE id = %d AND conversation_id = %d AND role = 'assistant'",
+				$this->t['messages'],
+				max( -1, min( 1, $rating ) ),
+				$message_id,
+				$conversation_id
+			)
+		);
+
+		// A rating that did not change still counts as the right message.
+		return false !== $updated && ( $updated > 0 || null !== $wpdb->get_var( $wpdb->prepare( "SELECT id FROM %i WHERE id = %d AND conversation_id = %d AND role = 'assistant'", $this->t['messages'], $message_id, $conversation_id ) ) );
+	}
+
+	/**
+	 * Share of rated answers rated helpful, since a moment.
+	 *
+	 * @param string $since_gmt MySQL datetime, UTC.
+	 * @return array{up: int, down: int}
+	 */
+	public function ratings_since( string $since_gmt ): array {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) AS up, SUM(CASE WHEN rating = -1 THEN 1 ELSE 0 END) AS down FROM %i WHERE role = 'assistant' AND created_at >= %s",
+				$this->t['messages'],
+				$since_gmt
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'up'   => (int) ( $row['up'] ?? 0 ),
+			'down' => (int) ( $row['down'] ?? 0 ),
+		);
 	}
 
 	/**

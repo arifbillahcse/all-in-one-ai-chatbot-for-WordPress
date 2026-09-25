@@ -31,7 +31,9 @@ final class Router {
 		$provider = match ( $id ) {
 			'openai'   => OpenAiCompatibleProvider::openai( $key, $model, (string) Settings::get( 'openai_reasoning', '' ) ),
 			'claude'   => new ClaudeProvider( $key, $model ),
-			'deepseek' => OpenAiCompatibleProvider::deepseek( $key, $model ),
+			'deepseek'   => OpenAiCompatibleProvider::deepseek( $key, $model ),
+			'gemini'     => OpenAiCompatibleProvider::gemini( $key, $model, (string) Settings::get( 'gemini_reasoning', 'low' ) ),
+			'openrouter' => OpenAiCompatibleProvider::openrouter( $key, $model ),
 			default    => null,
 		};
 
@@ -73,7 +75,44 @@ final class Router {
 	 * @throws LlmException When every provider failed; carries the last error.
 	 */
 	public function complete( string $system, array $messages, int $max_tokens, array $tools = array() ): LlmResponse {
-		$last = null;
+		return $this->run( $system, $messages, $max_tokens, $tools, null );
+	}
+
+	/**
+	 * Generate an answer, streaming text to $on_text.
+	 *
+	 * Falls back to the backup provider only while nothing has been shown:
+	 * once words have reached the visitor they cannot be taken back, so a
+	 * failure mid-answer is reported rather than restarted elsewhere.
+	 *
+	 * @param string                           $system     System prompt.
+	 * @param array<int, array<string, mixed>> $messages   Turns.
+	 * @param int                              $max_tokens Output limit.
+	 * @param array<int, ToolDefinition>       $tools      Tools.
+	 * @param callable(string): void           $on_text    Receives text deltas.
+	 * @throws LlmException When every provider failed.
+	 */
+	public function stream( string $system, array $messages, int $max_tokens, array $tools, callable $on_text ): LlmResponse {
+		return $this->run( $system, $messages, $max_tokens, $tools, $on_text );
+	}
+
+	/**
+	 * Try each provider in turn.
+	 *
+	 * @param string                           $system     System prompt.
+	 * @param array<int, array<string, mixed>> $messages   Turns.
+	 * @param int                              $max_tokens Output limit.
+	 * @param array<int, ToolDefinition>       $tools      Tools.
+	 * @param callable(string): void|null      $on_text    Streaming callback, or null.
+	 * @throws LlmException When every provider failed.
+	 */
+	private function run( string $system, array $messages, int $max_tokens, array $tools, ?callable $on_text ): LlmResponse {
+		$last    = null;
+		$emitted = false;
+		$relay   = null === $on_text ? null : static function ( string $delta ) use ( &$emitted, $on_text ): void {
+			$emitted = true;
+			$on_text( $delta );
+		};
 
 		foreach ( self::chain() as $id ) {
 			$provider = self::make( $id );
@@ -83,7 +122,9 @@ final class Router {
 			}
 
 			try {
-				$response = $provider->complete( $system, $messages, $max_tokens, $tools );
+				$response = null === $relay
+					? $provider->complete( $system, $messages, $max_tokens, $tools )
+					: $provider->stream( $system, $messages, $max_tokens, $tools, $relay );
 
 				// Reasoning models can spend the whole budget thinking and
 				// return nothing visible. That is a failure, not an answer —
@@ -104,7 +145,7 @@ final class Router {
 
 				self::log_failure( $e );
 
-				if ( ! $e->is_retryable_elsewhere() ) {
+				if ( ! $e->is_retryable_elsewhere() || $emitted ) {
 					break;
 				}
 			}

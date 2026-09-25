@@ -33,4 +33,18 @@ interface Provider {
 	 * @throws LlmException On failure.
 	 */
 	public function complete( string $system, array $messages, int $max_tokens, array $tools = array() ): LlmResponse;
+
+	/**
+	 * Generate an answer, passing text to $on_text as it is produced.
+	 *
+	 * Returns the same complete response as complete() once the stream ends.
+	 *
+	 * @param string                                                                              $system     System prompt.
+	 * @param array<int, array{role: string, content: string|array<int, array<string, mixed>>}> $messages   Turns.
+	 * @param int                                                                                 $max_tokens Output limit.
+	 * @param array<int, ToolDefinition>                                                          $tools      Tools.
+	 * @param callable(string): void                                                              $on_text    Receives text as it arrives.
+	 * @throws LlmException On failure.
+	 */
+	public function stream( string $system, array $messages, int $max_tokens, array $tools, callable $on_text ): LlmResponse;
 }

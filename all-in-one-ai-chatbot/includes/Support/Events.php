@@ -26,6 +26,7 @@ final class Events {
 	public const QUESTION_UNANSWERED = 'question.unanswered';
 	public const CONVERSATION_ENDED = 'conversation.ended';
 	public const MESSAGE_ANSWERED   = 'message.answered';
+	public const ANSWER_RATED       = 'answer.rated';
 
 	/**
 	 * Every event name, with a label for admin screens (webhook pickers etc.).
@@ -39,6 +40,7 @@ final class Events {
 			self::QUESTION_UNANSWERED => __( 'Question the assistant could not answer', 'all-in-one-ai-chatbot' ),
 			self::CONVERSATION_ENDED  => __( 'Conversation ended', 'all-in-one-ai-chatbot' ),
 			self::MESSAGE_ANSWERED    => __( 'Every answered message', 'all-in-one-ai-chatbot' ),
+			self::ANSWER_RATED        => __( 'Visitor rated an answer (👍 / 👎)', 'all-in-one-ai-chatbot' ),
 		);
 	}
 

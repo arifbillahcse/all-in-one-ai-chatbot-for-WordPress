@@ -34,6 +34,8 @@ final class DashboardPage {
 		$state      = get_option( Indexer::STATE_OPTION, array() );
 		$today      = ChatService::usage_today();
 		$month      = ( new ConversationStore() )->usage_since( gmdate( 'Y-m-d H:i:s', time() - 30 * DAY_IN_SECONDS ) );
+		$ratings    = ( new ConversationStore() )->ratings_since( gmdate( 'Y-m-d H:i:s', time() - 30 * DAY_IN_SECONDS ) );
+		$rated      = $ratings['up'] + $ratings['down'];
 		$last_error = get_option( 'softorio_ai_last_error', array() );
 		$docs       = wp_count_posts( PostTypes::DOC );
 		$doc_count  = isset( $docs->publish ) ? (int) $docs->publish : 0;
@@ -121,6 +123,23 @@ final class DashboardPage {
 						<div><strong><?php echo esc_html( '$' . number_format_i18n( $today['cost'], 4 ) ); ?></strong><span><?php esc_html_e( 'estimated cost today', 'all-in-one-ai-chatbot' ); ?></span></div>
 						<div><strong><?php echo esc_html( number_format_i18n( $month['answers'] ) ); ?></strong><span><?php esc_html_e( 'answers, last 30 days', 'all-in-one-ai-chatbot' ); ?></span></div>
 						<div><strong><?php echo esc_html( '$' . number_format_i18n( $month['cost'], $month['cost'] < 1 ? 4 : 2 ) ); ?></strong><span><?php esc_html_e( 'estimated, last 30 days', 'all-in-one-ai-chatbot' ); ?></span></div>
+						<?php if ( $rated > 0 ) : ?>
+							<div>
+								<strong><?php echo esc_html( number_format_i18n( 100 * $ratings['up'] / $rated ) . '%' ); ?></strong>
+								<span>
+									<?php
+									echo esc_html(
+										sprintf(
+											/* translators: 1: helpful ratings, 2: not helpful ratings */
+											__( 'helpful (👍 %1$d · 👎 %2$d), last 30 days', 'all-in-one-ai-chatbot' ),
+											$ratings['up'],
+											$ratings['down']
+										)
+									);
+									?>
+								</span>
+							</div>
+						<?php endif; ?>
 					</div>
 					<p class="description">
 						<?php

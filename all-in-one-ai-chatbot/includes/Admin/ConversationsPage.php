@@ -191,6 +191,12 @@ final class ConversationsPage {
 							if ( 'assistant' === $message['role'] && '' !== $message['model'] ) {
 								echo ' · ' . esc_html( $message['model'] );
 							}
+
+							if ( 1 === $message['rating'] ) {
+								echo ' · <span class="sai-rated-up">👍 ' . esc_html__( 'helpful', 'all-in-one-ai-chatbot' ) . '</span>';
+							} elseif ( -1 === $message['rating'] ) {
+								echo ' · <span class="sai-rated-down">👎 ' . esc_html__( 'not helpful', 'all-in-one-ai-chatbot' ) . '</span>';
+							}
 							?>
 						</div>
 						<div class="sai-turn-text"><?php echo nl2br( esc_html( $message['content'] ) ); ?></div>

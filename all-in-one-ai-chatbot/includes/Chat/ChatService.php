@@ -58,10 +58,11 @@ final class ChatService {
 	 * @param string $conversation_id Conversation to continue, or ''.
 	 * @param string $visitor_token   Widget's random token.
 	 * @param string $page_url        Page the visitor is on.
+	 * @param callable(string, mixed): void|null $on_event Streaming: receives ("delta", text), ("tool", name) and ("reset", null) as the answer is produced.
 	 * @return array{reply: string, conversation_id: string, sources: array<int, array{title: string, url: string}>, unanswered: bool, offer_lead: bool}
 	 * @throws ChatError When the message cannot be answered.
 	 */
-	public function ask( string $message, string $conversation_id, string $visitor_token, string $page_url ): array {
+	public function ask( string $message, string $conversation_id, string $visitor_token, string $page_url, ?callable $on_event = null ): array {
 		if ( ! Settings::get( 'enabled', true ) || ! Settings::is_ready() ) {
 			throw new ChatError( 'unavailable', __( 'The assistant is not available right now.', 'all-in-one-ai-chatbot' ), 503 );
 		}
@@ -100,7 +101,7 @@ final class ChatService {
 		$messages = array_merge( $history, array( array( 'role' => 'user', 'content' => $message ) ) );
 
 		try {
-			$outcome  = $this->generate( $system, $messages, $tools, $registry, $context );
+			$outcome  = $this->generate( $system, $messages, $tools, $registry, $context, $on_event );
 			$response = $outcome['response'];
 		} catch ( LlmException $e ) {
 			throw new ChatError(
@@ -120,7 +121,7 @@ final class ChatService {
 		$sources = $unanswered || $outcome['used_tools'] ? array() : self::sources( $passages, $reply );
 		$cards   = self::relevant_cards( $outcome['cards'], $reply );
 
-		$store->add_exchange(
+		$answer_id = $store->add_exchange(
 			$thread['id'],
 			$message,
 			$reply,
@@ -169,6 +170,7 @@ final class ChatService {
 			'conversation_id' => $thread['public_id'],
 			'sources'         => Settings::get( 'show_sources', true ) ? $sources : array(),
 			'cards'           => $cards,
+			'message_id'      => $answer_id,
 			'unanswered'      => $unanswered,
 			// Offer the lead form once per conversation, when it would help.
 			'offer_lead'      => $unanswered
@@ -192,7 +194,7 @@ final class ChatService {
 	 * @return array{response: \Softorio\AiAssistant\Llm\LlmResponse, cost: float, input_tokens: int, output_tokens: int, cards: array<int, array<string, mixed>>, used_tools: bool}
 	 * @throws LlmException When the provider fails.
 	 */
-	private function generate( string $system, array $messages, array $tools, ToolRegistry $registry, ToolContext $context ): array {
+	private function generate( string $system, array $messages, array $tools, ToolRegistry $registry, ToolContext $context, ?callable $on_event = null ): array {
 		$router     = $this->router ?? new Router();
 		$max_tokens = max( 128, (int) Settings::get( 'max_tokens', 1024 ) );
 		$cost       = 0.0;
@@ -202,7 +204,20 @@ final class ChatService {
 		$used_tools = false;
 
 		for ( $round = 1; $round <= self::MAX_TOOL_ROUNDS; $round++ ) {
-			$response = $router->complete( $system, $messages, $max_tokens, $tools );
+			if ( null === $on_event ) {
+				$response = $router->complete( $system, $messages, $max_tokens, $tools );
+			} else {
+				// Each round's text streams through its own marker filter;
+				// "reset" tells the widget a new round is starting, so text
+				// from a round that ended in a tool call is replaced.
+				if ( $round > 1 ) {
+					$on_event( 'reset', null );
+				}
+
+				$filter   = new MarkerFilter( static fn( string $text ) => $on_event( 'delta', $text ) );
+				$response = $router->stream( $system, $messages, $max_tokens, $tools, array( $filter, 'push' ) );
+				$filter->finish();
+			}
 			$cost    += $response->cost();
 			$in      += $response->input_tokens;
 			$out     += $response->output_tokens;
@@ -234,6 +249,10 @@ final class ChatService {
 			$used_tools = true;
 
 			foreach ( $response->tool_calls as $call ) {
+				if ( null !== $on_event ) {
+					$on_event( 'tool', $call->name );
+				}
+
 				$assistant[] = array(
 					'type'  => 'tool_use',
 					'id'    => $call->id,

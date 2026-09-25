@@ -48,7 +48,7 @@ final class FakeHttp {
 }
 
 add_filter( 'pre_http_request', static function ( $pre, $args, $url ) {
-	$faked = array( 'api.openai.com', 'api.anthropic.com', 'api.deepseek.com', 'api.telegram.org', 'hooks.example.com' );
+	$faked = array( 'api.openai.com', 'api.anthropic.com', 'api.deepseek.com', 'api.telegram.org', 'hooks.example.com', 'generativelanguage.googleapis.com', 'openrouter.ai' );
 
 	if ( ! in_array( wp_parse_url( $url, PHP_URL_HOST ), $faked, true ) ) {
 		return $pre;

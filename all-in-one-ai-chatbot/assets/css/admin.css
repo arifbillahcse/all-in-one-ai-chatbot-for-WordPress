@@ -76,3 +76,6 @@
 .sai-level { padding: 2px 8px; border-radius: 10px; font-size: 12px; background: #f0f0f1; }
 .sai-level-error { background: #fcf0f1; color: #b32d2e; }
 .sai-level-warning { background: #fcf9e8; color: #996800; }
+
+.sai-rated-up { color: #15803d; }
+.sai-rated-down { color: #b32d2e; }

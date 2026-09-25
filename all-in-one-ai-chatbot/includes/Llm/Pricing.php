@@ -37,6 +37,11 @@ final class Pricing {
 				'claude-haiku-4-5' => array( 'input' => 1.00, 'output' => 5.00 ),
 				'claude-sonnet-5'  => array( 'input' => 3.00, 'output' => 15.00 ),
 			),
+			'gemini'   => array(
+				'gemini-2.5-flash-lite' => array( 'input' => 0.10, 'output' => 0.40 ),
+				'gemini-2.5-flash'      => array( 'input' => 0.30, 'output' => 2.50 ),
+				'gemini-2.5-pro'        => array( 'input' => 1.25, 'output' => 10.00 ),
+			),
 			'deepseek' => array(
 				'deepseek-chat'     => array( 'input' => 0.28, 'output' => 0.42 ),
 				'deepseek-reasoner' => array( 'input' => 0.28, 'output' => 0.42 ),

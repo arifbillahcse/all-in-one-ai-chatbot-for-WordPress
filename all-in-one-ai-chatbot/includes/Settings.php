@@ -44,10 +44,20 @@ final class Settings {
 				'default_model' => 'claude-haiku-4-5',
 				'key_url'       => 'https://console.anthropic.com/settings/keys',
 			),
-			'deepseek' => array(
+			'deepseek'   => array(
 				'label'         => 'DeepSeek',
 				'default_model' => 'deepseek-chat',
 				'key_url'       => 'https://platform.deepseek.com/api_keys',
+			),
+			'gemini'     => array(
+				'label'         => 'Google Gemini',
+				'default_model' => 'gemini-2.5-flash',
+				'key_url'       => 'https://aistudio.google.com/apikey',
+			),
+			'openrouter' => array(
+				'label'         => 'OpenRouter',
+				'default_model' => 'openai/gpt-5-mini',
+				'key_url'       => 'https://openrouter.ai/settings/keys',
 			),
 		);
 	}

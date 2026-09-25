@@ -96,6 +96,8 @@ final class Widget {
 			'suggestions' => array_slice( $suggestions, 0, 4 ),
 			'maxLength'   => max( 50, (int) Settings::get( 'max_message_length', 1000 ) ),
 			'leads'       => LeadService::enabled() ? LeadService::form_config() : null,
+			'streaming'   => (bool) Settings::get( 'streaming', false ),
+			'feedback'    => (bool) Settings::get( 'feedback', false ),
 			// Only logged-in visitors get a nonce: their pages are not served
 			// from a shared cache, so it cannot go stale for someone else.
 			'nonce'       => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
@@ -135,6 +137,9 @@ final class Widget {
 				'privacy'     => __( 'Privacy policy', 'all-in-one-ai-chatbot' ),
 				'formFirst'   => __( 'Please fill in the form above to start chatting.', 'all-in-one-ai-chatbot' ),
 				'view'        => __( 'View', 'all-in-one-ai-chatbot' ),
+				'checking'    => __( 'Checking…', 'all-in-one-ai-chatbot' ),
+				'helpful'     => __( 'Helpful', 'all-in-one-ai-chatbot' ),
+				'notHelpful'  => __( 'Not helpful', 'all-in-one-ai-chatbot' ),
 				'adding'      => __( 'Adding…', 'all-in-one-ai-chatbot' ),
 				'added'       => __( 'Added ✓', 'all-in-one-ai-chatbot' ),
 				'viewCart'    => __( 'View cart', 'all-in-one-ai-chatbot' ),

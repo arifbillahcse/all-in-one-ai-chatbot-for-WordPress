@@ -161,7 +161,31 @@ button { font: inherit; cursor: pointer; }
 
 .sai-sources-label { color: var(--sai-muted); font-size: 12px; }
 
-.sai-typing { display: flex; gap: 4px; padding: 14px; }
+.sai-typing { display: flex; align-items: center; gap: 4px; padding: 14px; }
+.sai-typing-status { font-style: normal; font-size: 12px; color: var(--sai-muted); margin-left: 6px; }
+.sai-typing-status:empty { display: none; }
+
+.sai-msg.sai-bot { flex-wrap: wrap; }
+.sai-streaming .sai-bubble > :last-child::after {
+	content: '▍';
+	margin-left: 1px;
+	color: var(--sai-muted);
+	animation: sai-caret 1s steps(2) infinite;
+}
+@keyframes sai-caret { 50% { opacity: 0; } }
+
+.sai-feedback { flex-basis: 100%; display: flex; gap: 2px; margin-top: 2px; }
+.sai-rate {
+	border: 0;
+	background: none;
+	font-size: 14px;
+	padding: 2px 6px;
+	border-radius: 6px;
+	opacity: 0.45;
+	filter: grayscale(1);
+}
+.sai-rate:hover, .sai-rate:focus-visible { opacity: 0.9; }
+.sai-rate[aria-pressed="true"] { opacity: 1; filter: none; background: var(--sai-bot); }
 
 .sai-typing span {
 	width: 7px;
@@ -181,6 +205,7 @@ button { font: inherit; cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
 	.sai-typing span { animation: none; opacity: 0.6; }
+	.sai-streaming .sai-bubble > :last-child::after { animation: none; }
 	.sai-launcher { transition: none; }
 }
 
