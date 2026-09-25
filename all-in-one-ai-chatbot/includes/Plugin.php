@@ -29,6 +29,7 @@ final class Plugin {
 		Notify\Webhooks::init();
 		Leads\PrivacyTools::init();
 		Woo\WooModule::init();
+		Frontend\Inline::init();
 
 		/**
 		 * Fires once the core is loaded: feature modules register their

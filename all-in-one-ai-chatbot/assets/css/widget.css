@@ -428,3 +428,170 @@ button { font: inherit; cursor: pointer; }
 	/* The header's close button takes over from the launcher full-screen. */
 	:host(.sai-is-open) .sai-launcher { display: none; }
 }
+
+/* ── Look: avatar, status, launcher variants ─────────────────────────────── */
+
+.sai-avatar {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+	margin-right: 8px;
+	background: rgba(255, 255, 255, 0.25);
+}
+
+.sai-status { display: inline-flex; align-items: center; gap: 6px; }
+.sai-status::before {
+	content: "";
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+.sai-status.is-online::before { background: #4ade80; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+.sai-status.is-offline::before { background: #d1d5db; }
+
+.sai-offline {
+	padding: 8px 16px;
+	font-size: 13px;
+	background: #fef9c3;
+	color: #854d0e;
+	border-bottom: 1px solid var(--sai-border);
+}
+
+@media (prefers-color-scheme: dark) {
+	.sai-offline { background: #3a2f0b; color: #fde68a; }
+}
+
+.sai-launcher-avatar {
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.sai-launcher.has-label {
+	width: auto;
+	height: 52px;
+	padding: 0 20px 0 14px;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.sai-launcher.has-label .sai-launcher-avatar { width: 34px; height: 34px; }
+.sai-launcher-label { font-size: 15px; font-weight: 600; white-space: nowrap; }
+
+/* ── Pop-up greeting ─────────────────────────────────────────────────────── */
+
+.sai-popup {
+	position: relative;
+	max-width: 280px;
+	background: var(--sai-bg);
+	color: var(--sai-text);
+	border: 1px solid var(--sai-border);
+	border-radius: 14px;
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+	animation: sai-pop 0.25s ease-out;
+}
+
+.sai-popup-text {
+	display: block;
+	width: 100%;
+	border: 0;
+	background: none;
+	color: inherit;
+	text-align: left;
+	padding: 12px 34px 12px 14px;
+	font-size: 14px;
+	line-height: 1.45;
+}
+
+.sai-popup-close {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 26px;
+	height: 26px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--sai-muted);
+	font-size: 18px;
+	line-height: 1;
+}
+
+.sai-popup-close:hover { background: var(--sai-bot); }
+.sai-popup-text:focus-visible,
+.sai-popup-close:focus-visible,
+.sai-mic:focus-visible {
+	outline: 3px solid var(--sai-accent);
+	outline-offset: 2px;
+}
+
+@keyframes sai-pop {
+	from { opacity: 0; transform: translateY(8px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Quick replies ───────────────────────────────────────────────────────── */
+
+.sai-flow-menu { display: flex; flex-wrap: wrap; gap: 6px; }
+.sai-chip-muted { border-color: var(--sai-border); color: var(--sai-muted); }
+.sai-chip-muted:hover { background: var(--sai-bot); color: var(--sai-text); }
+
+/* ── Voice input ─────────────────────────────────────────────────────────── */
+
+.sai-mic {
+	width: 40px;
+	height: 40px;
+	border: 1px solid var(--sai-border);
+	border-radius: 10px;
+	background: var(--sai-bg);
+	color: var(--sai-muted);
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
+}
+
+.sai-mic svg { width: 18px; height: 18px; }
+.sai-mic:hover { color: var(--sai-accent); border-color: var(--sai-accent); }
+.sai-mic.is-listening {
+	color: #fff;
+	background: #dc2626;
+	border-color: #dc2626;
+	animation: sai-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sai-pulse {
+	0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45); }
+	50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sai-popup, .sai-mic.is-listening { animation: none; }
+}
+
+/* ── Inline (shortcode / block) ──────────────────────────────────────────── */
+
+.sai-wrap.sai-inline {
+	position: relative;
+	inset: auto;
+	z-index: auto;
+	height: 100%;
+	align-items: stretch;
+}
+
+.sai-inline .sai-panel,
+.sai-inline .sai-panel[hidden] {
+	display: flex !important;
+	position: static;
+	width: 100%;
+	height: 100%;
+	min-height: 360px;
+	box-shadow: none;
+	border-radius: 12px;
+	border: 1px solid var(--sai-border);
+}

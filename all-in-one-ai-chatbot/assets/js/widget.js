@@ -32,6 +32,10 @@
 	var gate = null;
 	var LOG_LIMIT = 60;
 
+	var KEY_POPUP = 'softorioAi.popup';
+	var inline = false;
+	var quiet = false;
+	var popupEl = null;
 	var root, hostEl, launcher, panel, log, input, sendButton, suggestionsBox, contactBox;
 	var busy = false;
 	var messages = [];
@@ -197,6 +201,11 @@
 	var ICON_CHAT = [ 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' ];
 	var ICON_CLOSE = [ 'M18 6 6 18', 'M6 6l12 12' ];
 	var ICON_SEND = [ 'M22 2 11 13', 'M22 2 15 22 11 13 2 9 22 2z' ];
+	var LAUNCHER_ICONS = {
+		chat: [ 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' ],
+		help: [ 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3', 'M12 17h.01' ],
+		sparkle: [ 'M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z', 'M19 17l.8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8z' ]
+	};
 	var ICON_NEW = [ 'M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z' ];
 
 	function safeHref( url ) {
@@ -548,29 +557,18 @@
 
 	// ── Network ─────────────────────────────────────────────────────────────────
 
-	function send( text ) {
+	function send( text, shown ) {
 		text = String( text || '' ).trim();
 
 		if ( ! text || busy ) {
 			return;
 		}
 
-		// The pre-chat form is waiting: "required" means it must be filled
-		// in first; with "optional", chatting anyway counts as skipping it.
-		if ( gate ) {
-			if ( leadCfg.mode === 'required' ) {
-				var first = gate.querySelector( 'input' );
-				if ( first ) {
-					first.focus();
-				}
-				return;
-			}
-			write( session, KEY_SKIPPED, '1' );
-			gate.remove();
-			releaseGate();
+		if ( ! passGate() ) {
+			return;
 		}
 
-		addMessage( 'user', text, null, true );
+		addMessage( 'user', shown || text, null, true );
 		input.value = '';
 		autoGrow();
 		setBusy( true );
@@ -589,6 +587,195 @@
 		} else {
 			sendPlain( payload );
 		}
+	}
+
+	/**
+	 * The pre-chat form is waiting: "required" means it must be filled in
+	 * first; with "optional", chatting anyway counts as skipping it.
+	 *
+	 * @return {boolean} whether the visitor may go ahead
+	 */
+	function passGate() {
+		if ( ! gate ) {
+			return true;
+		}
+		if ( leadCfg.mode === 'required' ) {
+			var first = gate.querySelector( 'input' );
+			if ( first ) {
+				first.focus();
+			}
+			return false;
+		}
+		write( session, KEY_SKIPPED, '1' );
+		gate.remove();
+		releaseGate();
+		return true;
+	}
+
+	// ── Quick replies (no AI, no cost) ──────────────────────────────────────────
+
+	function flowChips( nodes, container, onPick ) {
+		nodes.forEach( function ( node ) {
+			var chip = el( 'button', 'sai-chip', node.label );
+			chip.type = 'button';
+			chip.addEventListener( 'click', function () {
+				onPick( node );
+			} );
+			container.appendChild( chip );
+		} );
+	}
+
+	/** A sub-menu inside the conversation, with a way back to the top. */
+	function showFlowMenu( nodes ) {
+		var row = el( 'div', 'sai-flow-menu' );
+		flowChips( nodes, row, function ( node ) {
+			row.remove();
+			runFlow( node );
+		} );
+		var back = el( 'button', 'sai-chip sai-chip-muted', i18n.mainMenu );
+		back.type = 'button';
+		back.addEventListener( 'click', function () {
+			row.remove();
+			showFlowMenu( config.flows );
+		} );
+		if ( nodes !== config.flows ) {
+			row.appendChild( back );
+		}
+		log.appendChild( row );
+		scrollDown();
+	}
+
+	function runFlow( node ) {
+		if ( busy || ! passGate() ) {
+			return;
+		}
+
+		if ( node.action === 'ask_ai' ) {
+			send( node.prompt || node.label, node.label );
+			return;
+		}
+
+		addMessage( 'user', node.label, null, true );
+		if ( node.reply ) {
+			addMessage( 'bot', node.reply, null, true );
+		}
+
+		if ( node.action === 'reply' && node.children && node.children.length ) {
+			showFlowMenu( node.children );
+		} else if ( node.action === 'link' && safeHref( node.url ) ) {
+			var sameSite = node.url.indexOf( window.location.origin ) === 0;
+			if ( sameSite ) {
+				window.location.href = node.url;
+			} else {
+				window.open( node.url, '_blank', 'noopener' );
+			}
+		} else if ( node.action === 'lead' && leadCfg ) {
+			showLeadForm( 'handoff' );
+		} else if ( node.action === 'human' || node.action === 'lead' ) {
+			contactBox.hidden = ! contactBox.childNodes.length;
+			scrollDown();
+		}
+	}
+
+	// ── Business hours (decided in the browser: pages are cached) ───────────────
+
+	function hoursState() {
+		var h = config.hours;
+		if ( ! h || ! h.days ) {
+			return null;
+		}
+
+		var now = new Date();
+		var minutes = now.getUTCHours() * 60 + now.getUTCMinutes() + ( h.offset || 0 );
+		var day = ( now.getUTCDay() + Math.floor( minutes / 1440 ) + 7 ) % 7;
+		minutes = ( ( minutes % 1440 ) + 1440 ) % 1440;
+
+		var open = ( h.days[ day ] || [] ).some( function ( r ) {
+			return minutes >= r[ 0 ] && minutes < r[ 1 ];
+		} );
+
+		var back = '';
+		if ( ! open ) {
+			search:
+			for ( var i = 0; i <= 7; i++ ) {
+				var d = ( day + i ) % 7;
+				var ranges = h.days[ d ] || [];
+				for ( var j = 0; j < ranges.length; j++ ) {
+					if ( i > 0 || ranges[ j ][ 0 ] > minutes ) {
+						var at = ( '0' + Math.floor( ranges[ j ][ 0 ] / 60 ) ).slice( -2 ) + ':' + ( '0' + ( ranges[ j ][ 0 ] % 60 ) ).slice( -2 );
+						back = ( i === 0 ? '' : ( h.dayNames || [] )[ d ] + ' ' ) + at;
+						break search;
+					}
+				}
+			}
+		}
+
+		return { mode: h.mode, open: open, back: back, message: h.message };
+	}
+
+	// ── Voice input (browser speech recognition) ────────────────────────────────
+
+	function voiceButton() {
+		var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+		if ( ! config.voice || ! Recognition ) {
+			return null;
+		}
+
+		var button = el( 'button', 'sai-mic' );
+		button.type = 'button';
+		button.setAttribute( 'aria-label', i18n.speak );
+		button.title = i18n.speak;
+		button.appendChild( icon( [ 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z', 'M19 10v2a7 7 0 0 1-14 0v-2', 'M12 19v3' ] ) );
+
+		var active = null;
+
+		button.addEventListener( 'click', function () {
+			if ( active ) {
+				active.stop();
+				return;
+			}
+
+			var recognition = new Recognition();
+			recognition.lang = config.voice.lang || navigator.language || 'en-US';
+			recognition.interimResults = true;
+			recognition.maxAlternatives = 1;
+
+			var finalText = '';
+			active = recognition;
+			button.classList.add( 'is-listening' );
+			input.placeholder = i18n.listening;
+
+			recognition.onresult = function ( event ) {
+				var interim = '';
+				for ( var i = event.resultIndex; i < event.results.length; i++ ) {
+					if ( event.results[ i ].isFinal ) {
+						finalText += event.results[ i ][ 0 ].transcript;
+					} else {
+						interim += event.results[ i ][ 0 ].transcript;
+					}
+				}
+				input.value = ( finalText + interim ).trim();
+				autoGrow();
+			};
+			recognition.onend = function () {
+				// Browsers fire "end" after "error" too; finish only once.
+				if ( active !== recognition ) {
+					return;
+				}
+				active = null;
+				button.classList.remove( 'is-listening' );
+				input.placeholder = i18n.placeholder;
+				if ( finalText.trim() ) {
+					send( finalText );
+				}
+			};
+			recognition.onerror = function () {
+				recognition.onend();
+			};
+			recognition.start();
+		} );
+
+		return button;
 	}
 
 	/** The regular request: one JSON answer when it is complete. */
@@ -903,7 +1090,7 @@
 		scrollDown();
 
 		var first = form.querySelector( 'input, textarea' );
-		if ( first && ! panel.hidden ) {
+		if ( first && ! panel.hidden && ! quiet ) {
 			first.focus();
 		}
 
@@ -1033,6 +1220,10 @@
 	// ── Open / close ────────────────────────────────────────────────────────────
 
 	function open() {
+		if ( popupEl ) {
+			popupEl.remove();
+			popupEl = null;
+		}
 		panel.hidden = false;
 		launcher.setAttribute( 'aria-expanded', 'true' );
 		launcher.setAttribute( 'aria-label', i18n.close );
@@ -1059,10 +1250,26 @@
 	// ── Build ───────────────────────────────────────────────────────────────────
 
 	function build() {
+		var inlineHost = document.querySelector( '[data-aicb-inline]' );
+		var hours = hoursState();
+
+		// An inline chat on the page replaces the floating bubble. Without
+		// one, the bubble follows the page rules and business hours.
+		if ( ! inlineHost && ( ! config.floating || ( hours && hours.mode === 'hide' && ! hours.open ) ) ) {
+			return;
+		}
+
+		inline = !! inlineHost;
+
 		var host = hostEl = el( 'div' );
 		host.id = 'all-in-one-ai-chatbot';
 		host.style.setProperty( '--sai-color', config.color || '#2563eb' );
-		document.body.appendChild( host );
+		if ( inline ) {
+			host.style.outline = 'none';
+			host.style.display = 'block';
+			host.style.height = '100%';
+		}
+		( inlineHost || document.body ).appendChild( host );
 
 		root = host.attachShadow ? host.attachShadow( { mode: 'open' } ) : host;
 
@@ -1071,7 +1278,7 @@
 		css.href = config.cssUrl;
 		root.appendChild( css );
 
-		var wrap = el( 'div', 'sai-wrap sai-' + ( config.position === 'left' ? 'left' : 'right' ) );
+		var wrap = el( 'div', 'sai-wrap sai-' + ( config.position === 'left' ? 'left' : 'right' ) + ( inline ? ' sai-inline' : '' ) );
 		root.appendChild( wrap );
 
 		// Panel.
@@ -1081,9 +1288,19 @@
 		panel.setAttribute( 'aria-label', config.title || 'Chat' );
 
 		var header = el( 'header', 'sai-header' );
+		if ( config.avatar && safeHref( config.avatar ) ) {
+			var avatar = el( 'img', 'sai-avatar' );
+			avatar.src = config.avatar;
+			avatar.alt = '';
+			header.appendChild( avatar );
+		}
 		var heading = el( 'div', 'sai-heading' );
 		heading.appendChild( el( 'strong', 'sai-title', config.title || '' ) );
-		if ( config.subtitle ) {
+		if ( hours ) {
+			var status = el( 'span', 'sai-subtitle sai-status ' + ( hours.open ? 'is-online' : 'is-offline' ) );
+			status.textContent = hours.open ? i18n.online : i18n.offline + ( hours.back ? ' · ' + i18n.backAt.replace( '%s', hours.back ) : '' );
+			heading.appendChild( status );
+		} else if ( config.subtitle ) {
 			heading.appendChild( el( 'span', 'sai-subtitle', config.subtitle ) );
 		}
 		header.appendChild( heading );
@@ -1096,14 +1313,20 @@
 		newButton.addEventListener( 'click', newChat );
 		header.appendChild( newButton );
 
-		var closeButton = el( 'button', 'sai-icon-btn' );
-		closeButton.type = 'button';
-		closeButton.setAttribute( 'aria-label', i18n.close );
-		closeButton.appendChild( icon( ICON_CLOSE ) );
-		closeButton.addEventListener( 'click', close );
-		header.appendChild( closeButton );
+		if ( ! inline ) {
+			var closeButton = el( 'button', 'sai-icon-btn' );
+			closeButton.type = 'button';
+			closeButton.setAttribute( 'aria-label', i18n.close );
+			closeButton.appendChild( icon( ICON_CLOSE ) );
+			closeButton.addEventListener( 'click', close );
+			header.appendChild( closeButton );
+		}
 
 		panel.appendChild( header );
+
+		if ( hours && ! hours.open && hours.mode === 'notice' && hours.message ) {
+			panel.appendChild( el( 'div', 'sai-offline', hours.message ) );
+		}
 
 		log = el( 'div', 'sai-log' );
 		log.setAttribute( 'role', 'log' );
@@ -1111,14 +1334,18 @@
 		panel.appendChild( log );
 
 		suggestionsBox = el( 'div', 'sai-suggestions' );
-		( config.suggestions || [] ).forEach( function ( text ) {
-			var chip = el( 'button', 'sai-chip', text );
-			chip.type = 'button';
-			chip.addEventListener( 'click', function () {
-				send( text );
+		if ( config.flows && config.flows.length ) {
+			flowChips( config.flows, suggestionsBox, runFlow );
+		} else {
+			( config.suggestions || [] ).forEach( function ( text ) {
+				var chip = el( 'button', 'sai-chip', text );
+				chip.type = 'button';
+				chip.addEventListener( 'click', function () {
+					send( text );
+				} );
+				suggestionsBox.appendChild( chip );
 			} );
-			suggestionsBox.appendChild( chip );
-		} );
+		}
 		panel.appendChild( suggestionsBox );
 
 		contactBox = el( 'div', 'sai-contact' );
@@ -1173,6 +1400,11 @@
 		} );
 		form.appendChild( input );
 
+		var mic = voiceButton();
+		if ( mic ) {
+			form.appendChild( mic );
+		}
+
 		sendButton = el( 'button', 'sai-send' );
 		sendButton.type = 'submit';
 		sendButton.setAttribute( 'aria-label', i18n.send );
@@ -1186,20 +1418,43 @@
 
 		panel.appendChild( el( 'div', 'sai-disclaimer', i18n.disclaimer ) );
 
+		wrap.appendChild( panel );
+
+		greet();
+		restore();
+
+		if ( inline ) {
+			panel.hidden = false;
+			// Do not pull focus (and scroll the page) before the visitor
+			// has touched the chat.
+			quiet = true;
+			maybeGate();
+			quiet = false;
+			return;
+		}
+
 		panel.addEventListener( 'keydown', function ( event ) {
 			if ( event.key === 'Escape' ) {
 				close();
 			}
 		} );
 
-		wrap.appendChild( panel );
-
 		// Launcher.
-		launcher = el( 'button', 'sai-launcher' );
+		launcher = el( 'button', 'sai-launcher' + ( config.label ? ' has-label' : '' ) );
 		launcher.type = 'button';
 		launcher.setAttribute( 'aria-expanded', 'false' );
-		launcher.setAttribute( 'aria-label', i18n.open );
-		launcher.appendChild( icon( ICON_CHAT ) );
+		launcher.setAttribute( 'aria-label', config.label || i18n.open );
+		if ( config.icon === 'avatar' && config.avatar && safeHref( config.avatar ) ) {
+			var face = el( 'img', 'sai-launcher-avatar' );
+			face.src = config.avatar;
+			face.alt = '';
+			launcher.appendChild( face );
+		} else {
+			launcher.appendChild( icon( LAUNCHER_ICONS[ config.icon ] || ICON_CHAT ) );
+		}
+		if ( config.label ) {
+			launcher.appendChild( el( 'span', 'sai-launcher-label', config.label ) );
+		}
 		launcher.addEventListener( 'click', function () {
 			if ( panel.hidden ) {
 				open();
@@ -1209,13 +1464,49 @@
 		} );
 		wrap.appendChild( launcher );
 
-		greet();
-		restore();
 		maybeGate();
+		schedulePopup( wrap );
 
 		if ( read( session, KEY_OPEN ) === '1' ) {
 			open();
 		}
+	}
+
+	/** The pop-up greeting: once per visit, never over an open chat. */
+	function schedulePopup( wrap ) {
+		var popup = config.popup;
+		if ( ! popup || read( session, KEY_POPUP ) === '1' ) {
+			return;
+		}
+		if ( ! popup.mobile && window.matchMedia && window.matchMedia( '(max-width: 480px)' ).matches ) {
+			return;
+		}
+
+		setTimeout( function () {
+			if ( ! panel.hidden || read( session, KEY_POPUP ) === '1' ) {
+				return;
+			}
+			write( session, KEY_POPUP, '1' );
+
+			var bubble = el( 'div', 'sai-popup' );
+			bubble.setAttribute( 'role', 'status' );
+			var text = el( 'button', 'sai-popup-text', popup.message );
+			text.type = 'button';
+			text.addEventListener( 'click', function () {
+				bubble.remove();
+				open();
+			} );
+			var dismiss = el( 'button', 'sai-popup-close', '×' );
+			dismiss.type = 'button';
+			dismiss.setAttribute( 'aria-label', i18n.dismiss );
+			dismiss.addEventListener( 'click', function () {
+				bubble.remove();
+			} );
+			bubble.appendChild( text );
+			bubble.appendChild( dismiss );
+			wrap.insertBefore( bubble, launcher );
+			popupEl = bubble;
+		}, Math.max( 0, popup.delay || 0 ) * 1000 );
 	}
 
 	if ( document.readyState === 'loading' ) {

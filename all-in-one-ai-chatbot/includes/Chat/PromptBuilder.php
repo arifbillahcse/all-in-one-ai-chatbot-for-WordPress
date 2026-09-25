@@ -103,6 +103,12 @@ TEXT;
 			$parts[] = 'No contact details are configured; if you cannot help, suggest the visitor uses the contact page on this website.';
 		}
 
+		$availability = \Softorio\AiAssistant\Support\BusinessHours::prompt_line();
+
+		if ( '' !== $availability ) {
+			$parts[] = $availability;
+		}
+
 		$instructions = trim( (string) Settings::get( 'instructions', '' ) );
 
 		if ( '' !== $instructions ) {

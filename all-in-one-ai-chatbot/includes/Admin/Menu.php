@@ -28,6 +28,7 @@ final class Menu {
 		add_action( 'admin_notices', array( self::class, 'setup_notice' ) );
 		LogPage::init();
 		LeadsPage::init();
+		FlowsPage::init();
 		add_filter( 'plugin_action_links_' . plugin_basename( SOFTORIO_AI_FILE ), array( self::class, 'action_links' ) );
 	}
 
@@ -74,6 +75,15 @@ final class Menu {
 
 		add_submenu_page(
 			self::SLUG,
+			__( 'AI Chatbot — Quick Replies', 'all-in-one-ai-chatbot' ),
+			__( 'Quick Replies', 'all-in-one-ai-chatbot' ),
+			'manage_options',
+			self::SLUG . '-flows',
+			array( FlowsPage::class, 'render' )
+		);
+
+		add_submenu_page(
+			self::SLUG,
 			__( 'AI Chatbot — Settings', 'all-in-one-ai-chatbot' ),
 			__( 'Settings', 'all-in-one-ai-chatbot' ),
 			'manage_options',
@@ -102,6 +112,40 @@ final class Menu {
 		}
 
 		wp_enqueue_style( 'softorio-ai-admin', SOFTORIO_AI_URL . 'assets/css/admin.css', array(), SOFTORIO_AI_VERSION );
+
+		if ( str_contains( $hook, 'settings' ) ) {
+			wp_enqueue_media();
+		}
+
+		if ( str_contains( $hook, self::SLUG . '-flows' ) ) {
+			wp_enqueue_script( 'softorio-ai-flows', SOFTORIO_AI_URL . 'assets/js/flows.js', array(), SOFTORIO_AI_VERSION, true );
+			wp_localize_script(
+				'softorio-ai-flows',
+				'softorioAiFlows',
+				array(
+					'actions' => array(
+						'reply'  => __( 'Show a reply (and sub-menu)', 'all-in-one-ai-chatbot' ),
+						'ask_ai' => __( 'Ask the AI', 'all-in-one-ai-chatbot' ),
+						'link'   => __( 'Open a link', 'all-in-one-ai-chatbot' ),
+						'lead'   => __( 'Open the lead form', 'all-in-one-ai-chatbot' ),
+						'human'  => __( 'Show how to reach a person', 'all-in-one-ai-chatbot' ),
+					),
+					'i18n'    => array(
+						'label'         => __( 'Button text, e.g. 🚚 Delivery', 'all-in-one-ai-chatbot' ),
+						'reply'         => __( 'Reply shown when tapped', 'all-in-one-ai-chatbot' ),
+						'replyOptional' => __( 'Optional message shown first', 'all-in-one-ai-chatbot' ),
+						'prompt'        => __( 'Question for the AI (defaults to the button text)', 'all-in-one-ai-chatbot' ),
+						'addChild'      => __( '+ Add sub-button', 'all-in-one-ai-chatbot' ),
+						'up'            => __( 'Move up', 'all-in-one-ai-chatbot' ),
+						'down'          => __( 'Move down', 'all-in-one-ai-chatbot' ),
+						'remove'        => __( 'Delete', 'all-in-one-ai-chatbot' ),
+						'confirm'       => __( 'Delete this button and its sub-buttons?', 'all-in-one-ai-chatbot' ),
+						'replace'       => __( 'Replace your buttons with the example?', 'all-in-one-ai-chatbot' ),
+						'empty'         => __( 'No buttons yet. Add one, or load the example to see how it works.', 'all-in-one-ai-chatbot' ),
+					),
+				)
+			);
+		}
 		wp_enqueue_script( 'softorio-ai-admin', SOFTORIO_AI_URL . 'assets/js/admin.js', array(), SOFTORIO_AI_VERSION, true );
 
 		wp_localize_script(

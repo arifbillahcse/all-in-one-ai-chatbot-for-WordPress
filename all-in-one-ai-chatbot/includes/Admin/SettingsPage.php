@@ -318,6 +318,27 @@ final class SettingsPage {
 				}
 				break;
 
+			case 'image':
+				printf(
+					'<div class="sai-image-field"><img class="sai-image-preview" src="%1$s" alt="" %2$s><input type="url" id="%3$s" name="%4$s" value="%1$s" class="regular-text"> <button type="button" class="button sai-media" data-target="%3$s">%5$s</button></div>',
+					esc_url( (string) $value ),
+					'' === (string) $value ? 'hidden' : '',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					esc_html__( 'Choose image', 'all-in-one-ai-chatbot' )
+				);
+				break;
+
+			case 'hours':
+				printf(
+					'<input type="text" id="%s" name="%s" value="%s" class="regular-text code sai-hours" placeholder="%s" pattern="[0-9:.,\s\-–]*">',
+					esc_attr( $id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value ),
+					esc_attr( $ph )
+				);
+				break;
+
 			case 'multicheck':
 				foreach ( (array) $field['options'] as $option => $label ) {
 					printf(

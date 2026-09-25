@@ -8,7 +8,10 @@
 namespace Softorio\AiAssistant\Frontend;
 
 use Softorio\AiAssistant\Chat\PromptBuilder;
+use Softorio\AiAssistant\Flows\FlowStore;
 use Softorio\AiAssistant\Leads\LeadService;
+use Softorio\AiAssistant\Support\BusinessHours;
+use Softorio\AiAssistant\Support\PageRules;
 use Softorio\AiAssistant\Rest\ChatController;
 use Softorio\AiAssistant\Settings;
 
@@ -30,10 +33,17 @@ final class Widget {
 	 * Whether the widget should appear on this request.
 	 */
 	public static function should_show(): bool {
-		$show = Settings::get( 'enabled', true ) && Settings::is_ready();
+		$show = self::available();
 
 		if ( $show && Settings::get( 'hide_for_admins', false ) && current_user_can( 'manage_options' ) ) {
 			$show = false;
+		}
+
+		$mode = (string) Settings::get( 'display_mode', 'all' );
+
+		if ( $show && 'all' !== $mode ) {
+			$listed = PageRules::matches( PageRules::current_path(), (string) Settings::get( 'display_rules', '' ) );
+			$show   = 'include' === $mode ? $listed : ! $listed;
 		}
 
 		/**
@@ -45,10 +55,29 @@ final class Widget {
 	}
 
 	/**
-	 * Enqueue assets.
+	 * Whether the assistant can run at all (switched on, with a key).
+	 */
+	public static function available(): bool {
+		return Settings::get( 'enabled', true ) && Settings::is_ready();
+	}
+
+	/**
+	 * Enqueue assets for the floating widget.
 	 */
 	public static function enqueue(): void {
 		if ( ! self::should_show() ) {
+			return;
+		}
+
+		self::load();
+	}
+
+	/**
+	 * Load the widget script with its configuration. Idempotent, so the
+	 * inline block can call it too.
+	 */
+	public static function load(): void {
+		if ( wp_script_is( 'softorio-ai-widget', 'enqueued' ) ) {
 			return;
 		}
 
@@ -64,6 +93,30 @@ final class Widget {
 		);
 
 		wp_add_inline_script( 'softorio-ai-widget', 'window.softorioAiConfig = ' . wp_json_encode( self::config() ) . ';', 'before' );
+	}
+
+	/**
+	 * The pop-up greeting for this page, or null.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private static function popup_config(): ?array {
+		$message = trim( (string) Settings::get( 'popup_message', '' ) );
+		$pages   = trim( (string) Settings::get( 'popup_pages', '' ) );
+
+		if ( ! Settings::get( 'popup_enabled', false ) || '' === $message ) {
+			return null;
+		}
+
+		if ( '' !== $pages && ! PageRules::matches( PageRules::current_path(), $pages ) ) {
+			return null;
+		}
+
+		return array(
+			'message' => $message,
+			'delay'   => max( 0, (int) Settings::get( 'popup_delay', 8 ) ),
+			'mobile'  => (bool) Settings::get( 'popup_mobile', false ),
+		);
 	}
 
 	/**
@@ -95,6 +148,14 @@ final class Widget {
 			'position'    => 'left' === Settings::get( 'position', 'right' ) ? 'left' : 'right',
 			'suggestions' => array_slice( $suggestions, 0, 4 ),
 			'maxLength'   => max( 50, (int) Settings::get( 'max_message_length', 1000 ) ),
+			'avatar'      => esc_url_raw( (string) Settings::get( 'avatar_url', '' ) ),
+			'icon'        => (string) Settings::get( 'launcher_icon', 'chat' ),
+			'label'       => (string) Settings::get( 'launcher_label', '' ),
+			'floating'    => self::should_show(),
+			'popup'       => self::popup_config(),
+			'hours'       => BusinessHours::widget_config(),
+			'voice'       => Settings::get( 'voice_input', false ) ? array( 'lang' => (string) Settings::get( 'voice_lang', '' ) ) : null,
+			'flows'       => Settings::get( 'flows_enabled', false ) ? FlowStore::get() : null,
 			'leads'       => LeadService::enabled() ? LeadService::form_config() : null,
 			'streaming'   => (bool) Settings::get( 'streaming', false ),
 			'feedback'    => (bool) Settings::get( 'feedback', false ),
@@ -138,6 +199,13 @@ final class Widget {
 				'formFirst'   => __( 'Please fill in the form above to start chatting.', 'all-in-one-ai-chatbot' ),
 				'view'        => __( 'View', 'all-in-one-ai-chatbot' ),
 				'checking'    => __( 'Checking…', 'all-in-one-ai-chatbot' ),
+				'online'      => __( 'Online', 'all-in-one-ai-chatbot' ),
+				'offline'     => __( 'Offline', 'all-in-one-ai-chatbot' ),
+				'backAt'      => __( 'back %s', 'all-in-one-ai-chatbot' ),
+				'mainMenu'    => __( '⟲ Main menu', 'all-in-one-ai-chatbot' ),
+				'speak'       => __( 'Speak your question', 'all-in-one-ai-chatbot' ),
+				'listening'   => __( 'Listening…', 'all-in-one-ai-chatbot' ),
+				'dismiss'     => __( 'Dismiss', 'all-in-one-ai-chatbot' ),
 				'helpful'     => __( 'Helpful', 'all-in-one-ai-chatbot' ),
 				'notHelpful'  => __( 'Not helpful', 'all-in-one-ai-chatbot' ),
 				'adding'      => __( 'Adding…', 'all-in-one-ai-chatbot' ),

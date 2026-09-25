@@ -85,6 +85,19 @@ final class SettingsSchema {
 			'knowledge.search'  => array( 'title' => __( 'Search', 'all-in-one-ai-chatbot' ) ),
 			'widget.look'       => array( 'title' => __( 'Appearance', 'all-in-one-ai-chatbot' ) ),
 			'widget.behaviour'  => array( 'title' => __( 'Behaviour', 'all-in-one-ai-chatbot' ) ),
+			'widget.popup'      => array(
+				'title' => __( 'Pop-up greeting', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'A small message next to the chat button that invites visitors to ask. Shown once per visit.', 'all-in-one-ai-chatbot' ),
+			),
+			'widget.display'    => array(
+				'title' => __( 'Where to show the widget', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'One page per line: a path like /pricing/ or a pattern with * like /shop/*. The inline chat block and shortcode always show.', 'all-in-one-ai-chatbot' ),
+			),
+			'widget.hours'      => array(
+				'title' => __( 'Business hours', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'When your team is available. Use 24-hour times like 09:00-18:00, several ranges separated by commas (09:00-13:00, 14:00-18:00), or leave a day empty for closed. Uses the site timezone from Settings → General.', 'all-in-one-ai-chatbot' ),
+			),
+			'widget.voice'      => array( 'title' => __( 'Voice input', 'all-in-one-ai-chatbot' ) ),
 			'leads.form'        => array(
 				'title' => __( 'Lead capture', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Collect visitors\' contact details in the chat. Leads appear under AI Chatbot → Leads and can trigger emails, Telegram messages and webhooks.', 'all-in-one-ai-chatbot' ),
@@ -304,6 +317,37 @@ final class SettingsSchema {
 				),
 				'default' => 'right',
 			),
+			'avatar_url'           => array(
+				'tab'     => 'widget',
+				'section' => 'look',
+				'type'    => 'image',
+				'label'   => __( 'Avatar or logo', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Shown in the chat header and next to answers. A square image of at least 96×96 pixels works best.', 'all-in-one-ai-chatbot' ),
+				'default' => '',
+			),
+			'launcher_icon'        => array(
+				'tab'     => 'widget',
+				'section' => 'look',
+				'type'    => 'select',
+				'label'   => __( 'Chat button icon', 'all-in-one-ai-chatbot' ),
+				'options' => array(
+					'chat'    => __( 'Speech bubble', 'all-in-one-ai-chatbot' ),
+					'help'    => __( 'Question mark', 'all-in-one-ai-chatbot' ),
+					'sparkle' => __( 'Sparkle (AI)', 'all-in-one-ai-chatbot' ),
+					'avatar'  => __( 'Your avatar image', 'all-in-one-ai-chatbot' ),
+				),
+				'default' => 'chat',
+			),
+			'launcher_label'       => array(
+				'tab'         => 'widget',
+				'section'     => 'look',
+				'type'        => 'text',
+				'label'       => __( 'Chat button text', 'all-in-one-ai-chatbot' ),
+				'desc'        => __( 'Optional. Turns the round button into a pill with text, e.g. "Chat with us".', 'all-in-one-ai-chatbot' ),
+				'placeholder' => __( 'Chat with us', 'all-in-one-ai-chatbot' ),
+				'default'     => '',
+				'max'         => 30,
+			),
 			'suggestions'          => array(
 				'tab'         => 'widget',
 				'section'     => 'behaviour',
@@ -314,6 +358,14 @@ final class SettingsSchema {
 				'placeholder' => __( "What are your delivery charges?\nHow do I return an item?", 'all-in-one-ai-chatbot' ),
 				'default'     => '',
 				'max'         => 600,
+			),
+			'flows_enabled'        => array(
+				'tab'     => 'widget',
+				'section' => 'behaviour',
+				'type'    => 'checkbox',
+				'label'   => __( 'Quick replies', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Show your quick-reply buttons (build them under AI Chatbot → Quick Replies)', 'all-in-one-ai-chatbot' ),
+				'default' => false,
 			),
 			'show_sources'         => array(
 				'tab'     => 'widget',
@@ -338,6 +390,117 @@ final class SettingsSchema {
 				'label'   => __( 'Administrators', 'all-in-one-ai-chatbot' ),
 				'desc'    => __( 'Hide the widget from administrators', 'all-in-one-ai-chatbot' ),
 				'default' => false,
+			),
+
+			'popup_enabled'        => array(
+				'tab'     => 'widget',
+				'section' => 'popup',
+				'type'    => 'checkbox',
+				'label'   => __( 'Status', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Show a pop-up greeting', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'popup_message'        => array(
+				'tab'     => 'widget',
+				'section' => 'popup',
+				'type'    => 'text',
+				'label'   => __( 'Message', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'Hi! 👋 Need help? Ask me anything.', 'all-in-one-ai-chatbot' ),
+				'max'     => 140,
+			),
+			'popup_delay'          => array(
+				'tab'     => 'widget',
+				'section' => 'popup',
+				'type'    => 'number',
+				'label'   => __( 'Show after (seconds)', 'all-in-one-ai-chatbot' ),
+				'default' => 8,
+				'min'     => 0,
+				'max'     => 300,
+			),
+			'popup_pages'          => array(
+				'tab'         => 'widget',
+				'section'     => 'popup',
+				'type'        => 'textarea',
+				'rows'        => 3,
+				'label'       => __( 'Only on these pages', 'all-in-one-ai-chatbot' ),
+				'desc'        => __( 'Optional. One path or pattern per line, e.g. /pricing/ or /product/*. Empty = every page with the widget.', 'all-in-one-ai-chatbot' ),
+				'placeholder' => "/pricing/\n/product/*",
+				'default'     => '',
+				'max'         => 2000,
+			),
+			'popup_mobile'         => array(
+				'tab'     => 'widget',
+				'section' => 'popup',
+				'type'    => 'checkbox',
+				'label'   => __( 'Phones', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Also show the pop-up on small screens', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'display_mode'         => array(
+				'tab'     => 'widget',
+				'section' => 'display',
+				'type'    => 'select',
+				'label'   => __( 'Show on', 'all-in-one-ai-chatbot' ),
+				'options' => array(
+					'all'     => __( 'Every page', 'all-in-one-ai-chatbot' ),
+					'include' => __( 'Only the pages listed below', 'all-in-one-ai-chatbot' ),
+					'exclude' => __( 'Every page except those listed below', 'all-in-one-ai-chatbot' ),
+				),
+				'default' => 'all',
+			),
+			'display_rules'        => array(
+				'tab'         => 'widget',
+				'section'     => 'display',
+				'type'        => 'textarea',
+				'rows'        => 4,
+				'label'       => __( 'Pages', 'all-in-one-ai-chatbot' ),
+				'placeholder' => "/checkout/*\n/cart/\n/my-account/*",
+				'default'     => '',
+				'max'         => 4000,
+			),
+			'hours_mode'           => array(
+				'tab'     => 'widget',
+				'section' => 'hours',
+				'type'    => 'select',
+				'label'   => __( 'Outside business hours', 'all-in-one-ai-chatbot' ),
+				'options' => array(
+					'off'    => __( 'Ignore business hours', 'all-in-one-ai-chatbot' ),
+					'notice' => __( 'Keep the assistant, show "we\'re offline" and when you are back', 'all-in-one-ai-chatbot' ),
+					'hide'   => __( 'Hide the widget', 'all-in-one-ai-chatbot' ),
+				),
+				'default' => 'off',
+			),
+			'hours_offline_message' => array(
+				'tab'     => 'widget',
+				'section' => 'hours',
+				'type'    => 'text',
+				'label'   => __( 'Offline notice', 'all-in-one-ai-chatbot' ),
+				'default' => __( 'Our team is offline right now. The assistant can still help, and we will reply to messages when we are back.', 'all-in-one-ai-chatbot' ),
+				'max'     => 200,
+			),
+			'voice_input'          => array(
+				'tab'     => 'widget',
+				'section' => 'voice',
+				'type'    => 'checkbox',
+				'label'   => __( 'Microphone', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Let visitors speak their question (uses the browser\'s speech recognition; supported in Chrome, Edge and Safari)', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'voice_lang'           => array(
+				'tab'     => 'widget',
+				'section' => 'voice',
+				'type'    => 'select',
+				'label'   => __( 'Language', 'all-in-one-ai-chatbot' ),
+				'options' => array(
+					''      => __( 'Visitor\'s browser language', 'all-in-one-ai-chatbot' ),
+					'bn-BD' => 'বাংলা (Bangladesh)',
+					'en-US' => 'English (US)',
+					'en-GB' => 'English (UK)',
+					'hi-IN' => 'हिन्दी',
+					'ur-PK' => 'اردو',
+					'ar-SA' => 'العربية',
+				),
+				'default' => '',
 			),
 
 			// ── Limits and privacy ─────────────────────────────────────────
@@ -591,6 +754,17 @@ final class SettingsSchema {
 			),
 		);
 
+		foreach ( self::weekdays() as $day => $label ) {
+			$fields[ 'hours_' . $day ] = array(
+				'tab'         => 'widget',
+				'section'     => 'hours',
+				'type'        => 'hours',
+				'label'       => $label,
+				'placeholder' => __( 'Closed', 'all-in-one-ai-chatbot' ),
+				'default'     => in_array( $day, array( 'fri' ), true ) ? '' : '09:00-18:00',
+			);
+		}
+
 		// One key/model block per provider.
 		foreach ( Settings::providers() as $id => $p ) {
 			$fields[ $id . '_key' ]   = array(
@@ -648,6 +822,49 @@ final class SettingsSchema {
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Weekday keys, Monday first, with labels.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function weekdays(): array {
+		return array(
+			'mon' => __( 'Monday', 'all-in-one-ai-chatbot' ),
+			'tue' => __( 'Tuesday', 'all-in-one-ai-chatbot' ),
+			'wed' => __( 'Wednesday', 'all-in-one-ai-chatbot' ),
+			'thu' => __( 'Thursday', 'all-in-one-ai-chatbot' ),
+			'fri' => __( 'Friday', 'all-in-one-ai-chatbot' ),
+			'sat' => __( 'Saturday', 'all-in-one-ai-chatbot' ),
+			'sun' => __( 'Sunday', 'all-in-one-ai-chatbot' ),
+		);
+	}
+
+	/**
+	 * Parse "09:00-13:00, 14:00-18:00" into minute ranges.
+	 *
+	 * @param string $text Opening hours for one day.
+	 * @return array<int, array{0: int, 1: int}> [start, end] in minutes after midnight.
+	 */
+	public static function parse_hours( string $text ): array {
+		$ranges = array();
+
+		foreach ( explode( ',', $text ) as $part ) {
+			if ( ! preg_match( '/^\s*(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2})\s*$/u', $part, $m ) ) {
+				continue;
+			}
+
+			$start = (int) $m[1] * 60 + (int) $m[2];
+			$end   = (int) $m[3] * 60 + (int) $m[4];
+
+			// 24:00 is a valid end; past-midnight ranges are split by the owner.
+			if ( $start < $end && $end <= 1440 && (int) $m[2] < 60 && (int) $m[4] < 60 ) {
+				$ranges[] = array( $start, $end );
+			}
+		}
+
+		return $ranges;
 	}
 
 	/**
@@ -725,6 +942,19 @@ final class SettingsSchema {
 				// Secrets are never echoed back to the browser, so an empty
 				// field means "unchanged", not "delete".
 				return '' === $plain ? (string) $old : Support\Crypto::encrypt( $plain );
+
+			case 'hours':
+				// Store the normalised form of whatever parsed, drop the rest.
+				return implode(
+					', ',
+					array_map(
+						static fn( array $r ): string => sprintf( '%02d:%02d-%02d:%02d', intdiv( $r[0], 60 ), $r[0] % 60, intdiv( $r[1], 60 ), $r[1] % 60 ),
+						self::parse_hours( $scalar )
+					)
+				);
+
+			case 'image':
+				return esc_url_raw( trim( $scalar ), array( 'http', 'https' ) );
 
 			case 'multicheck':
 				$chosen = is_array( $value ) ? array_map( 'strval', $value ) : array();

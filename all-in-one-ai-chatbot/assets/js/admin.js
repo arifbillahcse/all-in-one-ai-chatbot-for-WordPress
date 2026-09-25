@@ -170,6 +170,27 @@
 		} );
 	} );
 
+	// ── Media picker for image settings ─────────────────────────────────────────
+	document.querySelectorAll( '.sai-media' ).forEach( function ( button ) {
+		var frame = null;
+		button.addEventListener( 'click', function () {
+			if ( ! window.wp || ! window.wp.media ) {
+				return;
+			}
+			var input = document.getElementById( button.getAttribute( 'data-target' ) );
+			var preview = button.parentNode.querySelector( '.sai-image-preview' );
+			frame = frame || window.wp.media( { library: { type: 'image' }, multiple: false } );
+			frame.off( 'select' ).on( 'select', function () {
+				var image = frame.state().get( 'selection' ).first().toJSON();
+				var url = ( image.sizes && image.sizes.thumbnail ? image.sizes.thumbnail.url : image.url );
+				input.value = url;
+				preview.src = url;
+				preview.hidden = false;
+			} );
+			frame.open();
+		} );
+	} );
+
 	// ── Delete conversation ─────────────────────────────────────────────────────
 	var del = document.getElementById( 'sai-delete-conversation' );
 

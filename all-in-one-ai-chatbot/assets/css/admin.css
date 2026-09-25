@@ -79,3 +79,19 @@
 
 .sai-rated-up { color: #15803d; }
 .sai-rated-down { color: #b32d2e; }
+
+.sai-image-field { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sai-image-preview { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid #dcdcde; }
+.sai-hours { max-width: 260px; }
+
+.sai-flows .sai-flow-list { margin: 0 0 0 0; }
+.sai-flows .sai-flow-list .sai-flow-list { margin-left: 28px; border-left: 2px solid #dcdcde; padding-left: 12px; }
+.sai-flow-node { margin: 10px 0; }
+.sai-flow-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sai-flow-label { width: 260px; font-weight: 600; }
+.sai-flow-tools .button-link { font-size: 15px; padding: 0 4px; text-decoration: none; }
+.sai-flow-tools .button-link:disabled { opacity: 0.3; }
+.sai-flow-details { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.sai-flow-details textarea { width: 420px; max-width: 100%; }
+.sai-flow-details input { width: 320px; max-width: 100%; }
+.sai-flow-add-child { margin: 4px 0 0 28px; }

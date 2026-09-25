@@ -4,7 +4,7 @@ Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,16 @@ It does not invent answers. When your content does not cover a question, it says
 * Live typing: answers appear word by word as the AI writes them. If your hosting blocks streaming, the widget falls back to normal replies on its own.
 * 👍 / 👎 on every answer, with a satisfaction score on the overview and ratings in each transcript.
 * A "Checking…" indicator while the assistant looks up products or orders.
+
+**Your brand, your rules**
+
+* Avatar or logo in the chat header and on the chat button, a choice of button icons, and an optional "Chat with us" text button.
+* Pop-up greeting next to the chat button after a delay you choose, once per visit, on every page or only the pages you list.
+* Show the widget on every page, only on some pages, or everywhere except some pages (with * patterns like /product/*).
+* Business hours: an online/offline status in the header, an offline notice, or hide the chat outside hours. The assistant knows when your team is back.
+* Quick Replies: a menu of buttons with sub-menus that answer common questions instantly, without an AI call. Buttons can also open a link, the lead form, your contact options, or ask the AI.
+* Embed the chat inside any page with the "AI Chatbot" block or the `[ai_chatbot height="520"]` shortcode.
+* Voice input: visitors can speak their question (Chrome, Edge and Safari), including in Bangla.
 
 **Private and safe by default**
 
@@ -112,7 +122,7 @@ Yes. The chat endpoint does not depend on anything cached in the page.
 
 = Can I hide the widget on some pages? =
 
-Use the `softorio_ai_show_widget` filter, for example `add_filter( 'softorio_ai_show_widget', fn( $show ) => $show && ! is_page( 'checkout' ) );`.
+Yes. Go to AI Chatbot → Settings → Widget → Where to show the widget, and list pages like /checkout/ or patterns like /my-account/*. Developers can also use the `softorio_ai_show_widget` filter, for example `add_filter( 'softorio_ai_show_widget', fn( $show ) => $show && ! is_page( 'checkout' ) );`.
 
 = Does it support WooCommerce orders? =
 
@@ -139,6 +149,15 @@ All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question 
 * `softorio_ai_provider_endpoint` (filter): change a provider's API URL (proxies, regional endpoints).
 
 == Changelog ==
+
+= 1.4.0 =
+* New: avatar or logo, chat button icon choices and an optional text button.
+* New: pop-up greeting, shown once per visit, with page targeting and an optional phone setting.
+* New: show or hide the widget by page, with * patterns.
+* New: business hours with online/offline status, an offline notice or hiding the chat, and hours-aware answers.
+* New: Quick Replies builder (AI Chatbot → Quick Replies): button menus with sub-menus, links, the lead form, contact options or an AI question.
+* New: inline chat block and [ai_chatbot] shortcode.
+* New: voice input.
 
 = 1.3.0 =
 * New: Google Gemini and OpenRouter providers. OpenRouter reports its exact cost per answer.
