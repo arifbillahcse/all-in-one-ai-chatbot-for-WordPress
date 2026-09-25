@@ -405,6 +405,7 @@ final class SettingsPage {
 					match ( (string) $field['test'] ) {
 						'telegram'      => __( 'Find my chat ID / send test', 'all-in-one-ai-chatbot' ),
 						'telegram_live' => __( 'Connect Telegram replies', 'all-in-one-ai-chatbot' ),
+						'hubspot', 'mailchimp', 'brevo' => __( 'Test connection', 'all-in-one-ai-chatbot' ),
 						default         => __( 'Send a test', 'all-in-one-ai-chatbot' ),
 					}
 				)

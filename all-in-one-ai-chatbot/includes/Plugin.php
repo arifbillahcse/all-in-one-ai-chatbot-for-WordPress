@@ -33,6 +33,7 @@ final class Plugin {
 		Sources\WebImporter::init();
 		Live\LiveChat::init();
 		Live\TelegramBridge::init();
+		Crm\CrmSync::init();
 
 		/**
 		 * Fires once the core is loaded: feature modules register their

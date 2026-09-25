@@ -146,3 +146,12 @@
 
 .sai-turn-agent { background: #edfaef; }
 .sai-turn-system { text-align: center; color: #8c8f94; font-style: italic; font-size: 12px; margin: 6px 0 12px; }
+
+/* ── CRM status on leads ─────────────────────────────────────────────────── */
+
+.sai-crm-cell { min-width: 150px; }
+.sai-crm { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border-radius: 999px; font-size: 11px; line-height: 18px; background: #f0f0f1; color: #50575e; white-space: nowrap; }
+.sai-crm-sent { background: #edfaef; color: #008a20; }
+.sai-crm-failed { background: #fcf0f1; color: #b32d2e; }
+.sai-crm-retrying, .sai-crm-pending { background: #fcf9e8; color: #996800; }
+.sai-crm-detail { display: block; font-size: 11px; color: #b32d2e; margin: 0 0 4px; max-width: 260px; }

@@ -7,6 +7,8 @@
 
 namespace Softorio\AiAssistant\Admin;
 
+use Softorio\AiAssistant\Crm\CrmClient;
+use Softorio\AiAssistant\Crm\CrmSync;
 use Softorio\AiAssistant\Leads\LeadStore;
 
 defined( 'ABSPATH' ) || exit;
@@ -19,6 +21,7 @@ final class LeadsPage {
 	private const PER_PAGE      = 25;
 	private const EXPORT_ACTION = 'softorio_ai_export_leads';
 	private const UPDATE_ACTION = 'softorio_ai_update_lead';
+	private const CRM_ACTION    = 'softorio_ai_lead_crm';
 
 	/**
 	 * Hook the form handlers.
@@ -26,6 +29,67 @@ final class LeadsPage {
 	public static function init(): void {
 		add_action( 'admin_post_' . self::EXPORT_ACTION, array( self::class, 'export' ) );
 		add_action( 'admin_post_' . self::UPDATE_ACTION, array( self::class, 'update' ) );
+		add_action( 'admin_post_' . self::CRM_ACTION, array( self::class, 'send_to_crm' ) );
+	}
+
+	/**
+	 * Send one lead (or every unsent lead) to the connected CRMs again.
+	 */
+	public static function send_to_crm(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to do that.', 'all-in-one-ai-chatbot' ), 403 );
+		}
+
+		check_admin_referer( self::CRM_ACTION );
+
+		$lead  = isset( $_POST['lead'] ) ? absint( $_POST['lead'] ) : 0;
+		$count = $lead > 0 ? min( 1, CrmSync::queue( $lead ) ) : CrmSync::backfill();
+		$back  = isset( $_POST['back'] ) ? esc_url_raw( wp_unslash( $_POST['back'] ) ) : Menu::url( 'leads' );
+
+		wp_safe_redirect( add_query_arg( 'crm_queued', $count, $back ) );
+		exit;
+	}
+
+	/**
+	 * CRM outcomes for a lead, as small badges.
+	 *
+	 * @param array<string, mixed>     $row     Lead.
+	 * @param array<string, CrmClient> $clients Connectors.
+	 */
+	private static function crm_badges( array $row, array $clients ): string {
+		$html = '';
+
+		foreach ( LeadStore::crm_state( $row ) as $id => $state ) {
+			$status = (string) ( $state['status'] ?? '' );
+			$name   = isset( $clients[ $id ] ) ? $clients[ $id ]->name() : $id;
+			$icon   = match ( $status ) {
+				'sent'     => '✓',
+				'skipped'  => '–',
+				'failed'   => '✗',
+				default    => '…',
+			};
+			$title = match ( $status ) {
+				'sent'     => __( 'Sent', 'all-in-one-ai-chatbot' ),
+				'skipped'  => __( 'Skipped', 'all-in-one-ai-chatbot' ),
+				'failed'   => __( 'Failed', 'all-in-one-ai-chatbot' ),
+				'retrying' => __( 'Will retry', 'all-in-one-ai-chatbot' ),
+				default    => __( 'Sending…', 'all-in-one-ai-chatbot' ),
+			};
+
+			$html .= sprintf(
+				'<span class="sai-crm sai-crm-%1$s" title="%2$s">%3$s %4$s</span>',
+				esc_attr( sanitize_key( $status ) ),
+				esc_attr( $title . ( '' !== (string) ( $state['detail'] ?? '' ) ? ': ' . $state['detail'] : '' ) ),
+				esc_html( $icon ),
+				esc_html( $name )
+			);
+
+			if ( 'failed' === $status && '' !== (string) ( $state['detail'] ?? '' ) ) {
+				$html .= '<span class="sai-crm-detail">' . esc_html( (string) $state['detail'] ) . '</span>';
+			}
+		}
+
+		return $html;
 	}
 
 	/**
@@ -144,6 +208,9 @@ final class LeadsPage {
 		$result = ( new LeadStore() )->search( $search, $status, self::PER_PAGE, ( $paged - 1 ) * self::PER_PAGE );
 		$pages  = (int) ceil( $result['total'] / self::PER_PAGE );
 		$here   = Menu::url( 'leads', array_filter( array( 's' => $search, 'status' => $status, 'paged' => $paged > 1 ? $paged : null ) ) );
+		$crms   = CrmSync::enabled();
+		$all    = CrmSync::clients();
+		$queued = isset( $_GET['crm_queued'] ) ? absint( $_GET['crm_queued'] ) : -1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
 		?>
 		<div class="wrap sai-admin">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Leads', 'all-in-one-ai-chatbot' ); ?></h1>
@@ -152,6 +219,28 @@ final class LeadsPage {
 				<?php wp_nonce_field( self::EXPORT_ACTION ); ?>
 				<button class="page-title-action"><?php esc_html_e( 'Export CSV', 'all-in-one-ai-chatbot' ); ?></button>
 			</form>
+			<?php if ( array() !== $crms ) : ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sai-inline-form">
+					<input type="hidden" name="action" value="<?php echo esc_attr( self::CRM_ACTION ); ?>">
+					<input type="hidden" name="back" value="<?php echo esc_url( $here ); ?>">
+					<?php wp_nonce_field( self::CRM_ACTION ); ?>
+					<button class="page-title-action" title="<?php esc_attr_e( 'For leads captured before a CRM was connected, or that failed', 'all-in-one-ai-chatbot' ); ?>">
+						<?php
+						/* translators: %s: CRM names */
+						echo esc_html( sprintf( __( 'Send unsent leads to %s', 'all-in-one-ai-chatbot' ), implode( ', ', array_map( static fn( CrmClient $c ): string => $c->name(), $crms ) ) ) );
+						?>
+					</button>
+				</form>
+			<?php endif; ?>
+
+			<?php if ( $queued >= 0 ) : ?>
+				<div class="notice notice-success is-dismissible"><p>
+					<?php
+					/* translators: %d: number of leads */
+					echo esc_html( sprintf( _n( '%d lead is being sent in the background.', '%d leads are being sent in the background.', $queued, 'all-in-one-ai-chatbot' ), $queued ) );
+					?>
+				</p></div>
+			<?php endif; ?>
 
 			<?php if ( 'off' === \Softorio\AiAssistant\Settings::get( 'leads_mode', 'off' ) ) : ?>
 				<div class="notice notice-info"><p>
@@ -179,12 +268,13 @@ final class LeadsPage {
 						<th><?php esc_html_e( 'Message', 'all-in-one-ai-chatbot' ); ?></th>
 						<th><?php esc_html_e( 'Source', 'all-in-one-ai-chatbot' ); ?></th>
 						<th><?php esc_html_e( 'Received', 'all-in-one-ai-chatbot' ); ?></th>
+						<th><?php esc_html_e( 'CRM', 'all-in-one-ai-chatbot' ); ?></th>
 						<th><?php esc_html_e( 'Status', 'all-in-one-ai-chatbot' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( array() === $result['rows'] ) : ?>
-						<tr><td colspan="5"><?php esc_html_e( 'No leads yet.', 'all-in-one-ai-chatbot' ); ?></td></tr>
+						<tr><td colspan="6"><?php esc_html_e( 'No leads yet.', 'all-in-one-ai-chatbot' ); ?></td></tr>
 					<?php endif; ?>
 					<?php foreach ( $result['rows'] as $row ) : ?>
 						<tr>
@@ -206,6 +296,18 @@ final class LeadsPage {
 							</td>
 							<td><?php echo esc_html( self::source_label( (string) $row['source'] ) ); ?><?php echo $row['consent'] ? ' <span class="sai-level" title="' . esc_attr( (string) $row['consent_text'] ) . '">' . esc_html__( 'consent', 'all-in-one-ai-chatbot' ) . '</span>' : ''; ?></td>
 							<td class="sai-nowrap"><?php echo esc_html( self::when( (string) $row['created_at'] ) ); ?></td>
+							<td class="sai-crm-cell">
+								<?php echo self::crm_badges( $row, $all ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in crm_badges(). ?>
+								<?php if ( array() !== $crms ) : ?>
+									<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sai-inline-form">
+										<input type="hidden" name="action" value="<?php echo esc_attr( self::CRM_ACTION ); ?>">
+										<input type="hidden" name="lead" value="<?php echo esc_attr( (string) $row['id'] ); ?>">
+										<input type="hidden" name="back" value="<?php echo esc_url( $here ); ?>">
+										<?php wp_nonce_field( self::CRM_ACTION ); ?>
+										<button class="button-link"><?php echo '' === (string) ( $row['crm'] ?? '' ) ? esc_html__( 'Send', 'all-in-one-ai-chatbot' ) : esc_html__( 'Send again', 'all-in-one-ai-chatbot' ); ?></button>
+									</form>
+								<?php endif; ?>
+							</td>
 							<td>
 								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sai-lead-actions">
 									<input type="hidden" name="action" value="<?php echo esc_attr( self::UPDATE_ACTION ); ?>">

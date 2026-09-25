@@ -4,7 +4,7 @@ Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,15 @@ It does not invent answers. When your content does not cover a question, it says
 * Give shop managers (or other roles) the Live Chat screen without full admin access.
 * Answer from your phone: live chats are posted to Telegram, and replying there reaches the visitor.
 * Visitors are only offered a live chat while someone is online and set to Available. If nobody answers within a few minutes, the AI takes over again and offers the lead form.
+
+**CRM and email marketing**
+
+* Every new lead goes straight to HubSpot, Mailchimp and/or Brevo: no Zapier needed.
+* HubSpot: contact created or updated by email, with the lead's message, page and chat attached as a note. Existing contacts keep their lifecycle stage.
+* Mailchimp: added to your audience with double opt-in by default, tagged, with a note.
+* Brevo: contact added to your lists, with the phone number in international format for SMS and WhatsApp campaigns.
+* Sent in the background with automatic retries. The Leads screen shows what was sent where, and why anything was skipped or failed, with "Send again" and "Send unsent leads" buttons.
+* Optional: only send leads who gave consent.
 
 **Members and logged-in visitors**
 
@@ -111,6 +120,7 @@ When a visitor sends a chat message, the plugin sends the provider: the visitor'
 * **Telegram**: only if you add a Telegram bot token. Lead and alert details are sent to your own bot chat. [Terms](https://telegram.org/tos), [Privacy policy](https://telegram.org/privacy).
 * **Web pages you import**: only the addresses you enter under Knowledge Sources → Import from websites (and their robots.txt and sitemaps) are downloaded, and again on the re-check schedule you choose. No data about your visitors is sent.
 * **Telegram live-chat replies**: only if you switch them on under Settings → Live Chat. Live-chat messages (visitor messages and the page they are on) are posted to your own Telegram chat, and Telegram sends your replies back to the site's webhook.
+* **HubSpot, Mailchimp, Brevo**: only for the services you switch on under Settings → Integrations. Each new lead's name, email, phone and message are sent, and for HubSpot and Mailchimp a note with the page and the chat. [HubSpot privacy policy](https://legal.hubspot.com/privacy-policy), [Mailchimp (Intuit) privacy statement](https://www.intuit.com/privacy/statement/), [Brevo privacy policy](https://www.brevo.com/legal/privacypolicy/).
 * **Your webhook URLs**: only if you add them. Event data, including lead contact details and chat transcripts, is sent to the URLs you enter.
 * **DeepSeek**: used when DeepSeek is selected as the main or backup provider. [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html), [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
 
@@ -160,6 +170,10 @@ Yes. It uses short, lightweight requests (no websockets or extra services), and 
 
 Yes, with Telegram: set up Telegram under Notifications, switch on "Telegram replies" under Live Chat and press Connect (the site needs HTTPS). Reply to a chat's message in Telegram to answer; send /ai to hand back to the AI or /end to end the chat.
 
+= Which CRMs are supported? =
+
+HubSpot, Mailchimp and Brevo directly (Settings → Integrations, each with a "Test connection" button). For anything else (Google Sheets, Zoho, Pipedrive, Salesforce, FluentCRM…) use the webhooks with Zapier, Make or n8n. Developers can add a connector with the `softorio_ai_crm_clients` filter.
+
 = Can I hide the widget on some pages? =
 
 Yes. Go to AI Chatbot → Settings → Widget → Where to show the widget, and list pages like /checkout/ or patterns like /my-account/*. Developers can also use the `softorio_ai_show_widget` filter, for example `add_filter( 'softorio_ai_show_widget', fn( $show ) => $show && ! is_page( 'checkout' ) );`.
@@ -190,8 +204,16 @@ All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question 
 * `softorio_ai_extract_text` (filter): read uploaded files yourself, e.g. send scanned PDFs to an OCR service.
 * `softorio_ai_live_visitor_message` (action): a visitor wrote during a live chat (conversation id, text, message id).
 * Events `live.requested`, `live.started` and `live.ended` for webhooks and integrations.
+* `softorio_ai_crm_fields` (filter): change the fields sent to a CRM (receives the fields, the lead and the CRM id).
+* `softorio_ai_crm_clients` (filter): add your own CRM connector (extend `Softorio\AiAssistant\Crm\CrmClient`).
 
 == Changelog ==
+
+= 1.7.0 =
+* New: HubSpot, Mailchimp and Brevo integrations. New leads are added or updated automatically in the background, with retries, notes carrying the chat, tags and lists.
+* New: CRM status on every lead (sent, skipped, failed with the reason), "Send again" per lead and "Send unsent leads" for leads captured before a CRM was connected.
+* New: phone numbers converted to international format with a default country code (880 for Bangladesh).
+* New: option to only send leads who gave consent; privacy policy text mentions CRMs.
 
 = 1.6.0 =
 * New: live chat. Visitors can ask for a person; agents can take over any conversation, reply, hand back to the AI or end the chat. The AI stays quiet (and free) while a person answers, and learns what the agent said when it takes over again.

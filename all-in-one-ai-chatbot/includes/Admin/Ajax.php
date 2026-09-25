@@ -141,6 +141,7 @@ final class Ajax {
 				'telegram' => self::test_telegram(),
 				'webhook'  => self::test_webhooks(),
 				'telegram_live' => \Softorio\AiAssistant\Live\TelegramBridge::connect(),
+				'hubspot', 'mailchimp', 'brevo' => \Softorio\AiAssistant\Crm\CrmSync::clients()[ $kind ]->test(),
 				default    => throw new \RuntimeException( __( 'Unknown test.', 'all-in-one-ai-chatbot' ) ),
 			};
 		} catch ( \Throwable $e ) {

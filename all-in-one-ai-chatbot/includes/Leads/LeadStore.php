@@ -117,6 +117,41 @@ final class LeadStore {
 	}
 
 	/**
+	 * Record one CRM's outcome for a lead (merged into the crm column).
+	 *
+	 * @param int                  $id    Lead id.
+	 * @param string               $crm   Connector id.
+	 * @param array<string, mixed> $state status, detail, ref, at.
+	 */
+	public function set_crm( int $id, string $crm, array $state ): void {
+		global $wpdb;
+
+		$row = $this->find( $id );
+
+		if ( null === $row ) {
+			return;
+		}
+
+		$all         = self::crm_state( $row );
+		$all[ $crm ] = $state;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
+		$wpdb->update( $this->table, array( 'crm' => wp_json_encode( $all ) ), array( 'id' => $id ), array( '%s' ), array( '%d' ) );
+	}
+
+	/**
+	 * CRM outcomes stored on a lead row.
+	 *
+	 * @param array<string, mixed> $row Lead row.
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function crm_state( array $row ): array {
+		$state = json_decode( (string) ( $row['crm'] ?? '' ), true );
+
+		return is_array( $state ) ? $state : array();
+	}
+
+	/**
 	 * Change a lead's status.
 	 *
 	 * @param int    $id     Lead id.

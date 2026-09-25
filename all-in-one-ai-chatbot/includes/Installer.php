@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION        = '5';
+	public const DB_VERSION        = '6';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**
@@ -202,6 +202,7 @@ CREATE TABLE {$t['leads']} (
   consent_text text NULL,
   page_url varchar(2048) NOT NULL DEFAULT '',
   user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  crm longtext NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),

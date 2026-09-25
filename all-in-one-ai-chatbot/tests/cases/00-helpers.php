@@ -68,14 +68,16 @@ add_filter( 'pre_http_request', static function ( $pre, $args, $url ) {
 		);
 	}
 
-	$faked = array( 'api.openai.com', 'api.anthropic.com', 'api.deepseek.com', 'api.telegram.org', 'hooks.example.com', 'generativelanguage.googleapis.com', 'openrouter.ai' );
+	$faked = array( 'api.openai.com', 'api.anthropic.com', 'api.deepseek.com', 'api.telegram.org', 'hooks.example.com', 'generativelanguage.googleapis.com', 'openrouter.ai', 'api.hubapi.com', 'api.brevo.com' );
+	$host  = (string) wp_parse_url( $url, PHP_URL_HOST );
 
-	if ( ! in_array( wp_parse_url( $url, PHP_URL_HOST ), $faked, true ) ) {
+	if ( ! in_array( $host, $faked, true ) && ! str_ends_with( $host, '.api.mailchimp.com' ) ) {
 		return $pre;
 	}
 
 	FakeHttp::$requests[] = array(
 		'url'     => $url,
+		'method'  => strtoupper( (string) ( $args['method'] ?? 'GET' ) ),
 		'body'    => json_decode( (string) $args['body'], true ),
 		'headers' => $args['headers'],
 	);
@@ -121,9 +123,9 @@ function sai_save_settings( array $changes ): void {
 	$form = array_merge( Settings::all(), array( '_tab' => '*' ), $changes );
 
 	// Keys in the form are plaintext; saved values are encrypted. Blank means keep.
-	foreach ( array_keys( Settings::providers() ) as $id ) {
-		if ( ! array_key_exists( $id . '_key', $changes ) ) {
-			$form[ $id . '_key' ] = '';
+	foreach ( \Softorio\AiAssistant\SettingsSchema::fields() as $key => $field ) {
+		if ( 'secret' === ( $field['type'] ?? '' ) && ! array_key_exists( $key, $changes ) ) {
+			$form[ $key ] = '';
 		}
 	}
 
