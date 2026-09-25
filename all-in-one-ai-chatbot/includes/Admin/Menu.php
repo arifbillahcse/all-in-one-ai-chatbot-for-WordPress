@@ -31,6 +31,7 @@ final class Menu {
 		LeadsPage::init();
 		FlowsPage::init();
 		SourcesPage::init();
+		AnalyticsPage::init();
 		LivePage::init();
 		add_filter( 'plugin_action_links_' . plugin_basename( SOFTORIO_AI_FILE ), array( self::class, 'action_links' ) );
 	}
@@ -79,6 +80,15 @@ final class Menu {
 			self::SLUG . '-sources',
 			array( SourcesPage::class, 'render' ),
 			1
+		);
+
+		add_submenu_page(
+			self::SLUG,
+			__( 'AI Chatbot — Analytics', 'all-in-one-ai-chatbot' ),
+			__( 'Analytics', 'all-in-one-ai-chatbot' ),
+			'manage_options',
+			self::SLUG . '-analytics',
+			array( AnalyticsPage::class, 'render' )
 		);
 
 		add_submenu_page(
@@ -141,7 +151,8 @@ final class Menu {
 		$rank = static fn( array $item ): int => match ( (string) ( $item[2] ?? '' ) ) {
 			self::SLUG           => 0,
 			self::SLUG . '-live' => 1,
-			default              => 2,
+			self::SLUG . '-analytics' => 2,
+			default              => 3,
 		};
 
 		$items = array_values( $submenu[ self::SLUG ] );

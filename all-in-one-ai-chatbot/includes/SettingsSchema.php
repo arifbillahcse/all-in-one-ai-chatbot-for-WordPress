@@ -127,6 +127,10 @@ final class SettingsSchema {
 				'title' => __( 'Telegram', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Get alerts on your phone. Create a bot with @BotFather, paste its token, send your bot any message, then use "Find my chat ID".', 'all-in-one-ai-chatbot' ),
 			),
+			'notify.report'     => array(
+				'title' => __( 'Report by email', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'A summary of conversations, leads, satisfaction and cost, what visitors asked most, and the questions the assistant could not answer.', 'all-in-one-ai-chatbot' ),
+			),
 			'integrations.crm'  => array(
 				'title' => __( 'CRM and email marketing', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Every new lead is added to the tools you switch on below, in the background, with retries if a service is down. The Leads screen shows what was sent where.', 'all-in-one-ai-chatbot' ),
@@ -864,6 +868,29 @@ final class SettingsSchema {
 			),
 
 			// ── Integrations ───────────────────────────────────────────────
+			'report_frequency'     => array(
+				'tab'     => 'notify',
+				'section' => 'report',
+				'type'    => 'select',
+				'label'   => __( 'Send a report', 'all-in-one-ai-chatbot' ),
+				'options' => array(
+					'off'     => __( 'Never', 'all-in-one-ai-chatbot' ),
+					'weekly'  => __( 'Every week (on Monday, for the week before)', 'all-in-one-ai-chatbot' ),
+					'monthly' => __( 'Every month (on the 1st, for the 30 days before)', 'all-in-one-ai-chatbot' ),
+				),
+				'default' => 'off',
+				'test'    => 'report',
+			),
+			'report_recipients'    => array(
+				'tab'         => 'notify',
+				'section'     => 'report',
+				'type'        => 'text',
+				'label'       => __( 'Send it to', 'all-in-one-ai-chatbot' ),
+				'desc'        => __( 'Email addresses separated by commas, e.g. your client and yourself. Empty = the alert email above.', 'all-in-one-ai-chatbot' ),
+				'placeholder' => 'owner@example.com, you@agency.com',
+				'default'     => '',
+				'max'         => 500,
+			),
 			'crm_require_consent'  => array(
 				'tab'     => 'integrations',
 				'section' => 'crm',

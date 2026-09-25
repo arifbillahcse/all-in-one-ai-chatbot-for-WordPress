@@ -406,6 +406,7 @@ final class SettingsPage {
 						'telegram'      => __( 'Find my chat ID / send test', 'all-in-one-ai-chatbot' ),
 						'telegram_live' => __( 'Connect Telegram replies', 'all-in-one-ai-chatbot' ),
 						'hubspot', 'mailchimp', 'brevo' => __( 'Test connection', 'all-in-one-ai-chatbot' ),
+						'report'        => __( 'Send a report now', 'all-in-one-ai-chatbot' ),
 						default         => __( 'Send a test', 'all-in-one-ai-chatbot' ),
 					}
 				)

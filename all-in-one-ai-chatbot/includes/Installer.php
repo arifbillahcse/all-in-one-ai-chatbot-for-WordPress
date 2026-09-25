@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION        = '6';
+	public const DB_VERSION        = '7';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**
@@ -37,6 +37,7 @@ final class Installer {
 			'jobs'          => $wpdb->prefix . 'softorio_ai_jobs',
 			'logs'          => $wpdb->prefix . 'softorio_ai_logs',
 			'leads'         => $wpdb->prefix . 'softorio_ai_leads',
+			'daily'         => $wpdb->prefix . 'softorio_ai_daily',
 		);
 	}
 
@@ -209,6 +210,13 @@ CREATE TABLE {$t['leads']} (
   KEY email (email),
   KEY status (status),
   KEY created_at (created_at)
+) $charset;
+
+CREATE TABLE {$t['daily']} (
+  day date NOT NULL,
+  stats longtext NOT NULL,
+  updated_at datetime NOT NULL,
+  PRIMARY KEY  (day)
 ) $charset;"
 		);
 

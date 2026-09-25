@@ -4,7 +4,7 @@ Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,14 @@ It does not invent answers. When your content does not cover a question, it says
 * Give shop managers (or other roles) the Live Chat screen without full admin access.
 * Answer from your phone: live chats are posted to Telegram, and replying there reaches the visitor.
 * Visitors are only offered a live chat while someone is online and set to Available. If nobody answers within a few minutes, the AI takes over again and offers the lead form.
+
+**Analytics and reports**
+
+* Analytics screen: conversations, leads and conversion, share of questions the AI answered, satisfaction, live chats and average wait, and AI cost, each compared with the period before (7 days, 30 days, 90 days, 12 months).
+* Knowledge gaps: the questions the assistant could not answer, grouped, with an "Add the answer" button that opens a new Knowledge Article titled with the question.
+* What visitors ask most (similar wordings grouped, English and Bangla), answers rated 👎, pages where chats start, the knowledge used most, and a heatmap of when visitors chat.
+* Weekly or monthly report by email to you and your client, with the numbers, top questions and knowledge gaps.
+* Charts are drawn in WordPress itself: no external scripts, nothing sent anywhere. Daily totals are kept after old chats are deleted, without personal data. CSV export.
 
 **CRM and email marketing**
 
@@ -170,6 +178,10 @@ Yes. It uses short, lightweight requests (no websockets or extra services), and 
 
 Yes, with Telegram: set up Telegram under Notifications, switch on "Telegram replies" under Live Chat and press Connect (the site needs HTTPS). Reply to a chat's message in Telegram to answer; send /ai to hand back to the AI or /end to end the chat.
 
+= Does the Analytics screen slow down my site? =
+
+No. It only runs when you open it in WP Admin, with a few small grouped queries. Visitors are never affected. Charts are plain SVG, with no chart library.
+
 = Which CRMs are supported? =
 
 HubSpot, Mailchimp and Brevo directly (Settings → Integrations, each with a "Test connection" button). For anything else (Google Sheets, Zoho, Pipedrive, Salesforce, FluentCRM…) use the webhooks with Zapier, Make or n8n. Developers can add a connector with the `softorio_ai_crm_clients` filter.
@@ -208,6 +220,13 @@ All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question 
 * `softorio_ai_crm_clients` (filter): add your own CRM connector (extend `Softorio\AiAssistant\Crm\CrmClient`).
 
 == Changelog ==
+
+= 1.8.0 =
+* New: Analytics screen with KPIs and changes against the previous period, conversations and leads chart, AI cost chart, busiest-times heatmap, pages where chats start and most used knowledge.
+* New: knowledge gaps (unanswered questions grouped, "Add the answer", dismiss until asked again) and most asked questions.
+* New: answers rated 👎 with their questions.
+* New: weekly or monthly report emails with a "Send a report now" button.
+* New: daily totals kept beyond the conversation retention period (no personal data); CSV export.
 
 = 1.7.0 =
 * New: HubSpot, Mailchimp and Brevo integrations. New leads are added or updated automatically in the background, with retries, notes carrying the chat, tags and lists.

@@ -88,5 +88,7 @@ final class Cron {
 		RateLimiter::prune();
 		Support\Log::prune( (int) Settings::get( 'log_retention_days', 30 ) );
 		Support\Queue::housekeeping();
+		( new Analytics\Stats() )->snapshot_recent();
+		Analytics\Report::maybe_send();
 	}
 }

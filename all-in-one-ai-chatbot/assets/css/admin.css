@@ -155,3 +155,53 @@
 .sai-crm-failed { background: #fcf0f1; color: #b32d2e; }
 .sai-crm-retrying, .sai-crm-pending { background: #fcf9e8; color: #996800; }
 .sai-crm-detail { display: block; font-size: 11px; color: #b32d2e; margin: 0 0 4px; max-width: 260px; }
+
+/* ── Analytics ───────────────────────────────────────────────────────────── */
+
+.sai-ranges { display: inline-flex; gap: 4px; margin: 14px 0 6px; background: #fff; border: 1px solid #dcdcde; border-radius: 8px; padding: 3px; }
+.sai-ranges a { padding: 5px 12px; border-radius: 6px; text-decoration: none; color: #50575e; }
+.sai-ranges a.is-current { background: #2271b1; color: #fff; }
+
+.sai-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 10px 0 4px; }
+.sai-kpi { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; padding: 12px 14px; }
+.sai-kpi-label { font-size: 12px; color: #646970; }
+.sai-kpi-value { font-size: 26px; font-weight: 700; line-height: 1.3; margin: 2px 0; }
+.sai-kpi-note { font-size: 12px; color: #646970; margin-top: 4px; }
+.sai-compare { margin: 4px 0 14px; }
+
+.sai-analytics .sai-card { margin: 0 0 16px; }
+.sai-analytics .sai-card h2 { margin-top: 0; font-size: 15px; }
+.sai-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
+
+.sai-chart { width: 100%; height: auto; display: block; }
+.sai-chart .sai-grid { stroke: #f0f0f1; stroke-width: 1; }
+.sai-chart .sai-axis { font-size: 11px; fill: #8c8f94; }
+.sai-chart .sai-bar { fill: #93c5fd; }
+.sai-chart .sai-bar:hover { fill: #2271b1; }
+.sai-chart .sai-line { fill: none; stroke: #16a34a; stroke-width: 2; }
+.sai-chart .sai-dot { fill: #16a34a; }
+.sai-heatmap .sai-heat { fill: #2271b1; }
+.sai-legend { font-size: 12px; color: #50575e; margin: 6px 0; }
+.sai-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin: 0 2px 0 8px; }
+.sai-key-bar { background: #93c5fd; }
+.sai-key-line { background: #16a34a; height: 3px; vertical-align: 3px; }
+.sai-chart-data summary { cursor: pointer; font-size: 12px; color: #2271b1; }
+.sai-chart-data table { margin-top: 6px; max-width: 420px; }
+
+.sai-rank { margin: 8px 0 0 22px; }
+.sai-rank li { margin: 0 0 10px; }
+.sai-rank-text { font-weight: 500; }
+.sai-count { color: #8c8f94; font-size: 12px; margin-left: 6px; }
+.sai-rank-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; font-size: 12px; }
+.sai-empty { color: #646970; }
+
+.sai-low { margin: 0; }
+.sai-low li { margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f1; }
+.sai-low strong, .sai-low span { display: block; }
+.sai-low span { color: #50575e; font-size: 12px; margin: 2px 0; }
+
+.sai-bars { margin: 8px 0 0; }
+.sai-bars li { position: relative; display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; margin: 0 0 4px; border-radius: 4px; overflow: hidden; }
+.sai-bars a { position: relative; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sai-bars .sai-count { position: relative; }
+.sai-bars-fill { position: absolute; inset: 0 auto 0 0; background: #eef4fb; }

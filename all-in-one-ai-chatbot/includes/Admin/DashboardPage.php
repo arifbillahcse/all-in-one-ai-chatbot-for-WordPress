@@ -70,7 +70,9 @@ final class DashboardPage {
 		);
 		?>
 		<div class="wrap sai-admin">
-			<h1><?php esc_html_e( 'AI Chatbot', 'all-in-one-ai-chatbot' ); ?></h1>
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'AI Chatbot', 'all-in-one-ai-chatbot' ); ?></h1>
+			<a class="page-title-action" href="<?php echo esc_url( Menu::url( 'analytics' ) ); ?>"><?php esc_html_e( 'Full analytics', 'all-in-one-ai-chatbot' ); ?></a>
+			<hr class="wp-header-end">
 
 			<?php if ( ! empty( $last_error['time'] ) && time() - (int) $last_error['time'] < DAY_IN_SECONDS ) : ?>
 				<div class="notice notice-warning">
