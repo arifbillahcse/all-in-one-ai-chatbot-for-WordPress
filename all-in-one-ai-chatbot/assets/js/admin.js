@@ -108,7 +108,7 @@
 
 						var score = document.createElement( 'span' );
 						score.className = 'sai-score';
-						score.textContent = ' ' + r.score;
+						score.textContent = ' ' + r.score + ( r.members ? ' · 🔒 ' + r.members : '' );
 						li.appendChild( score );
 
 						var excerpt = document.createElement( 'p' );

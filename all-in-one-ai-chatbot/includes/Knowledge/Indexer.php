@@ -153,9 +153,12 @@ final class Indexer {
 			return 'removed';
 		}
 
-		$url          = PostTypes::DOC === $post->post_type ? '' : (string) get_permalink( $post );
+		// Knowledge Articles have no page of their own, except ones imported
+		// from a web page, which link to that page.
+		$url          = PostTypes::DOC === $post->post_type ? \Softorio\AiAssistant\Sources\SourceStore::link( $post_id ) : (string) get_permalink( $post );
+		$audience     = Audience::for_post( $post_id );
 		$use_vectors  = $embeddings && Embedder::enabled();
-		$content_hash = hash( 'sha256', implode( "\x1f", array( $title, $body, $url, $use_vectors ? 'e1' : 'e0' ) ) );
+		$content_hash = hash( 'sha256', implode( "\x1f", array( $title, $body, $url, $audience, $use_vectors ? 'e1' : 'e0' ) ) );
 
 		if ( $this->store->hash_for( $post_id ) === $content_hash ) {
 			return 'unchanged';
@@ -185,6 +188,7 @@ final class Indexer {
 				'search_text'  => ' ' . implode( ' ', $search ) . ' ',
 				'token_count'  => count( $search ),
 				'content_hash' => $content_hash,
+				'audience'     => $audience,
 				'embedding'    => null,
 			);
 		}
@@ -201,7 +205,7 @@ final class Indexer {
 			} catch ( LlmException $e ) {
 				// Index keyword-only now, and store a hash that does not claim
 				// embeddings, so the next rebuild tries again.
-				$fallback_hash = hash( 'sha256', implode( "\x1f", array( $title, $body, $url, 'e0' ) ) );
+				$fallback_hash = hash( 'sha256', implode( "\x1f", array( $title, $body, $url, $audience, 'e0' ) ) );
 
 				foreach ( $rows as $i => $row ) {
 					$rows[ $i ]['content_hash'] = $fallback_hash;

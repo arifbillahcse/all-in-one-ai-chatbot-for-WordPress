@@ -42,6 +42,7 @@ final class Cron {
 		}
 
 		self::queue_build( 0 );
+		Sources\WebImporter::schedule();
 	}
 
 	/**
@@ -52,6 +53,7 @@ final class Cron {
 		wp_clear_scheduled_hook( self::BUILD );
 		wp_clear_scheduled_hook( 'softorio_ai_index_post' );
 		wp_clear_scheduled_hook( Support\Queue::HOOK );
+		wp_clear_scheduled_hook( Sources\WebImporter::RESYNC );
 	}
 
 	/**

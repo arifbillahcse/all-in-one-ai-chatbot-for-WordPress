@@ -83,6 +83,11 @@ final class SettingsSchema {
 			'ai.answers'        => array( 'title' => __( 'Answers', 'all-in-one-ai-chatbot' ) ),
 			'knowledge.sources' => array( 'title' => __( 'Content the assistant reads', 'all-in-one-ai-chatbot' ) ),
 			'knowledge.search'  => array( 'title' => __( 'Search', 'all-in-one-ai-chatbot' ) ),
+			'knowledge.members' => array(
+				'title' => __( 'Logged-in visitors and members', 'all-in-one-ai-chatbot' ),
+				'desc'  => __( 'For membership sites, courses and customer portals: knowledge only logged-in users (or some roles) get, and a more personal chat for people with an account.', 'all-in-one-ai-chatbot' ),
+			),
+			'knowledge.web'     => array( 'title' => __( 'Imported web pages', 'all-in-one-ai-chatbot' ) ),
 			'widget.look'       => array( 'title' => __( 'Appearance', 'all-in-one-ai-chatbot' ) ),
 			'widget.behaviour'  => array( 'title' => __( 'Behaviour', 'all-in-one-ai-chatbot' ) ),
 			'widget.popup'      => array(
@@ -296,6 +301,44 @@ final class SettingsSchema {
 				'label'   => __( 'Semantic search', 'all-in-one-ai-chatbot' ),
 				'desc'    => __( 'Match meaning, not only words — e.g. "money back" finds your refund policy. Uses OpenAI embeddings, so it needs an OpenAI API key even if another provider writes the answers.', 'all-in-one-ai-chatbot' ),
 				'default' => false,
+			),
+
+			'members_knowledge'    => array(
+				'tab'     => 'knowledge',
+				'section' => 'members',
+				'type'    => 'checkbox',
+				'label'   => __( 'Members-only knowledge', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Adds "Who can the assistant share this with?" to Knowledge Articles, pages and imports: everyone, logged-in users, or chosen roles. Visitors who are not logged in never get members-only answers. Switching this off hides members-only content from everyone.', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'member_greeting'      => array(
+				'tab'     => 'knowledge',
+				'section' => 'members',
+				'type'    => 'text',
+				'label'   => __( 'Greeting for logged-in visitors', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Optional. {name} becomes their first name, e.g. "Welcome back, {name}! How can I help today?" Empty uses the normal greeting.', 'all-in-one-ai-chatbot' ),
+				'default' => '',
+			),
+			'members_skip_lead'    => array(
+				'tab'     => 'knowledge',
+				'section' => 'members',
+				'type'    => 'checkbox',
+				'label'   => __( 'Skip the lead form for logged-in visitors', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Their name and email are taken from their account instead of asking again.', 'all-in-one-ai-chatbot' ),
+				'default' => false,
+			),
+			'web_resync'           => array(
+				'tab'     => 'knowledge',
+				'section' => 'web',
+				'type'    => 'select',
+				'label'   => __( 'Check imported pages for changes', 'all-in-one-ai-chatbot' ),
+				'desc'    => __( 'Re-reads every page imported under Knowledge Sources → Import from websites, so the assistant follows changes. Pages that no longer exist are unpublished. Manual edits to those articles are replaced.', 'all-in-one-ai-chatbot' ),
+				'options' => array(
+					'off'    => __( 'Never (only when I ask)', 'all-in-one-ai-chatbot' ),
+					'daily'  => __( 'Daily', 'all-in-one-ai-chatbot' ),
+					'weekly' => __( 'Weekly', 'all-in-one-ai-chatbot' ),
+				),
+				'default' => 'off',
 			),
 
 			// ── Widget ─────────────────────────────────────────────────────

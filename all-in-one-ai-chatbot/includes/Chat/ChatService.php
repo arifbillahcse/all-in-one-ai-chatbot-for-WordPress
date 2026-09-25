@@ -7,6 +7,7 @@
 
 namespace Softorio\AiAssistant\Chat;
 
+use Softorio\AiAssistant\Knowledge\Audience;
 use Softorio\AiAssistant\Knowledge\Retriever;
 use Softorio\AiAssistant\Llm\LlmException;
 use Softorio\AiAssistant\Llm\Router;
@@ -96,7 +97,7 @@ final class ChatService {
 		$registry = $this->tools ?? new ToolRegistry();
 		$tools    = $registry->definitions( $context );
 
-		$passages = ( $this->retriever ?? new Retriever() )->search( $query );
+		$passages = ( $this->retriever ?? new Retriever() )->search( $query, null, Audience::for_user( $context->user_id ) );
 		$system   = ( new PromptBuilder() )->build( $passages, $page_url, array_map( static fn( $t ): string => $t->name, $tools ), $context );
 		$messages = array_merge( $history, array( array( 'role' => 'user', 'content' => $message ) ) );
 

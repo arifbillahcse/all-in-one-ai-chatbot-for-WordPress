@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION        = '3';
+	public const DB_VERSION        = '4';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**
@@ -104,6 +104,7 @@ final class Installer {
   search_text longtext NOT NULL,
   token_count int(11) unsigned NOT NULL DEFAULT 0,
   content_hash char(64) NOT NULL DEFAULT '',
+  audience varchar(191) NOT NULL DEFAULT '',
   embedding longtext NULL,
   indexed_at datetime NOT NULL,
   PRIMARY KEY  (id),

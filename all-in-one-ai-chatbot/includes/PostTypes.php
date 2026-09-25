@@ -29,6 +29,61 @@ final class PostTypes {
 		add_action( 'init', array( self::class, 'register' ) );
 		add_action( 'add_meta_boxes', array( self::class, 'add_exclude_box' ) );
 		add_action( 'save_post', array( self::class, 'save_exclude_box' ), 5 );
+		add_filter( 'manage_' . self::DOC . '_posts_columns', array( self::class, 'columns' ) );
+		add_action( 'manage_' . self::DOC . '_posts_custom_column', array( self::class, 'column' ), 10, 2 );
+	}
+
+	/**
+	 * "Source" and "Who can see it" columns on the Knowledge Articles list.
+	 *
+	 * @param array<string, string> $columns Columns.
+	 * @return array<string, string>
+	 */
+	public static function columns( array $columns ): array {
+		$date = $columns['date'] ?? null;
+		unset( $columns['date'] );
+
+		$columns['sai_source'] = __( 'Source', 'all-in-one-ai-chatbot' );
+
+		if ( Knowledge\Audience::enabled() ) {
+			$columns['sai_audience'] = __( 'Who can see it', 'all-in-one-ai-chatbot' );
+		}
+
+		if ( null !== $date ) {
+			$columns['date'] = $date;
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Render a custom column.
+	 *
+	 * @param string $column  Column key.
+	 * @param int    $post_id Post id.
+	 */
+	public static function column( string $column, int $post_id ): void {
+		if ( 'sai_audience' === $column ) {
+			echo esc_html( Knowledge\Audience::label( Knowledge\Audience::for_post( $post_id ) ) );
+			return;
+		}
+
+		if ( 'sai_source' !== $column ) {
+			return;
+		}
+
+		$type = (string) get_post_meta( $post_id, Sources\SourceStore::TYPE, true );
+
+		if ( 'url' === $type ) {
+			$url = (string) get_post_meta( $post_id, Sources\SourceStore::URL, true );
+			printf( '<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>', esc_url( $url ), esc_html( (string) wp_parse_url( $url, PHP_URL_HOST ) ) );
+		} elseif ( 'file' === $type ) {
+			echo esc_html( (string) get_post_meta( $post_id, Sources\SourceStore::NAME, true ) );
+		} elseif ( 'faq' === $type ) {
+			esc_html_e( 'FAQ import', 'all-in-one-ai-chatbot' );
+		} else {
+			esc_html_e( 'Written here', 'all-in-one-ai-chatbot' );
+		}
 	}
 
 	/**
@@ -83,10 +138,17 @@ final class PostTypes {
 	 * Show the exclude switch on every post type the assistant reads.
 	 */
 	public static function add_exclude_box(): void {
-		foreach ( (array) Settings::get( 'post_types', array() ) as $post_type ) {
-			if ( self::DOC === $post_type ) {
-				continue;
-			}
+		$types = (array) Settings::get( 'post_types', array() );
+
+		// Knowledge Articles have no "hide" switch (make them a draft), but
+		// they get the audience choice when members-only knowledge is on.
+		if ( Knowledge\Audience::enabled() ) {
+			$types[] = self::DOC;
+		} else {
+			$types = array_diff( $types, array( self::DOC ) );
+		}
+
+		foreach ( array_unique( $types ) as $post_type ) {
 
 			add_meta_box(
 				'softorio-ai-exclude',
@@ -108,13 +170,23 @@ final class PostTypes {
 		wp_nonce_field( 'softorio_ai_exclude', 'softorio_ai_exclude_nonce' );
 
 		$checked = (bool) get_post_meta( $post->ID, self::EXCLUDE_KEY, true );
-		?>
-		<label>
-			<input type="checkbox" name="softorio_ai_exclude" value="1" <?php checked( $checked ); ?>>
-			<?php esc_html_e( 'Hide this from the AI assistant', 'all-in-one-ai-chatbot' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'The assistant will not use this content in its answers.', 'all-in-one-ai-chatbot' ); ?></p>
-		<?php
+
+		if ( self::DOC !== $post->post_type ) :
+			?>
+			<label>
+				<input type="checkbox" name="softorio_ai_exclude" value="1" <?php checked( $checked ); ?>>
+				<?php esc_html_e( 'Hide this from the AI assistant', 'all-in-one-ai-chatbot' ); ?>
+			</label>
+			<p class="description"><?php esc_html_e( 'The assistant will not use this content in its answers.', 'all-in-one-ai-chatbot' ); ?></p>
+			<?php
+		endif;
+
+		if ( Knowledge\Audience::enabled() ) :
+			?>
+			<p><strong><?php esc_html_e( 'Who can the assistant share this with?', 'all-in-one-ai-chatbot' ); ?></strong></p>
+			<?php Knowledge\Audience::render_picker( 'softorio_ai_audience', Knowledge\Audience::for_post( $post->ID ) ); ?>
+			<?php
+		endif;
 	}
 
 	/**
@@ -146,6 +218,12 @@ final class PostTypes {
 			update_post_meta( $post_id, self::EXCLUDE_KEY, true );
 		} else {
 			delete_post_meta( $post_id, self::EXCLUDE_KEY );
+		}
+
+		// Only when the picker was on the screen: saving with the feature off
+		// must not wipe audiences set earlier.
+		if ( Knowledge\Audience::enabled() && isset( $_POST['softorio_ai_audience'] ) ) {
+			Knowledge\Audience::set( $post_id, Knowledge\Audience::from_picker( map_deep( wp_unslash( $_POST['softorio_ai_audience'] ), 'sanitize_text_field' ) ) );
 		}
 	}
 

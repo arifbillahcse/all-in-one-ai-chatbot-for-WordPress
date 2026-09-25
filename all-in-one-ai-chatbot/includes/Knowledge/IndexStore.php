@@ -63,10 +63,11 @@ final class IndexStore {
 					'search_text'  => (string) $row['search_text'],
 					'token_count'  => (int) $row['token_count'],
 					'content_hash' => (string) $row['content_hash'],
+					'audience'     => (string) ( $row['audience'] ?? '' ),
 					'embedding'    => $row['embedding'] ?? null,
 					'indexed_at'   => $now,
 				),
-				array( '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' )
+				array( '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' )
 			);
 		}
 
@@ -139,11 +140,12 @@ final class IndexStore {
 	 * prefix match on a whole term: "refund" matches "refundable" but "fund"
 	 * does not match "refund".
 	 *
-	 * @param array<int, string> $terms Query terms.
-	 * @param int                $limit Most rows to return.
+	 * @param array<int, string> $terms    Query terms.
+	 * @param int                $limit    Most rows to return.
+	 * @param Audience|null      $audience Who is asking; null means everyone may see the result (guest).
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function candidates( array $terms, int $limit = 400 ): array {
+	public function candidates( array $terms, int $limit = 400, ?Audience $audience = null ): array {
 		global $wpdb;
 
 		if ( array() === $terms ) {
@@ -158,10 +160,14 @@ final class IndexStore {
 			$args[]    = '% ' . $wpdb->esc_like( $term ) . '%';
 		}
 
+		[ $who, $who_args ] = ( $audience ?? Audience::guest() )->where();
+
+		$args = array_merge( $args, $who_args );
 		$args[] = $limit;
 
-		$sql = 'SELECT id, post_id, title, url, content, search_text, token_count FROM %i WHERE '
+		$sql = 'SELECT id, post_id, title, url, content, search_text, token_count, audience FROM %i WHERE ('
 			. implode( ' OR ', $clauses )
+			. ')' . ( '' !== $who ? ' AND ' . $who : '' )
 			. ' LIMIT %d';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- placeholders built above.
@@ -173,10 +179,11 @@ final class IndexStore {
 	/**
 	 * Chunks by id.
 	 *
-	 * @param array<int, int> $ids Chunk ids.
+	 * @param array<int, int> $ids      Chunk ids.
+	 * @param Audience|null   $audience Who is asking; null = guest.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function by_ids( array $ids ): array {
+	public function by_ids( array $ids, ?Audience $audience = null ): array {
 		global $wpdb;
 
 		$ids = array_values( array_filter( array_map( 'intval', $ids ) ) );
@@ -185,11 +192,13 @@ final class IndexStore {
 			return array();
 		}
 
+		[ $who, $who_args ] = ( $audience ?? Audience::guest() )->where();
+
 		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-		$sql          = "SELECT id, post_id, title, url, content, search_text, token_count FROM %i WHERE id IN ($placeholders)";
+		$sql          = "SELECT id, post_id, title, url, content, search_text, token_count, audience FROM %i WHERE id IN ($placeholders)" . ( '' !== $who ? ' AND ' . $who : '' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders -- placeholders built above.
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $this->table ), $ids ) ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $this->table ), $ids, $who_args ) ), ARRAY_A );
 
 		return is_array( $rows ) ? $rows : array();
 	}
@@ -197,14 +206,19 @@ final class IndexStore {
 	/**
 	 * Every stored embedding, for semantic search.
 	 *
-	 * @param int $limit Safety cap on rows loaded into memory.
+	 * @param int           $limit    Safety cap on rows loaded into memory.
+	 * @param Audience|null $audience Who is asking; null = guest.
 	 * @return array<int, string> chunk id => packed vector
 	 */
-	public function embeddings( int $limit = 5000 ): array {
+	public function embeddings( int $limit = 5000, ?Audience $audience = null ): array {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
-		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT id, embedding FROM %i WHERE embedding IS NOT NULL LIMIT %d', $this->table, $limit ), ARRAY_A );
+		[ $who, $who_args ] = ( $audience ?? Audience::guest() )->where();
+
+		$sql = 'SELECT id, embedding FROM %i WHERE embedding IS NOT NULL' . ( '' !== $who ? ' AND ' . $who : '' ) . ' LIMIT %d';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- placeholders built above.
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $this->table ), $who_args, array( $limit ) ) ), ARRAY_A );
 
 		$out = array();
 

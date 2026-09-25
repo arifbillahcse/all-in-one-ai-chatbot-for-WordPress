@@ -4,7 +4,7 @@ Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,19 @@ It does not invent answers. When your content does not cover a question, it says
 * Replies in the visitor's language, including Bangla and other non-Latin scripts.
 * "Talk to a person" button for WhatsApp, email or your contact page.
 * Read every conversation in WP Admin to see what visitors ask and what your content is missing.
+
+**Teach it from anything**
+
+* Upload documents: PDF, Word (.docx), OpenDocument, text, Markdown and HTML, up to 20 at a time. Text is read on your own server, including Bangla PDFs; the files themselves are not kept.
+* Import FAQs from a spreadsheet (CSV from Excel or Google Sheets). Re-import after editing to update answers.
+* Import web pages: a help centre on another site, a sitemap, or a whole site. Pages are fetched politely in the background, respect robots.txt, and can be re-checked daily or weekly. Answers link back to the page.
+* Everything imported becomes a Knowledge Article you can read and edit.
+
+**Members and logged-in visitors**
+
+* Members-only knowledge: mark any page, article, document or import for everyone, logged-in users, or chosen roles (e.g. customers or a "Gold member" role). Visitors who are not logged in never get members-only answers.
+* A personal greeting for logged-in visitors ("Welcome back, Karim!"), their details pre-filled in the lead form, or no lead form at all.
+* A conversation started while logged in cannot be reopened by the same browser after logging out.
 
 **WooCommerce shop assistant**
 
@@ -87,6 +100,7 @@ When a visitor sends a chat message, the plugin sends the provider: the visitor'
 * **Google Gemini**: used when Gemini is selected as the main or backup provider. [Terms of service](https://ai.google.dev/gemini-api/terms), [Privacy policy](https://policies.google.com/privacy).
 * **OpenRouter**: used when OpenRouter is selected. OpenRouter passes the request to the model vendor you choose. [Terms](https://openrouter.ai/terms), [Privacy policy](https://openrouter.ai/privacy).
 * **Telegram**: only if you add a Telegram bot token. Lead and alert details are sent to your own bot chat. [Terms](https://telegram.org/tos), [Privacy policy](https://telegram.org/privacy).
+* **Web pages you import**: only the addresses you enter under Knowledge Sources → Import from websites (and their robots.txt and sitemaps) are downloaded, and again on the re-check schedule you choose. No data about your visitors is sent.
 * **Your webhook URLs**: only if you add them. Event data, including lead contact details and chat transcripts, is sent to the URLs you enter.
 * **DeepSeek**: used when DeepSeek is selected as the main or backup provider. [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html), [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
 
@@ -120,6 +134,14 @@ Use "Test what the assistant finds" on the Overview screen with the same questio
 
 Yes. The chat endpoint does not depend on anything cached in the page.
 
+= Which files can it learn from? =
+
+PDF, Word (.docx), OpenDocument (.odt), text, Markdown and HTML, under AI Chatbot → Knowledge Sources. PDFs must contain real text: a scanned PDF is a picture of text and cannot be read (copy its text into a Knowledge Article, or connect an OCR service with the `softorio_ai_extract_text` filter). Password-protected PDFs need an unprotected copy.
+
+= How do I give members extra answers? =
+
+Turn on Settings → Knowledge → Members-only knowledge. Then choose "Who can the assistant share this with?" in the AI Chatbot box of any page or Knowledge Article, or when importing. Logged-in users (or the roles you tick) get those answers; everyone else does not.
+
 = Can I hide the widget on some pages? =
 
 Yes. Go to AI Chatbot → Settings → Widget → Where to show the widget, and list pages like /checkout/ or patterns like /my-account/*. Developers can also use the `softorio_ai_show_widget` filter, for example `add_filter( 'softorio_ai_show_widget', fn( $show ) => $show && ! is_page( 'checkout' ) );`.
@@ -147,8 +169,16 @@ All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question 
 * `softorio_ai_find_order` (filter): resolve custom or sequential order numbers to an order.
 * `softorio_ai_order_tracking` (filter): add shipment tracking from courier plugins (Pathao, Steadfast, RedX and others).
 * `softorio_ai_provider_endpoint` (filter): change a provider's API URL (proxies, regional endpoints).
+* `softorio_ai_extract_text` (filter): read uploaded files yourself, e.g. send scanned PDFs to an OCR service.
 
 == Changelog ==
+
+= 1.5.0 =
+* New: Knowledge Sources screen. Upload PDF, Word, OpenDocument, text, Markdown and HTML files; import FAQs from CSV; import web pages, sitemaps or whole sites in the background, with an optional daily or weekly re-check.
+* New: members-only knowledge by logged-in status or user role, for pages, Knowledge Articles and imports. Filtering happens in the search itself.
+* New: personal greeting, pre-filled lead form and an option to skip the lead form for logged-in visitors; the assistant knows the visitor's account type.
+* New: "Source" and "Who can see it" columns on Knowledge Articles; members-only results marked 🔒 in the admin search preview.
+* Security: a conversation started while logged in can only be resumed by the same account.
 
 = 1.4.0 =
 * New: avatar or logo, chat button icon choices and an optional text button.

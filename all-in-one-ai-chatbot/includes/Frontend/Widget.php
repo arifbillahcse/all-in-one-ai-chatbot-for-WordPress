@@ -120,6 +120,45 @@ final class Widget {
 	}
 
 	/**
+	 * The opening message, personal for logged-in visitors when set.
+	 */
+	private static function greeting(): string {
+		$greeting = (string) Settings::get( 'greeting', '' );
+		$member   = trim( (string) Settings::get( 'member_greeting', '' ) );
+		$user     = wp_get_current_user();
+
+		if ( '' === $member || ! $user->exists() ) {
+			return $greeting;
+		}
+
+		$name = trim( (string) $user->first_name );
+		$name = '' !== $name ? $name : (string) $user->display_name;
+
+		return str_replace( '{name}', $name, $member );
+	}
+
+	/**
+	 * The logged-in visitor's details for the lead form, or null.
+	 *
+	 * @return array{name: string, email: string, skipLead: bool}|null
+	 */
+	private static function user(): ?array {
+		$user = wp_get_current_user();
+
+		if ( ! $user->exists() ) {
+			return null;
+		}
+
+		$name = trim( $user->first_name . ' ' . $user->last_name );
+
+		return array(
+			'name'     => '' !== $name ? $name : (string) $user->display_name,
+			'email'    => (string) $user->user_email,
+			'skipLead' => (bool) Settings::get( 'members_skip_lead', false ),
+		);
+	}
+
+	/**
 	 * Everything the widget needs, including its translated strings.
 	 *
 	 * @return array<string, mixed>
@@ -143,7 +182,7 @@ final class Widget {
 			'cssUrl'      => SOFTORIO_AI_URL . 'assets/css/widget.css?ver=' . rawurlencode( SOFTORIO_AI_VERSION ),
 			'title'       => (string) Settings::get( 'assistant_name', '' ),
 			'subtitle'    => Settings::company_name(),
-			'greeting'    => (string) Settings::get( 'greeting', '' ),
+			'greeting'    => self::greeting(),
 			'color'       => $color ? $color : '#2563eb',
 			'position'    => 'left' === Settings::get( 'position', 'right' ) ? 'left' : 'right',
 			'suggestions' => array_slice( $suggestions, 0, 4 ),
@@ -157,6 +196,9 @@ final class Widget {
 			'voice'       => Settings::get( 'voice_input', false ) ? array( 'lang' => (string) Settings::get( 'voice_lang', '' ) ) : null,
 			'flows'       => Settings::get( 'flows_enabled', false ) ? FlowStore::get() : null,
 			'leads'       => LeadService::enabled() ? LeadService::form_config() : null,
+			// Only on pages rendered for a logged-in user (never cached for
+			// others): pre-fills their details in the lead form.
+			'user'        => self::user(),
 			'streaming'   => (bool) Settings::get( 'streaming', false ),
 			'feedback'    => (bool) Settings::get( 'feedback', false ),
 			// Only logged-in visitors get a nonce: their pages are not served

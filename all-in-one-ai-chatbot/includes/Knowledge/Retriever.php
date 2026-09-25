@@ -39,28 +39,30 @@ final class Retriever {
 	/**
 	 * Best passages for a question.
 	 *
-	 * @param string   $query Visitor question.
-	 * @param int|null $limit Most results.
-	 * @return array<int, array{chunk_id: int, post_id: int, title: string, url: string, content: string, score: float}>
+	 * @param string        $query    Visitor question.
+	 * @param int|null      $limit    Most results.
+	 * @param Audience|null $audience Who is asking; null = a guest.
+	 * @return array<int, array{chunk_id: int, post_id: int, title: string, url: string, content: string, score: float, audience: string}>
 	 */
-	public function search( string $query, ?int $limit = null ): array {
-		$limit ??= max( 1, (int) Settings::get( 'results', 5 ) );
+	public function search( string $query, ?int $limit = null, ?Audience $audience = null ): array {
+		$limit    ??= max( 1, (int) Settings::get( 'results', 5 ) );
+		$audience ??= Audience::guest();
 
 		$terms      = Tokenizer::query_terms( $query );
-		$candidates = $this->store->candidates( $terms );
+		$candidates = $this->store->candidates( $terms, 400, $audience );
 		$lexical    = self::bm25( $terms, $candidates, $this->store->stats() );
 
 		$vector = array();
 
 		if ( Embedder::enabled() ) {
-			$vector = $this->vector_scores( $query );
+			$vector = $this->vector_scores( $query, $audience );
 
 			// Pull in strong semantic matches that shared no keyword with the
 			// question — the case semantic search exists for.
 			$missing = array_diff( array_keys( $vector ), array_map( static fn( $r ): int => (int) $r['id'], $candidates ) );
 
 			if ( array() !== $missing ) {
-				$candidates = array_merge( $candidates, $this->store->by_ids( $missing ) );
+				$candidates = array_merge( $candidates, $this->store->by_ids( $missing, $audience ) );
 			}
 		}
 
@@ -145,10 +147,11 @@ final class Retriever {
 	/**
 	 * Cosine similarity of the question to every embedded chunk; top matches only.
 	 *
-	 * @param string $query Question.
+	 * @param string   $query    Question.
+	 * @param Audience $audience Who is asking.
 	 * @return array<int, float> chunk id => similarity
 	 */
-	private function vector_scores( string $query ): array {
+	private function vector_scores( string $query, Audience $audience ): array {
 		$packed = ( new Embedder() )->embed_one( $query );
 
 		if ( '' === $packed ) {
@@ -158,7 +161,7 @@ final class Retriever {
 		$question = VectorMath::unpack( $packed );
 		$scores   = array();
 
-		foreach ( $this->store->embeddings() as $id => $stored ) {
+		foreach ( $this->store->embeddings( 5000, $audience ) as $id => $stored ) {
 			$scores[ $id ] = VectorMath::dot( $question, VectorMath::unpack( $stored ) );
 		}
 
@@ -210,6 +213,7 @@ final class Retriever {
 				'url'      => (string) $row['url'],
 				'content'  => (string) $row['content'],
 				'score'    => $score,
+				'audience' => (string) ( $row['audience'] ?? '' ),
 			);
 		}
 

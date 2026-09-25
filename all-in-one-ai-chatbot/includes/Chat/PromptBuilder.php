@@ -124,6 +124,17 @@ TEXT;
 			$name = $user ? trim( (string) $user->first_name ) : '';
 
 			$parts[] = 'The visitor is logged in to the website' . ( '' !== $name ? ' as ' . self::defuse( mb_substr( $name, 0, 40 ) ) : '' ) . '. You may greet them by first name.';
+
+			// On membership sites the account type decides what applies to
+			// them ("Gold members get free shipping").
+			if ( $user && \Softorio\AiAssistant\Knowledge\Audience::enabled() ) {
+				$names = wp_roles()->get_names();
+				$roles = array_map( static fn( string $r ): string => translate_user_role( $names[ $r ] ?? $r ), (array) $user->roles );
+
+				if ( array() !== $roles ) {
+					$parts[] = 'Their account type on this website: ' . self::defuse( mb_substr( implode( ', ', $roles ), 0, 120 ) ) . '. Some passages in the website content are for members only; they were selected for this visitor, so you may use them.';
+				}
+			}
 		}
 
 		if ( array() !== $tools ) {

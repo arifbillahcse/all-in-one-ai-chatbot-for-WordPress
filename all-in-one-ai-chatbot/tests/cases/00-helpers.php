@@ -12,9 +12,17 @@ final class FakeHttp {
 	/** @var array<int, array{url: string, body: array, headers: array}> */
 	public static array $requests = array();
 
+	/** @var array<string, array{0: int, 1: string, 2: array<string, string>}> Fixed responses by exact URL (web import tests). */
+	public static array $routes = array();
+
 	public static function reset(): void {
 		self::$queue    = array();
 		self::$requests = array();
+		self::$routes   = array();
+	}
+
+	public static function route( string $url, int $status, string $body, string $type = 'text/html; charset=utf-8' ): void {
+		self::$routes[ $url ] = array( $status, $body, array( 'content-type' => $type ) );
 	}
 
 	public static function push( int $status, array|string $body ): void {
@@ -48,6 +56,18 @@ final class FakeHttp {
 }
 
 add_filter( 'pre_http_request', static function ( $pre, $args, $url ) {
+	if ( isset( FakeHttp::$routes[ $url ] ) || str_ends_with( (string) wp_parse_url( $url, PHP_URL_HOST ), '.example.org' ) ) {
+		FakeHttp::$requests[] = array( 'url' => $url, 'body' => null, 'headers' => $args['headers'] ?? array(), 'user-agent' => $args['user-agent'] ?? '' );
+		[ $status, $body, $headers ] = FakeHttp::$routes[ $url ] ?? array( 404, 'Not found', array( 'content-type' => 'text/html' ) );
+		return array(
+			'headers'  => new WpOrg\Requests\Utility\CaseInsensitiveDictionary( $headers ),
+			'body'     => $body,
+			'response' => array( 'code' => $status, 'message' => '' ),
+			'cookies'  => array(),
+			'filename' => null,
+		);
+	}
+
 	$faked = array( 'api.openai.com', 'api.anthropic.com', 'api.deepseek.com', 'api.telegram.org', 'hooks.example.com', 'generativelanguage.googleapis.com', 'openrouter.ai' );
 
 	if ( ! in_array( wp_parse_url( $url, PHP_URL_HOST ), $faked, true ) ) {

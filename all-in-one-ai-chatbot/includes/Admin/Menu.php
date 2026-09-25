@@ -29,6 +29,7 @@ final class Menu {
 		LogPage::init();
 		LeadsPage::init();
 		FlowsPage::init();
+		SourcesPage::init();
 		add_filter( 'plugin_action_links_' . plugin_basename( SOFTORIO_AI_FILE ), array( self::class, 'action_links' ) );
 	}
 
@@ -53,6 +54,16 @@ final class Menu {
 			'manage_options',
 			self::SLUG,
 			array( DashboardPage::class, 'render' )
+		);
+
+		add_submenu_page(
+			self::SLUG,
+			__( 'AI Chatbot — Knowledge Sources', 'all-in-one-ai-chatbot' ),
+			__( 'Knowledge Sources', 'all-in-one-ai-chatbot' ),
+			'manage_options',
+			self::SLUG . '-sources',
+			array( SourcesPage::class, 'render' ),
+			1
 		);
 
 		add_submenu_page(

@@ -8,6 +8,7 @@
 namespace Softorio\AiAssistant\Admin;
 
 use Softorio\AiAssistant\Chat\ConversationStore;
+use Softorio\AiAssistant\Knowledge\Audience;
 use Softorio\AiAssistant\Knowledge\Indexer;
 use Softorio\AiAssistant\Knowledge\Retriever;
 use Softorio\AiAssistant\Llm\LlmException;
@@ -81,8 +82,10 @@ final class Ajax {
 				'url'     => '' !== $r['url'] ? $r['url'] : get_edit_post_link( $r['post_id'], 'raw' ),
 				'score'   => round( $r['score'], 2 ),
 				'excerpt' => mb_substr( $r['content'], 0, 240, 'UTF-8' ),
+				'members' => '' !== $r['audience'] ? Audience::label( $r['audience'] ) : '',
 			),
-			'' === $query ? array() : ( new Retriever() )->search( $query )
+			// The owner sees everything, marked with who it is for.
+			'' === $query ? array() : ( new Retriever() )->search( $query, null, Audience::everything() )
 		);
 
 		wp_send_json_success( array( 'results' => $results ) );

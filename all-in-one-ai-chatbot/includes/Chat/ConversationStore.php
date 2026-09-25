@@ -104,6 +104,13 @@ final class ConversationStore {
 			return null;
 		}
 
+		// A conversation started while logged in stays with that account:
+		// after logging out, or on a shared computer, the browser's token
+		// alone must not reopen it (it may hold order or members-only details).
+		if ( (int) $row['user_id'] > 0 && (int) $row['user_id'] !== get_current_user_id() ) {
+			return null;
+		}
+
 		return $row;
 	}
 

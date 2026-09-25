@@ -978,6 +978,10 @@
 		if ( leadDone() || hasUserMessage() || gate || ( leadCfg.mode === 'optional' && read( session, KEY_SKIPPED ) === '1' ) ) {
 			return;
 		}
+		// We already know who a logged-in visitor is.
+		if ( config.user && config.user.skipLead ) {
+			return;
+		}
 		gate = showLeadForm( 'pre_chat' );
 		lockInput( true );
 		updateSuggestions();
@@ -1004,6 +1008,10 @@
 		field.required = rule === 'required';
 		if ( autocomplete ) {
 			field.autocomplete = autocomplete;
+		}
+		// Logged-in visitors: their account details, ready to send.
+		if ( config.user && ( name === 'name' || name === 'email' ) && config.user[ name ] ) {
+			field.value = config.user[ name ];
 		}
 		wrap.appendChild( field );
 		wrap.appendChild( el( 'span', 'sai-field-error' ) );

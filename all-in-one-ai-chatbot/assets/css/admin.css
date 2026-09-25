@@ -95,3 +95,51 @@
 .sai-flow-details textarea { width: 420px; max-width: 100%; }
 .sai-flow-details input { width: 320px; max-width: 100%; }
 .sai-flow-add-child { margin: 4px 0 0 28px; }
+
+/* ── Knowledge Sources ───────────────────────────────────────────────────── */
+
+.sai-source-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 16px;
+	margin: 16px 0 8px;
+}
+
+.sai-source-grid .sai-card { margin: 0; }
+.sai-source-grid h2 { display: flex; align-items: center; gap: 6px; margin-top: 0; font-size: 15px; }
+.sai-source-grid .dashicons { color: #2563eb; }
+.sai-source-grid textarea { font-size: 12px; }
+.sai-source-grid .submit, .sai-source-grid p.submit { padding: 0; margin: 8px 0 0; }
+
+.sai-inline-form { display: inline; margin: 0 8px 0 0; }
+.sai-inline-form .button-link { vertical-align: baseline; }
+
+.sai-sources-heading { margin-top: 28px; }
+.sai-sources-tools { float: right; margin: 6px 0; }
+.sai-sources-tools .sai-inline-form { margin: 0 0 0 8px; }
+.sai-sources-table { clear: both; }
+.sai-sources-table td { vertical-align: middle; }
+.sai-source-url { color: #50575e; font-size: 12px; word-break: break-all; margin-left: 4px; }
+.sai-row-actions { white-space: nowrap; text-align: right; }
+
+.sai-badge {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: #e0e7ff;
+	color: #1e3a8a;
+	font-size: 11px;
+	line-height: 18px;
+}
+
+.sai-badge-muted { background: #f0f0f1; color: #50575e; margin-left: 6px; }
+
+.button.sai-danger { color: #b32d2e; border-color: #b32d2e; }
+.button.sai-danger:hover { background: #fcf0f1; color: #8a2424; border-color: #8a2424; }
+.button-link.sai-danger-link { color: #b32d2e; }
+
+.sai-audience-wrap { margin: 10px 0; padding: 10px 12px; background: #f6f7f7; border-radius: 6px; }
+.sai-audience { border: 0; margin: 6px 0 0; padding: 0; }
+.sai-audience label { line-height: 1.9; }
+.sai-audience-roles { display: block; margin: 2px 0 0 22px; }
+.sai-audience-roles label { display: inline-block; margin-right: 10px; }

@@ -30,6 +30,7 @@ final class Plugin {
 		Leads\PrivacyTools::init();
 		Woo\WooModule::init();
 		Frontend\Inline::init();
+		Sources\WebImporter::init();
 
 		/**
 		 * Fires once the core is loaded: feature modules register their
