@@ -4,11 +4,11 @@ Tags: ai, chatbot, customer support, live chat, openai
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-An AI support assistant that answers visitors from your own pages, posts and knowledge articles. Use your own OpenAI, Claude or DeepSeek API key.
+An AI support assistant that answers visitors from your own pages, posts and knowledge articles. Use your own OpenAI, Claude, Gemini, DeepSeek or OpenRouter API key.
 
 == Description ==
 
@@ -47,10 +47,16 @@ It does not invent answers. When your content does not cover a question, it says
 
 **You control the cost**
 
-* Bring your own API key from OpenAI, Anthropic (Claude) or DeepSeek. You pay the provider directly, with no middleman markup.
+* Bring your own API key from OpenAI, Anthropic (Claude), Google Gemini, DeepSeek or OpenRouter (hundreds of models with one key). You pay the provider directly, with no middleman markup.
 * Cheap, fast models by default. A typical answer costs a fraction of a US cent.
 * A daily budget, a daily answer cap and a per-visitor limit stop abuse and surprise bills.
 * An optional backup provider takes over automatically if your main one fails.
+
+**A better chat experience**
+
+* Live typing: answers appear word by word as the AI writes them. If your hosting blocks streaming, the widget falls back to normal replies on its own.
+* 👍 / 👎 on every answer, with a satisfaction score on the overview and ratings in each transcript.
+* A "Checking…" indicator while the assistant looks up products or orders.
 
 **Private and safe by default**
 
@@ -68,6 +74,8 @@ When a visitor sends a chat message, the plugin sends the provider: the visitor'
 
 * **OpenAI**: used when OpenAI is selected as the main or backup provider, when you press "Test connection" for OpenAI, and for semantic search if you turn it on. With semantic search on, the text of your published content is also sent when it is indexed. [Terms of use](https://openai.com/policies/terms-of-use/), [Privacy policy](https://openai.com/policies/privacy-policy/).
 * **Anthropic (Claude)**: used when Claude is selected as the main or backup provider. [Commercial terms](https://www.anthropic.com/legal/commercial-terms), [Privacy policy](https://www.anthropic.com/legal/privacy).
+* **Google Gemini**: used when Gemini is selected as the main or backup provider. [Terms of service](https://ai.google.dev/gemini-api/terms), [Privacy policy](https://policies.google.com/privacy).
+* **OpenRouter**: used when OpenRouter is selected. OpenRouter passes the request to the model vendor you choose. [Terms](https://openrouter.ai/terms), [Privacy policy](https://openrouter.ai/privacy).
 * **Telegram**: only if you add a Telegram bot token. Lead and alert details are sent to your own bot chat. [Terms](https://telegram.org/tos), [Privacy policy](https://telegram.org/privacy).
 * **Your webhook URLs**: only if you add them. Event data, including lead contact details and chat transcripts, is sent to the URLs you enter.
 * **DeepSeek**: used when DeepSeek is selected as the main or backup provider. [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html), [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
@@ -128,8 +136,15 @@ All three: OpenAI, Claude and DeepSeek support tool calling. Each shop question 
 * `softorio_ai_post_types` (filter): post types the assistant reads.
 * `softorio_ai_find_order` (filter): resolve custom or sequential order numbers to an order.
 * `softorio_ai_order_tracking` (filter): add shipment tracking from courier plugins (Pathao, Steadfast, RedX and others).
+* `softorio_ai_provider_endpoint` (filter): change a provider's API URL (proxies, regional endpoints).
 
 == Changelog ==
+
+= 1.3.0 =
+* New: Google Gemini and OpenRouter providers. OpenRouter reports its exact cost per answer.
+* New: live typing (streaming) for every provider, with automatic fallback; the backup provider takes over when the main one fails before anything has been shown.
+* New: 👍 / 👎 answer feedback, a satisfaction score on the overview, and an answer.rated webhook event.
+* Fix: the "no answer" marker is hidden reliably, even when it arrives split across streamed pieces.
 
 = 1.2.0 =
 * New: WooCommerce shop assistant, with product search and recommendations, product cards, add to cart from the chat, and order tracking with ownership checks.
