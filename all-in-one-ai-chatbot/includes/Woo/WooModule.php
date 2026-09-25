@@ -175,10 +175,10 @@ final class WooModule {
 	 * products enter or leave it.
 	 *
 	 * @param array<string, mixed> $old Previous settings.
-	 * @param array<string, mixed> $new New settings.
+	 * @param array<string, mixed> $saved New settings.
 	 */
-	public static function settings_changed( array $old, array $new ): void {
-		if ( (bool) ( $old['woo_enabled'] ?? false ) !== (bool) ( $new['woo_enabled'] ?? false ) ) {
+	public static function settings_changed( array $old, array $saved ): void {
+		if ( (bool) ( $old['woo_enabled'] ?? false ) !== (bool) ( $saved['woo_enabled'] ?? false ) ) {
 			update_option( Indexer::STATE_OPTION, array( 'status' => 'pending' ), false );
 			Cron::queue_build( 0 );
 		}
@@ -230,8 +230,8 @@ final class WooModule {
 		}
 
 		if ( in_array( 'check_order_status', $tools, true ) ) {
-			$verify  = (string) Settings::get( 'woo_guest_verify', 'email_or_phone' );
-			$proof   = match ( $verify ) {
+			$verify = (string) Settings::get( 'woo_guest_verify', 'email_or_phone' );
+			$proof  = match ( $verify ) {
 				'email' => 'the email address used at checkout',
 				'phone' => 'the phone number used at checkout',
 				'none'  => '',

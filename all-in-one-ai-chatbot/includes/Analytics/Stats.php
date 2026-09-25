@@ -141,10 +141,10 @@ final class Stats {
 	private function raw( string $first, string $last ): array {
 		global $wpdb;
 
-		$from  = $this->utc_start( $first );
-		$to    = $this->utc_start( ( new \DateTimeImmutable( $last ) )->modify( '+1 day' )->format( 'Y-m-d' ) );
-		$days  = array();
-		$add   = function ( string $bucket, string $metric, float $value ) use ( &$days ): void {
+		$from = $this->utc_start( $first );
+		$to   = $this->utc_start( ( new \DateTimeImmutable( $last ) )->modify( '+1 day' )->format( 'Y-m-d' ) );
+		$days = array();
+		$add  = function ( string $bucket, string $metric, float $value ) use ( &$days ): void {
 			[ $date ]                  = $this->local( $bucket );
 			$days[ $date ]           ??= self::zero();
 			$days[ $date ][ $metric ] += $value;
@@ -240,7 +240,15 @@ final class Stats {
 
 		foreach ( $this->raw( $this->dates( $days, $yesterday )[0], $yesterday->format( 'Y-m-d' ) ) + array_fill_keys( $this->dates( $days, $yesterday ), self::zero() ) as $date => $stats ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table; portable upsert.
-			$wpdb->replace( $this->t['daily'], array( 'day' => $date, 'stats' => wp_json_encode( $stats ), 'updated_at' => $now ), array( '%s', '%s', '%s' ) );
+			$wpdb->replace(
+				$this->t['daily'],
+				array(
+					'day'        => $date,
+					'stats'      => wp_json_encode( $stats ),
+					'updated_at' => $now,
+				),
+				array( '%s', '%s', '%s' )
+			);
 		}
 	}
 
@@ -262,10 +270,10 @@ final class Stats {
 		$rated = $sum['up'] + $sum['down'];
 
 		return $sum + array(
-			'answered_rate'    => $sum['answers'] > 0 ? 1 - $sum['unanswered'] / $sum['answers'] : null,
-			'satisfaction'     => $rated > 0 ? $sum['up'] / $rated : null,
-			'conversion'       => $sum['conversations'] > 0 ? $sum['leads'] / $sum['conversations'] : null,
-			'cost_per_chat'    => $sum['conversations'] > 0 ? $sum['cost'] / $sum['conversations'] : null,
+			'answered_rate'     => $sum['answers'] > 0 ? 1 - $sum['unanswered'] / $sum['answers'] : null,
+			'satisfaction'      => $rated > 0 ? $sum['up'] / $rated : null,
+			'conversion'        => $sum['conversations'] > 0 ? $sum['leads'] / $sum['conversations'] : null,
+			'cost_per_chat'     => $sum['conversations'] > 0 ? $sum['cost'] / $sum['conversations'] : null,
 			'messages_per_chat' => $sum['conversations'] > 0 ? $sum['messages'] / $sum['conversations'] : null,
 		);
 	}
@@ -367,8 +375,8 @@ final class Stats {
 			}
 
 			++$groups[ $signature ]['count'];
-			$form                                         = mb_substr( trim( preg_replace( '/\s+/u', ' ', $item['text'] ) ?? '' ), 0, 160 );
-			$groups[ $signature ]['forms'][ $form ]       = ( $groups[ $signature ]['forms'][ $form ] ?? 0 ) + 1;
+			$form                                   = mb_substr( trim( preg_replace( '/\s+/u', ' ', $item['text'] ) ?? '' ), 0, 160 );
+			$groups[ $signature ]['forms'][ $form ] = ( $groups[ $signature ]['forms'][ $form ] ?? 0 ) + 1;
 		}
 
 		usort( $groups, static fn( array $a, array $b ): int => array( $b['count'], $b['last'] ) <=> array( $a['count'], $a['last'] ) );

@@ -21,15 +21,15 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Events {
 
-	public const LEAD_CREATED       = 'lead.created';
-	public const HANDOFF_REQUESTED  = 'handoff.requested';
+	public const LEAD_CREATED        = 'lead.created';
+	public const HANDOFF_REQUESTED   = 'handoff.requested';
 	public const QUESTION_UNANSWERED = 'question.unanswered';
-	public const CONVERSATION_ENDED = 'conversation.ended';
-	public const MESSAGE_ANSWERED   = 'message.answered';
-	public const ANSWER_RATED       = 'answer.rated';
-	public const LIVE_REQUESTED     = 'live.requested';
-	public const LIVE_STARTED       = 'live.started';
-	public const LIVE_ENDED         = 'live.ended';
+	public const CONVERSATION_ENDED  = 'conversation.ended';
+	public const MESSAGE_ANSWERED    = 'message.answered';
+	public const ANSWER_RATED        = 'answer.rated';
+	public const LIVE_REQUESTED      = 'live.requested';
+	public const LIVE_STARTED        = 'live.started';
+	public const LIVE_ENDED          = 'live.ended';
 
 	/**
 	 * Every event name, with a label for admin screens (webhook pickers etc.).

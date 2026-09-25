@@ -164,11 +164,26 @@ final class SearchProductsTool implements Tool {
 		}
 
 		$args += match ( $sort ) {
-			'price_low'  => array( 'orderby' => 'price', 'order' => 'ASC' ),
-			'price_high' => array( 'orderby' => 'price', 'order' => 'DESC' ),
-			'popular'    => array( 'orderby' => 'popularity', 'order' => 'DESC' ),
-			'rating'     => array( 'orderby' => 'rating', 'order' => 'DESC' ),
-			'newest'     => array( 'orderby' => 'date', 'order' => 'DESC' ),
+			'price_low'  => array(
+				'orderby' => 'price',
+				'order'   => 'ASC',
+			),
+			'price_high' => array(
+				'orderby' => 'price',
+				'order'   => 'DESC',
+			),
+			'popular'    => array(
+				'orderby' => 'popularity',
+				'order'   => 'DESC',
+			),
+			'rating'     => array(
+				'orderby' => 'rating',
+				'order'   => 'DESC',
+			),
+			'newest'     => array(
+				'orderby' => 'date',
+				'order'   => 'DESC',
+			),
 			default      => array(),
 		};
 

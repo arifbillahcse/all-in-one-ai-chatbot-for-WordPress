@@ -105,7 +105,7 @@ final class LeadStore {
 
 		$sql_where = implode( ' AND ', $where );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table; $sql_where holds fixed fragments.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- custom table; $sql_where holds fixed fragments.
 		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE $sql_where", $args ) );
 		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE $sql_where ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $args, array( $limit, $offset ) ) ), ARRAY_A );
 		// phpcs:enable
@@ -165,7 +165,16 @@ final class LeadStore {
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
-		return false !== $wpdb->update( $this->table, array( 'status' => $status, 'updated_at' => current_time( 'mysql', true ) ), array( 'id' => $id ), array( '%s', '%s' ), array( '%d' ) );
+		return false !== $wpdb->update(
+			$this->table,
+			array(
+				'status'     => $status,
+				'updated_at' => current_time( 'mysql', true ),
+			),
+			array( 'id' => $id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
 	}
 
 	/**
@@ -214,7 +223,8 @@ final class LeadStore {
 				$last = (int) $row['id'];
 				yield $row;
 			}
-		} while ( count( $rows ) === $batch );
+			$more = count( $rows ) === $batch;
+		} while ( $more );
 	}
 
 	/**

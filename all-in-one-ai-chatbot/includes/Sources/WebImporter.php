@@ -27,9 +27,9 @@ defined( 'ABSPATH' ) || exit;
  */
 final class WebImporter {
 
-	public const JOB        = 'source.fetch';
-	public const RESYNC     = 'softorio_ai_web_resync';
-	public const MAX_PAGES  = 500;
+	public const JOB         = 'source.fetch';
+	public const RESYNC      = 'softorio_ai_web_resync';
+	public const MAX_PAGES   = 500;
 	private const PER_MINUTE = 15;
 	private const MAX_BYTES  = 3 * MB_IN_BYTES;
 
@@ -77,10 +77,10 @@ final class WebImporter {
 	 * Expand the owner's input into page addresses.
 	 *
 	 * @param string $input   One address per line: pages, sitemaps (.xml) or site roots.
-	 * @param string $include Optional path patterns (one per line) pages must match.
+	 * @param string $patterns Optional path patterns (one per line) pages must match.
 	 * @return array{urls: array<int, string>, errors: array<int, string>}
 	 */
-	public static function discover( string $input, string $include = '' ): array {
+	public static function discover( string $input, string $patterns = '' ): array {
 		$urls   = array();
 		$errors = array();
 
@@ -118,11 +118,11 @@ final class WebImporter {
 
 		$urls = array_values( array_unique( $urls ) );
 
-		if ( '' !== trim( $include ) ) {
+		if ( '' !== trim( $patterns ) ) {
 			$urls = array_values(
 				array_filter(
 					$urls,
-					static fn( string $u ): bool => PageRules::matches( (string) wp_parse_url( $u, PHP_URL_PATH ) ?: '/', $include )
+					static fn( string $u ): bool => PageRules::matches( (string) wp_parse_url( $u, PHP_URL_PATH ) ?: '/', $patterns )
 				)
 			);
 		}
@@ -450,8 +450,8 @@ final class WebImporter {
 	 * @return array<int, array{0: bool, 1: string}>
 	 */
 	public static function robots_rules( string $robots ): array {
-		$groups  = array();
-		$current = array();
+		$groups   = array();
+		$current  = array();
 		$in_rules = false;
 
 		foreach ( preg_split( '/\R/', $robots ) ?: array() as $line ) {

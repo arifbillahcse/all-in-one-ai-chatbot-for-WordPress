@@ -34,12 +34,12 @@ final class Settings {
 	 */
 	public static function providers(): array {
 		return array(
-			'openai'   => array(
+			'openai'     => array(
 				'label'         => 'OpenAI',
 				'default_model' => 'gpt-5-mini',
 				'key_url'       => 'https://platform.openai.com/api-keys',
 			),
-			'claude'   => array(
+			'claude'     => array(
 				'label'         => 'Anthropic Claude',
 				'default_model' => 'claude-haiku-4-5',
 				'key_url'       => 'https://console.anthropic.com/settings/keys',

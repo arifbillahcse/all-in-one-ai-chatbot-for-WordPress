@@ -107,7 +107,7 @@ final class ConversationStore {
 		// A conversation started while logged in stays with that account:
 		// after logging out, or on a shared computer, the browser's token
 		// alone must not reopen it (it may hold order or members-only details).
-		if ( (int) $row['user_id'] > 0 && (int) $row['user_id'] !== get_current_user_id() ) {
+		if ( (int) $row['user_id'] > 0 && get_current_user_id() !== (int) $row['user_id'] ) {
 			return null;
 		}
 
@@ -290,7 +290,12 @@ final class ConversationStore {
 				'conversation_id' => $conversation_id,
 				'role'            => 'assistant',
 				'content'         => $answer,
-				'sources'         => wp_json_encode( array() === ( $usage['cards'] ?? array() ) ? $sources : array( 'sources' => $sources, 'cards' => $usage['cards'] ) ),
+				'sources'         => wp_json_encode(
+					array() === ( $usage['cards'] ?? array() ) ? $sources : array(
+						'sources' => $sources,
+						'cards'   => $usage['cards'],
+					)
+				),
 				'provider'        => (string) ( $usage['provider'] ?? '' ),
 				'model'           => (string) ( $usage['model'] ?? '' ),
 				'input_tokens'    => (int) ( $usage['input_tokens'] ?? 0 ),

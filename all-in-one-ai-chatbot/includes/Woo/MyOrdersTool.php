@@ -69,7 +69,12 @@ final class MyOrdersTool implements Tool {
 		$orders = array_filter( (array) $orders, static fn( $o ): bool => $o instanceof \WC_Order && $o->get_customer_id() === $context->user_id );
 
 		if ( array() === $orders ) {
-			return new ToolResult( array( 'orders' => array(), 'note' => 'This customer has no orders on their account.' ) );
+			return new ToolResult(
+				array(
+					'orders' => array(),
+					'note'   => 'This customer has no orders on their account.',
+				)
+			);
 		}
 
 		return new ToolResult(

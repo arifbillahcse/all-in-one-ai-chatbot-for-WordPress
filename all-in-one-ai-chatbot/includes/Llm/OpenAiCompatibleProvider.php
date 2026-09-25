@@ -116,16 +116,16 @@ final class OpenAiCompatibleProvider implements Provider {
 	 * Endpoint URL, filterable (proxies, EU endpoints, local testing).
 	 *
 	 * @param string $provider Provider id.
-	 * @param string $default  Default URL.
+	 * @param string $fallback Default URL.
 	 */
-	private static function endpoint( string $provider, string $default ): string {
+	private static function endpoint( string $provider, string $fallback ): string {
 		/**
 		 * Filter a provider's API endpoint.
 		 *
 		 * @param string $url      Endpoint.
 		 * @param string $provider Provider id.
 		 */
-		return (string) apply_filters( 'softorio_ai_provider_endpoint', $default, $provider );
+		return (string) apply_filters( 'softorio_ai_provider_endpoint', $fallback, $provider );
 	}
 
 	/**
@@ -244,8 +244,12 @@ final class OpenAiCompatibleProvider implements Provider {
 				}
 
 				foreach ( (array) ( $delta['tool_calls'] ?? array() ) as $fragment ) {
-					$index = (int) ( $fragment['index'] ?? 0 );
-					$parts[ $index ] ??= array( 'id' => '', 'name' => '', 'arguments' => '' );
+					$index             = (int) ( $fragment['index'] ?? 0 );
+					$parts[ $index ] ??= array(
+						'id'        => '',
+						'name'      => '',
+						'arguments' => '',
+					);
 
 					if ( ! empty( $fragment['id'] ) ) {
 						$parts[ $index ]['id'] = (string) $fragment['id'];
@@ -288,7 +292,15 @@ final class OpenAiCompatibleProvider implements Provider {
 
 		$request = array(
 			'model'            => $this->model,
-			'messages'         => array_merge( array( array( 'role' => 'system', 'content' => $system ) ), self::convert_messages( $messages ) ),
+			'messages'         => array_merge(
+				array(
+					array(
+						'role'    => 'system',
+						'content' => $system,
+					),
+				),
+				self::convert_messages( $messages )
+			),
 			$this->token_param => max( 1, $max_tokens ),
 		) + $this->extra;
 

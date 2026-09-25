@@ -27,24 +27,60 @@ final class Pricing {
 	public static function table(): array {
 		$table = array(
 			'openai'   => array(
-				'gpt-5-nano'   => array( 'input' => 0.05, 'output' => 0.40 ),
-				'gpt-5-mini'   => array( 'input' => 0.25, 'output' => 2.00 ),
-				'gpt-5'        => array( 'input' => 1.25, 'output' => 10.00 ),
-				'gpt-4.1-mini' => array( 'input' => 0.40, 'output' => 1.60 ),
-				'gpt-4o-mini'  => array( 'input' => 0.15, 'output' => 0.60 ),
+				'gpt-5-nano'   => array(
+					'input'  => 0.05,
+					'output' => 0.40,
+				),
+				'gpt-5-mini'   => array(
+					'input'  => 0.25,
+					'output' => 2.00,
+				),
+				'gpt-5'        => array(
+					'input'  => 1.25,
+					'output' => 10.00,
+				),
+				'gpt-4.1-mini' => array(
+					'input'  => 0.40,
+					'output' => 1.60,
+				),
+				'gpt-4o-mini'  => array(
+					'input'  => 0.15,
+					'output' => 0.60,
+				),
 			),
 			'claude'   => array(
-				'claude-haiku-4-5' => array( 'input' => 1.00, 'output' => 5.00 ),
-				'claude-sonnet-5'  => array( 'input' => 3.00, 'output' => 15.00 ),
+				'claude-haiku-4-5' => array(
+					'input'  => 1.00,
+					'output' => 5.00,
+				),
+				'claude-sonnet-5'  => array(
+					'input'  => 3.00,
+					'output' => 15.00,
+				),
 			),
 			'gemini'   => array(
-				'gemini-2.5-flash-lite' => array( 'input' => 0.10, 'output' => 0.40 ),
-				'gemini-2.5-flash'      => array( 'input' => 0.30, 'output' => 2.50 ),
-				'gemini-2.5-pro'        => array( 'input' => 1.25, 'output' => 10.00 ),
+				'gemini-2.5-flash-lite' => array(
+					'input'  => 0.10,
+					'output' => 0.40,
+				),
+				'gemini-2.5-flash'      => array(
+					'input'  => 0.30,
+					'output' => 2.50,
+				),
+				'gemini-2.5-pro'        => array(
+					'input'  => 1.25,
+					'output' => 10.00,
+				),
 			),
 			'deepseek' => array(
-				'deepseek-chat'     => array( 'input' => 0.28, 'output' => 0.42 ),
-				'deepseek-reasoner' => array( 'input' => 0.28, 'output' => 0.42 ),
+				'deepseek-chat'     => array(
+					'input'  => 0.28,
+					'output' => 0.42,
+				),
+				'deepseek-reasoner' => array(
+					'input'  => 0.28,
+					'output' => 0.42,
+				),
 			),
 		);
 

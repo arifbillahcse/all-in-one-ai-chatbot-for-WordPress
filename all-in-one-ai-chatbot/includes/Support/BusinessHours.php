@@ -82,7 +82,7 @@ final class BusinessHours {
 		$schedule = self::schedule();
 
 		for ( $offset = 0; $offset <= 7; $offset++ ) {
-			$day     = $at->modify( '+' . $offset . ' days' );
+			$day      = $at->modify( '+' . $offset . ' days' );
 			$midnight = $day->setTime( 0, 0 );
 
 			foreach ( $schedule[ (int) $day->format( 'w' ) ] as [ $start ] ) {
@@ -104,7 +104,7 @@ final class BusinessHours {
 		$lines = array();
 
 		foreach ( SettingsSchema::weekdays() as $day => $label ) {
-			$hours = (string) Settings::get( 'hours_' . $day, '' );
+			$hours   = (string) Settings::get( 'hours_' . $day, '' );
 			$lines[] = $label . ': ' . ( '' !== $hours ? $hours : 'closed' );
 		}
 

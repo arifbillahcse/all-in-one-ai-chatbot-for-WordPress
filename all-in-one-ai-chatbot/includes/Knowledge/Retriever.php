@@ -132,9 +132,9 @@ final class Retriever {
 					continue;
 				}
 
-				$df    = $doc_freq[ $term ];
-				$idf   = log( 1 + ( $total_docs - $df + 0.5 ) / ( $df + 0.5 ) );
-				$norm  = self::K1 * ( 1 - self::B + self::B * $doc['length'] / $avg_length );
+				$df     = $doc_freq[ $term ];
+				$idf    = log( 1 + ( $total_docs - $df + 0.5 ) / ( $df + 0.5 ) );
+				$norm   = self::K1 * ( 1 - self::B + self::B * $doc['length'] / $avg_length );
 				$score += $idf * ( $tf * ( self::K1 + 1 ) ) / ( $tf + $norm );
 			}
 
@@ -252,7 +252,7 @@ final class Retriever {
 				break;
 			}
 
-			$post = $result['post_id'];
+			$post              = $result['post_id'];
 			$per_post[ $post ] = ( $per_post[ $post ] ?? 0 ) + 1;
 
 			if ( $per_post[ $post ] > 2 ) {

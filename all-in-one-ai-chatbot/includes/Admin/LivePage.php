@@ -82,9 +82,9 @@ final class LivePage {
 		}
 
 		$common = array(
-			'sound'  => (bool) Settings::get( 'live_sound', true ),
-			'inbox'  => Menu::url( 'live' ),
-			'i18n'   => array(
+			'sound' => (bool) Settings::get( 'live_sound', true ),
+			'inbox' => Menu::url( 'live' ),
+			'i18n'  => array(
 				'waiting'    => __( 'A visitor is waiting for a live chat', 'all-in-one-ai-chatbot' ),
 				'newMessage' => __( 'New live chat message', 'all-in-one-ai-chatbot' ),
 				'open'       => __( 'Open Live Chat', 'all-in-one-ai-chatbot' ),
@@ -101,11 +101,11 @@ final class LivePage {
 				array_merge(
 					$common,
 					array(
-					'rest'  => esc_url_raw( rest_url( ChatController::NAMESPACE . '/' ) ),
-					'nonce' => wp_create_nonce( 'wp_rest' ),
-					'me'    => get_current_user_id(),
-					'open'  => isset( $_GET['conversation'] ) ? absint( $_GET['conversation'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- which conversation to show.
-					'i18n'  => $common['i18n'] + self::strings(),
+						'rest'  => esc_url_raw( rest_url( ChatController::NAMESPACE . '/' ) ),
+						'nonce' => wp_create_nonce( 'wp_rest' ),
+						'me'    => get_current_user_id(),
+						'open'  => isset( $_GET['conversation'] ) ? absint( $_GET['conversation'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- which conversation to show.
+					'i18n'      => $common['i18n'] + self::strings(),
 					)
 				)
 			);
@@ -139,6 +139,7 @@ final class LivePage {
 			'send'        => __( 'Send', 'all-in-one-ai-chatbot' ),
 			'placeholder' => __( 'Type a reply… (Enter to send, Shift+Enter for a new line)', 'all-in-one-ai-chatbot' ),
 			'aiNote'      => __( 'The AI is answering. Sending a message takes over the chat.', 'all-in-one-ai-chatbot' ),
+			/* translators: %s: agent's name */
 			'otherAgent'  => __( '%s is handling this chat.', 'all-in-one-ai-chatbot' ),
 			'visitor'     => __( 'Visitor', 'all-in-one-ai-chatbot' ),
 			'ai'          => __( 'AI assistant', 'all-in-one-ai-chatbot' ),
@@ -146,6 +147,7 @@ final class LivePage {
 			'modeWaiting' => __( 'Waiting', 'all-in-one-ai-chatbot' ),
 			'modeHuman'   => __( 'Live', 'all-in-one-ai-chatbot' ),
 			'modeAi'      => __( 'AI', 'all-in-one-ai-chatbot' ),
+			/* translators: %s: how long, e.g. "3m" */
 			'waitingFor'  => __( 'waiting %s', 'all-in-one-ai-chatbot' ),
 			'page'        => __( 'Page', 'all-in-one-ai-chatbot' ),
 			'email'       => __( 'Email', 'all-in-one-ai-chatbot' ),

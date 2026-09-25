@@ -223,7 +223,9 @@ final class Menu {
 				'nonce'   => wp_create_nonce( Ajax::NONCE ),
 				'i18n'    => array(
 					'working'   => __( 'Working…', 'all-in-one-ai-chatbot' ),
+					/* translators: 1: items done, 2: total items */
 					'indexing'  => __( 'Indexing %1$d of %2$d…', 'all-in-one-ai-chatbot' ),
+					/* translators: %d: number of items */
 					'indexed'   => __( 'Done. %d items are searchable.', 'all-in-one-ai-chatbot' ),
 					'failed'    => __( 'Something went wrong. Please reload the page and try again.', 'all-in-one-ai-chatbot' ),
 					'noResults' => __( 'Nothing matched. The assistant would say it does not know.', 'all-in-one-ai-chatbot' ),

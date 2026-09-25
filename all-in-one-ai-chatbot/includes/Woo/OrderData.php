@@ -52,7 +52,13 @@ final class OrderData {
 		}
 
 		$notes = array();
-		foreach ( wc_get_order_notes( array( 'order_id' => $order->get_id(), 'type' => 'customer', 'limit' => 3 ) ) as $note ) {
+		foreach ( wc_get_order_notes(
+			array(
+				'order_id' => $order->get_id(),
+				'type'     => 'customer',
+				'limit'    => 3,
+			)
+		) as $note ) {
 			$notes[] = wp_strip_all_tags( (string) $note->content );
 		}
 		if ( array() !== $notes ) {

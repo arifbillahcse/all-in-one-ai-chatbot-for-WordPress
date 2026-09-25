@@ -52,7 +52,7 @@ final class FaqImporter {
 		$skipped = 0;
 		$line    = 0;
 
-		while ( false !== ( $cells = fgetcsv( $handle, 0, $delimiter, '"', '' ) ) ) {
+		while ( false !== ( $cells = fgetcsv( $handle, 0, $delimiter, '"', '' ) ) ) { // phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition -- read row by row.
 			++$line;
 
 			if ( array( null ) === $cells ) {

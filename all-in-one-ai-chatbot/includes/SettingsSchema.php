@@ -35,15 +35,15 @@ final class SettingsSchema {
 	 */
 	public static function tabs(): array {
 		$tabs = array(
-			'general'   => __( 'Assistant', 'all-in-one-ai-chatbot' ),
-			'ai'        => __( 'AI Provider', 'all-in-one-ai-chatbot' ),
-			'knowledge' => __( 'Knowledge', 'all-in-one-ai-chatbot' ),
-			'widget'    => __( 'Widget', 'all-in-one-ai-chatbot' ),
-			'leads'     => __( 'Leads', 'all-in-one-ai-chatbot' ),
-			'notify'    => __( 'Notifications', 'all-in-one-ai-chatbot' ),
-			'live'      => __( 'Live Chat', 'all-in-one-ai-chatbot' ),
+			'general'      => __( 'Assistant', 'all-in-one-ai-chatbot' ),
+			'ai'           => __( 'AI Provider', 'all-in-one-ai-chatbot' ),
+			'knowledge'    => __( 'Knowledge', 'all-in-one-ai-chatbot' ),
+			'widget'       => __( 'Widget', 'all-in-one-ai-chatbot' ),
+			'leads'        => __( 'Leads', 'all-in-one-ai-chatbot' ),
+			'notify'       => __( 'Notifications', 'all-in-one-ai-chatbot' ),
+			'live'         => __( 'Live Chat', 'all-in-one-ai-chatbot' ),
 			'integrations' => __( 'Integrations', 'all-in-one-ai-chatbot' ),
-			'limits'    => __( 'Limits & Privacy', 'all-in-one-ai-chatbot' ),
+			'limits'       => __( 'Limits & Privacy', 'all-in-one-ai-chatbot' ),
 		);
 
 		/**
@@ -61,81 +61,81 @@ final class SettingsSchema {
 	 */
 	public static function sections(): array {
 		$sections = array(
-			'general.assistant' => array( 'title' => __( 'Assistant', 'all-in-one-ai-chatbot' ) ),
-			'general.handoff'   => array(
+			'general.assistant'      => array( 'title' => __( 'Assistant', 'all-in-one-ai-chatbot' ) ),
+			'general.handoff'        => array(
 				'title' => __( 'Talk to a person', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Shown in the widget and offered by the assistant when it cannot help.', 'all-in-one-ai-chatbot' ),
 			),
-			'ai.routing'        => array(
+			'ai.routing'             => array(
 				'title' => __( 'Providers', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'The assistant uses your own account with an AI provider. You pay the provider directly for what the assistant uses. API keys are stored encrypted.', 'all-in-one-ai-chatbot' ),
 			),
-			'ai.openai'         => array( 'title' => 'OpenAI' ),
-			'ai.claude'         => array( 'title' => 'Anthropic Claude' ),
-			'ai.deepseek'       => array( 'title' => 'DeepSeek' ),
-			'ai.gemini'         => array(
+			'ai.openai'              => array( 'title' => 'OpenAI' ),
+			'ai.claude'              => array( 'title' => 'Anthropic Claude' ),
+			'ai.deepseek'            => array( 'title' => 'DeepSeek' ),
+			'ai.gemini'              => array(
 				'title' => 'Google Gemini',
 				'desc'  => __( 'Fast and low-cost, with a free tier for testing. Get a key in Google AI Studio.', 'all-in-one-ai-chatbot' ),
 			),
-			'ai.openrouter'     => array(
+			'ai.openrouter'          => array(
 				'title' => 'OpenRouter',
 				'desc'  => __( 'One key for hundreds of models from many vendors. Enter the model as vendor/model, e.g. openai/gpt-5-mini, anthropic/claude-haiku-4.5 or deepseek/deepseek-chat. Costs are reported by OpenRouter itself.', 'all-in-one-ai-chatbot' ),
 			),
-			'ai.answers'        => array( 'title' => __( 'Answers', 'all-in-one-ai-chatbot' ) ),
-			'knowledge.sources' => array( 'title' => __( 'Content the assistant reads', 'all-in-one-ai-chatbot' ) ),
-			'knowledge.search'  => array( 'title' => __( 'Search', 'all-in-one-ai-chatbot' ) ),
-			'knowledge.members' => array(
+			'ai.answers'             => array( 'title' => __( 'Answers', 'all-in-one-ai-chatbot' ) ),
+			'knowledge.sources'      => array( 'title' => __( 'Content the assistant reads', 'all-in-one-ai-chatbot' ) ),
+			'knowledge.search'       => array( 'title' => __( 'Search', 'all-in-one-ai-chatbot' ) ),
+			'knowledge.members'      => array(
 				'title' => __( 'Logged-in visitors and members', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'For membership sites, courses and customer portals: knowledge only logged-in users (or some roles) get, and a more personal chat for people with an account.', 'all-in-one-ai-chatbot' ),
 			),
-			'knowledge.web'     => array( 'title' => __( 'Imported web pages', 'all-in-one-ai-chatbot' ) ),
-			'live.main'         => array(
+			'knowledge.web'          => array( 'title' => __( 'Imported web pages', 'all-in-one-ai-chatbot' ) ),
+			'live.main'              => array(
 				'title' => __( 'Live chat with your team', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Let visitors chat with a person, and let your team take over any conversation from the AI. Answer from AI Chatbot → Live Chat (with sound and browser alerts) or from Telegram. Visitors are only offered a live chat while someone from your team has WP Admin open and is set to Available.', 'all-in-one-ai-chatbot' ),
 			),
-			'live.text'         => array( 'title' => __( 'Messages', 'all-in-one-ai-chatbot' ) ),
-			'live.telegram'     => array(
+			'live.text'              => array( 'title' => __( 'Messages', 'all-in-one-ai-chatbot' ) ),
+			'live.telegram'          => array(
 				'title' => __( 'Answer from Telegram', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Live-chat requests and visitor messages are posted to your Telegram chat (set up under Notifications). Reply to a post to answer that visitor; send /ai to hand back to the AI or /end to end the chat. Needs HTTPS.', 'all-in-one-ai-chatbot' ),
 			),
-			'widget.look'       => array( 'title' => __( 'Appearance', 'all-in-one-ai-chatbot' ) ),
-			'widget.behaviour'  => array( 'title' => __( 'Behaviour', 'all-in-one-ai-chatbot' ) ),
-			'widget.popup'      => array(
+			'widget.look'            => array( 'title' => __( 'Appearance', 'all-in-one-ai-chatbot' ) ),
+			'widget.behaviour'       => array( 'title' => __( 'Behaviour', 'all-in-one-ai-chatbot' ) ),
+			'widget.popup'           => array(
 				'title' => __( 'Pop-up greeting', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'A small message next to the chat button that invites visitors to ask. Shown once per visit.', 'all-in-one-ai-chatbot' ),
 			),
-			'widget.display'    => array(
+			'widget.display'         => array(
 				'title' => __( 'Where to show the widget', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'One page per line: a path like /pricing/ or a pattern with * like /shop/*. The inline chat block and shortcode always show.', 'all-in-one-ai-chatbot' ),
 			),
-			'widget.hours'      => array(
+			'widget.hours'           => array(
 				'title' => __( 'Business hours', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'When your team is available. Use 24-hour times like 09:00-18:00, several ranges separated by commas (09:00-13:00, 14:00-18:00), or leave a day empty for closed. Uses the site timezone from Settings → General.', 'all-in-one-ai-chatbot' ),
 			),
-			'widget.voice'      => array( 'title' => __( 'Voice input', 'all-in-one-ai-chatbot' ) ),
-			'leads.form'        => array(
+			'widget.voice'           => array( 'title' => __( 'Voice input', 'all-in-one-ai-chatbot' ) ),
+			'leads.form'             => array(
 				'title' => __( 'Lead capture', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Collect visitors\' contact details in the chat. Leads appear under AI Chatbot → Leads and can trigger emails, Telegram messages and webhooks.', 'all-in-one-ai-chatbot' ),
 			),
-			'leads.text'        => array( 'title' => __( 'Form text', 'all-in-one-ai-chatbot' ) ),
-			'leads.consent'     => array(
+			'leads.text'             => array( 'title' => __( 'Form text', 'all-in-one-ai-chatbot' ) ),
+			'leads.consent'          => array(
 				'title' => __( 'Consent (GDPR)', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Needed for visitors from the EU and UK. The exact text a visitor agreed to is stored with their lead.', 'all-in-one-ai-chatbot' ),
 			),
-			'notify.email'      => array( 'title' => __( 'Email', 'all-in-one-ai-chatbot' ) ),
-			'notify.telegram'   => array(
+			'notify.email'           => array( 'title' => __( 'Email', 'all-in-one-ai-chatbot' ) ),
+			'notify.telegram'        => array(
 				'title' => __( 'Telegram', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Get alerts on your phone. Create a bot with @BotFather, paste its token, send your bot any message, then use "Find my chat ID".', 'all-in-one-ai-chatbot' ),
 			),
-			'notify.report'     => array(
+			'notify.report'          => array(
 				'title' => __( 'Report by email', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'A summary of conversations, leads, satisfaction and cost, what visitors asked most, and the questions the assistant could not answer.', 'all-in-one-ai-chatbot' ),
 			),
-			'integrations.crm'  => array(
+			'integrations.crm'       => array(
 				'title' => __( 'CRM and email marketing', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Every new lead is added to the tools you switch on below, in the background, with retries if a service is down. The Leads screen shows what was sent where.', 'all-in-one-ai-chatbot' ),
 			),
-			'integrations.hubspot' => array(
+			'integrations.hubspot'   => array(
 				'title' => 'HubSpot',
 				'desc'  => __( 'In HubSpot: Settings → Integrations → Private Apps → Create a private app with the scopes crm.objects.contacts.read and crm.objects.contacts.write, then copy its access token.', 'all-in-one-ai-chatbot' ),
 			),
@@ -143,16 +143,16 @@ final class SettingsSchema {
 				'title' => 'Mailchimp',
 				'desc'  => __( 'In Mailchimp: Profile → Extras → API keys → Create a key. Leads without an email address are skipped.', 'all-in-one-ai-chatbot' ),
 			),
-			'integrations.brevo' => array(
+			'integrations.brevo'     => array(
 				'title' => 'Brevo',
 				'desc'  => __( 'In Brevo: your name (top right) → SMTP & API → API keys → Generate a new API key. Phone numbers are sent for SMS and WhatsApp campaigns.', 'all-in-one-ai-chatbot' ),
 			),
-			'integrations.webhooks' => array(
+			'integrations.webhooks'  => array(
 				'title' => __( 'Webhooks', 'all-in-one-ai-chatbot' ),
 				'desc'  => __( 'Send events to Zapier, Make, n8n, Google Sheets, your CRM or any URL. Each request is JSON, signed with the secret below in the X-AICB-Signature header (HMAC-SHA256 of the body).', 'all-in-one-ai-chatbot' ),
 			),
-			'limits.abuse'      => array( 'title' => __( 'Usage limits', 'all-in-one-ai-chatbot' ) ),
-			'limits.privacy'    => array( 'title' => __( 'Privacy and data', 'all-in-one-ai-chatbot' ) ),
+			'limits.abuse'           => array( 'title' => __( 'Usage limits', 'all-in-one-ai-chatbot' ) ),
+			'limits.privacy'         => array( 'title' => __( 'Privacy and data', 'all-in-one-ai-chatbot' ) ),
 		);
 
 		/**
@@ -191,7 +191,7 @@ final class SettingsSchema {
 
 		$fields = array(
 			// ── Assistant ──────────────────────────────────────────────────
-			'enabled'              => array(
+			'enabled'               => array(
 				'tab'     => 'general',
 				'section' => 'assistant',
 				'type'    => 'checkbox',
@@ -199,7 +199,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Show the chat widget on the website', 'all-in-one-ai-chatbot' ),
 				'default' => true,
 			),
-			'assistant_name'       => array(
+			'assistant_name'        => array(
 				'tab'     => 'general',
 				'section' => 'assistant',
 				'type'    => 'text',
@@ -207,7 +207,7 @@ final class SettingsSchema {
 				'default' => __( 'Support Assistant', 'all-in-one-ai-chatbot' ),
 				'max'     => 60,
 			),
-			'company_name'         => array(
+			'company_name'          => array(
 				'tab'         => 'general',
 				'section'     => 'assistant',
 				'type'        => 'text',
@@ -216,7 +216,7 @@ final class SettingsSchema {
 				'max'         => 120,
 				'placeholder' => wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES ),
 			),
-			'greeting'             => array(
+			'greeting'              => array(
 				'tab'     => 'general',
 				'section' => 'assistant',
 				'type'    => 'textarea',
@@ -225,7 +225,7 @@ final class SettingsSchema {
 				'default' => __( 'Hi! 👋 How can I help you today?', 'all-in-one-ai-chatbot' ),
 				'max'     => 500,
 			),
-			'instructions'         => array(
+			'instructions'          => array(
 				'tab'         => 'general',
 				'section'     => 'assistant',
 				'type'        => 'textarea',
@@ -236,7 +236,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 4000,
 			),
-			'whatsapp'             => array(
+			'whatsapp'              => array(
 				'tab'         => 'general',
 				'section'     => 'handoff',
 				'type'        => 'phone',
@@ -244,14 +244,14 @@ final class SettingsSchema {
 				'placeholder' => '+8801XXXXXXXXX',
 				'default'     => '',
 			),
-			'contact_email'        => array(
+			'contact_email'         => array(
 				'tab'     => 'general',
 				'section' => 'handoff',
 				'type'    => 'email',
 				'label'   => __( 'Support email', 'all-in-one-ai-chatbot' ),
 				'default' => '',
 			),
-			'contact_url'          => array(
+			'contact_url'           => array(
 				'tab'     => 'general',
 				'section' => 'handoff',
 				'type'    => 'url',
@@ -260,7 +260,7 @@ final class SettingsSchema {
 			),
 
 			// ── AI provider ────────────────────────────────────────────────
-			'provider'             => array(
+			'provider'              => array(
 				'tab'     => 'ai',
 				'section' => 'routing',
 				'type'    => 'select',
@@ -268,7 +268,7 @@ final class SettingsSchema {
 				'options' => $providers,
 				'default' => 'openai',
 			),
-			'fallback_provider'    => array(
+			'fallback_provider'     => array(
 				'tab'     => 'ai',
 				'section' => 'routing',
 				'type'    => 'select',
@@ -277,7 +277,7 @@ final class SettingsSchema {
 				'options' => array( '' => __( 'None', 'all-in-one-ai-chatbot' ) ) + $providers,
 				'default' => '',
 			),
-			'max_tokens'           => array(
+			'max_tokens'            => array(
 				'tab'     => 'ai',
 				'section' => 'answers',
 				'type'    => 'number',
@@ -286,7 +286,7 @@ final class SettingsSchema {
 				'min'     => 128,
 				'max'     => 8000,
 			),
-			'streaming'            => array(
+			'streaming'             => array(
 				'tab'     => 'ai',
 				'section' => 'answers',
 				'type'    => 'checkbox',
@@ -294,7 +294,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Show answers word by word as the AI writes them (streaming). If your hosting blocks streaming, the widget automatically falls back to normal replies.', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'history_turns'        => array(
+			'history_turns'         => array(
 				'tab'     => 'ai',
 				'section' => 'answers',
 				'type'    => 'number',
@@ -306,7 +306,7 @@ final class SettingsSchema {
 			),
 
 			// ── Knowledge ──────────────────────────────────────────────────
-			'post_types'           => array(
+			'post_types'            => array(
 				'tab'     => 'knowledge',
 				'section' => 'sources',
 				'type'    => 'post_types',
@@ -314,7 +314,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Knowledge Articles are always included. Only published, non-password-protected content is used. Hide a single page with the "AI Chatbot" box in the editor.', 'all-in-one-ai-chatbot' ),
 				'default' => array( 'post', 'page', PostTypes::DOC ),
 			),
-			'results'              => array(
+			'results'               => array(
 				'tab'     => 'knowledge',
 				'section' => 'search',
 				'type'    => 'number',
@@ -324,7 +324,7 @@ final class SettingsSchema {
 				'min'     => 1,
 				'max'     => 10,
 			),
-			'semantic_search'      => array(
+			'semantic_search'       => array(
 				'tab'     => 'knowledge',
 				'section' => 'search',
 				'type'    => 'checkbox',
@@ -333,7 +333,7 @@ final class SettingsSchema {
 				'default' => false,
 			),
 
-			'members_knowledge'    => array(
+			'members_knowledge'     => array(
 				'tab'     => 'knowledge',
 				'section' => 'members',
 				'type'    => 'checkbox',
@@ -341,7 +341,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Adds "Who can the assistant share this with?" to Knowledge Articles, pages and imports: everyone, logged-in users, or chosen roles. Visitors who are not logged in never get members-only answers. Switching this off hides members-only content from everyone.', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'member_greeting'      => array(
+			'member_greeting'       => array(
 				'tab'     => 'knowledge',
 				'section' => 'members',
 				'type'    => 'text',
@@ -349,7 +349,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Optional. {name} becomes their first name, e.g. "Welcome back, {name}! How can I help today?" Empty uses the normal greeting.', 'all-in-one-ai-chatbot' ),
 				'default' => '',
 			),
-			'members_skip_lead'    => array(
+			'members_skip_lead'     => array(
 				'tab'     => 'knowledge',
 				'section' => 'members',
 				'type'    => 'checkbox',
@@ -357,7 +357,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Their name and email are taken from their account instead of asking again.', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'web_resync'           => array(
+			'web_resync'            => array(
 				'tab'     => 'knowledge',
 				'section' => 'web',
 				'type'    => 'select',
@@ -372,14 +372,14 @@ final class SettingsSchema {
 			),
 
 			// ── Widget ─────────────────────────────────────────────────────
-			'color'                => array(
+			'color'                 => array(
 				'tab'     => 'widget',
 				'section' => 'look',
 				'type'    => 'color',
 				'label'   => __( 'Colour', 'all-in-one-ai-chatbot' ),
 				'default' => '#2563eb',
 			),
-			'position'             => array(
+			'position'              => array(
 				'tab'     => 'widget',
 				'section' => 'look',
 				'type'    => 'radio',
@@ -390,7 +390,7 @@ final class SettingsSchema {
 				),
 				'default' => 'right',
 			),
-			'avatar_url'           => array(
+			'avatar_url'            => array(
 				'tab'     => 'widget',
 				'section' => 'look',
 				'type'    => 'image',
@@ -398,7 +398,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Shown in the chat header and next to answers. A square image of at least 96×96 pixels works best.', 'all-in-one-ai-chatbot' ),
 				'default' => '',
 			),
-			'launcher_icon'        => array(
+			'launcher_icon'         => array(
 				'tab'     => 'widget',
 				'section' => 'look',
 				'type'    => 'select',
@@ -411,7 +411,7 @@ final class SettingsSchema {
 				),
 				'default' => 'chat',
 			),
-			'launcher_label'       => array(
+			'launcher_label'        => array(
 				'tab'         => 'widget',
 				'section'     => 'look',
 				'type'        => 'text',
@@ -421,7 +421,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 30,
 			),
-			'suggestions'          => array(
+			'suggestions'           => array(
 				'tab'         => 'widget',
 				'section'     => 'behaviour',
 				'type'        => 'textarea',
@@ -432,7 +432,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 600,
 			),
-			'flows_enabled'        => array(
+			'flows_enabled'         => array(
 				'tab'     => 'widget',
 				'section' => 'behaviour',
 				'type'    => 'checkbox',
@@ -440,7 +440,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Show your quick-reply buttons (build them under AI Chatbot → Quick Replies)', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'show_sources'         => array(
+			'show_sources'          => array(
 				'tab'     => 'widget',
 				'section' => 'behaviour',
 				'type'    => 'checkbox',
@@ -448,7 +448,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Show links to related pages under answers', 'all-in-one-ai-chatbot' ),
 				'default' => true,
 			),
-			'feedback'             => array(
+			'feedback'              => array(
 				'tab'     => 'widget',
 				'section' => 'behaviour',
 				'type'    => 'checkbox',
@@ -456,7 +456,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Show 👍 / 👎 buttons under answers. Ratings appear in conversations and on the overview.', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'hide_for_admins'      => array(
+			'hide_for_admins'       => array(
 				'tab'     => 'widget',
 				'section' => 'behaviour',
 				'type'    => 'checkbox',
@@ -465,7 +465,7 @@ final class SettingsSchema {
 				'default' => false,
 			),
 
-			'popup_enabled'        => array(
+			'popup_enabled'         => array(
 				'tab'     => 'widget',
 				'section' => 'popup',
 				'type'    => 'checkbox',
@@ -473,7 +473,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Show a pop-up greeting', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'popup_message'        => array(
+			'popup_message'         => array(
 				'tab'     => 'widget',
 				'section' => 'popup',
 				'type'    => 'text',
@@ -481,7 +481,7 @@ final class SettingsSchema {
 				'default' => __( 'Hi! 👋 Need help? Ask me anything.', 'all-in-one-ai-chatbot' ),
 				'max'     => 140,
 			),
-			'popup_delay'          => array(
+			'popup_delay'           => array(
 				'tab'     => 'widget',
 				'section' => 'popup',
 				'type'    => 'number',
@@ -490,7 +490,7 @@ final class SettingsSchema {
 				'min'     => 0,
 				'max'     => 300,
 			),
-			'popup_pages'          => array(
+			'popup_pages'           => array(
 				'tab'         => 'widget',
 				'section'     => 'popup',
 				'type'        => 'textarea',
@@ -501,7 +501,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 2000,
 			),
-			'popup_mobile'         => array(
+			'popup_mobile'          => array(
 				'tab'     => 'widget',
 				'section' => 'popup',
 				'type'    => 'checkbox',
@@ -509,7 +509,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Also show the pop-up on small screens', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'display_mode'         => array(
+			'display_mode'          => array(
 				'tab'     => 'widget',
 				'section' => 'display',
 				'type'    => 'select',
@@ -521,7 +521,7 @@ final class SettingsSchema {
 				),
 				'default' => 'all',
 			),
-			'display_rules'        => array(
+			'display_rules'         => array(
 				'tab'         => 'widget',
 				'section'     => 'display',
 				'type'        => 'textarea',
@@ -531,7 +531,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 4000,
 			),
-			'hours_mode'           => array(
+			'hours_mode'            => array(
 				'tab'     => 'widget',
 				'section' => 'hours',
 				'type'    => 'select',
@@ -551,7 +551,7 @@ final class SettingsSchema {
 				'default' => __( 'Our team is offline right now. The assistant can still help, and we will reply to messages when we are back.', 'all-in-one-ai-chatbot' ),
 				'max'     => 200,
 			),
-			'voice_input'          => array(
+			'voice_input'           => array(
 				'tab'     => 'widget',
 				'section' => 'voice',
 				'type'    => 'checkbox',
@@ -559,7 +559,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Let visitors speak their question (uses the browser\'s speech recognition; supported in Chrome, Edge and Safari)', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'voice_lang'           => array(
+			'voice_lang'            => array(
 				'tab'     => 'widget',
 				'section' => 'voice',
 				'type'    => 'select',
@@ -577,7 +577,7 @@ final class SettingsSchema {
 			),
 
 			// ── Limits and privacy ─────────────────────────────────────────
-			'visitor_hourly_limit' => array(
+			'visitor_hourly_limit'  => array(
 				'tab'     => 'limits',
 				'section' => 'abuse',
 				'type'    => 'number',
@@ -587,7 +587,7 @@ final class SettingsSchema {
 				'min'     => 0,
 				'max'     => 1000,
 			),
-			'daily_message_cap'    => array(
+			'daily_message_cap'     => array(
 				'tab'     => 'limits',
 				'section' => 'abuse',
 				'type'    => 'number',
@@ -597,7 +597,7 @@ final class SettingsSchema {
 				'min'     => 0,
 				'max'     => 100000,
 			),
-			'daily_budget'         => array(
+			'daily_budget'          => array(
 				'tab'     => 'limits',
 				'section' => 'abuse',
 				'type'    => 'float',
@@ -607,7 +607,7 @@ final class SettingsSchema {
 				'min'     => 0,
 				'max'     => 1000,
 			),
-			'max_message_length'   => array(
+			'max_message_length'    => array(
 				'tab'     => 'limits',
 				'section' => 'abuse',
 				'type'    => 'number',
@@ -616,7 +616,7 @@ final class SettingsSchema {
 				'min'     => 100,
 				'max'     => 4000,
 			),
-			'trust_cloudflare'     => array(
+			'trust_cloudflare'      => array(
 				'tab'     => 'limits',
 				'section' => 'abuse',
 				'type'    => 'checkbox',
@@ -624,7 +624,7 @@ final class SettingsSchema {
 				'desc'    => __( 'This site is behind Cloudflare. Only tick this if it is true: on a site not behind Cloudflare it would let anyone bypass the per-visitor limit.', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'retention_days'       => array(
+			'retention_days'        => array(
 				'tab'     => 'limits',
 				'section' => 'privacy',
 				'type'    => 'number',
@@ -634,7 +634,7 @@ final class SettingsSchema {
 				'min'     => 0,
 				'max'     => 3650,
 			),
-			'log_retention_days'   => array(
+			'log_retention_days'    => array(
 				'tab'     => 'limits',
 				'section' => 'privacy',
 				'type'    => 'number',
@@ -643,7 +643,7 @@ final class SettingsSchema {
 				'min'     => 1,
 				'max'     => 365,
 			),
-			'delete_on_uninstall'  => array(
+			'delete_on_uninstall'   => array(
 				'tab'     => 'limits',
 				'section' => 'privacy',
 				'type'    => 'checkbox',
@@ -662,7 +662,7 @@ final class SettingsSchema {
 
 		$fields += array(
 			// ── Leads ──────────────────────────────────────────────────────
-			'leads_mode'           => array(
+			'leads_mode'            => array(
 				'tab'     => 'leads',
 				'section' => 'form',
 				'type'    => 'select',
@@ -675,7 +675,7 @@ final class SettingsSchema {
 				),
 				'default' => 'off',
 			),
-			'lead_name'            => array(
+			'lead_name'             => array(
 				'tab'     => 'leads',
 				'section' => 'form',
 				'type'    => 'select',
@@ -683,7 +683,7 @@ final class SettingsSchema {
 				'options' => $visibility,
 				'default' => 'required',
 			),
-			'lead_email'           => array(
+			'lead_email'            => array(
 				'tab'     => 'leads',
 				'section' => 'form',
 				'type'    => 'select',
@@ -691,7 +691,7 @@ final class SettingsSchema {
 				'options' => $visibility,
 				'default' => 'required',
 			),
-			'lead_phone'           => array(
+			'lead_phone'            => array(
 				'tab'     => 'leads',
 				'section' => 'form',
 				'type'    => 'select',
@@ -700,7 +700,7 @@ final class SettingsSchema {
 				'options' => $visibility,
 				'default' => 'optional',
 			),
-			'lead_title'           => array(
+			'lead_title'            => array(
 				'tab'     => 'leads',
 				'section' => 'text',
 				'type'    => 'text',
@@ -708,7 +708,7 @@ final class SettingsSchema {
 				'default' => __( 'Leave your details', 'all-in-one-ai-chatbot' ),
 				'max'     => 80,
 			),
-			'lead_intro'           => array(
+			'lead_intro'            => array(
 				'tab'     => 'leads',
 				'section' => 'text',
 				'type'    => 'textarea',
@@ -717,7 +717,7 @@ final class SettingsSchema {
 				'default' => __( 'We will get back to you as soon as possible.', 'all-in-one-ai-chatbot' ),
 				'max'     => 300,
 			),
-			'lead_thanks'          => array(
+			'lead_thanks'           => array(
 				'tab'     => 'leads',
 				'section' => 'text',
 				'type'    => 'textarea',
@@ -726,7 +726,7 @@ final class SettingsSchema {
 				'default' => __( 'Thanks! We have received your details and will contact you soon.', 'all-in-one-ai-chatbot' ),
 				'max'     => 300,
 			),
-			'consent_required'     => array(
+			'consent_required'      => array(
 				'tab'     => 'leads',
 				'section' => 'consent',
 				'type'    => 'checkbox',
@@ -734,7 +734,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Visitors must tick a consent box before sending their details', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'consent_text'         => array(
+			'consent_text'          => array(
 				'tab'     => 'leads',
 				'section' => 'consent',
 				'type'    => 'textarea',
@@ -746,7 +746,7 @@ final class SettingsSchema {
 			),
 
 			// ── Notifications ──────────────────────────────────────────────
-			'notify_email'         => array(
+			'notify_email'          => array(
 				'tab'         => 'notify',
 				'section'     => 'email',
 				'type'        => 'email',
@@ -756,12 +756,20 @@ final class SettingsSchema {
 				'default'     => '',
 				'test'        => 'email',
 			),
-			'notify_email_events'  => array(
+			'notify_email_events'   => array(
 				'tab'     => 'notify',
 				'section' => 'email',
 				'type'    => 'multicheck',
 				'label'   => __( 'Email me when', 'all-in-one-ai-chatbot' ),
-				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true, Support\Events::LIVE_STARTED => true, Support\Events::LIVE_ENDED => true ) ),
+				'options' => array_diff_key(
+					$events,
+					array(
+						Support\Events::MESSAGE_ANSWERED => true,
+						Support\Events::ANSWER_RATED     => true,
+						Support\Events::LIVE_STARTED     => true,
+						Support\Events::LIVE_ENDED       => true,
+					)
+				),
 				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
 			),
 			'transcript_to_visitor' => array(
@@ -772,14 +780,14 @@ final class SettingsSchema {
 				'desc'    => __( 'Email visitors a copy of their chat when it ends (only visitors who left an email address)', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'telegram_key'         => array(
+			'telegram_key'          => array(
 				'tab'     => 'notify',
 				'section' => 'telegram',
 				'type'    => 'secret',
 				'label'   => __( 'Bot token', 'all-in-one-ai-chatbot' ),
 				'default' => '',
 			),
-			'telegram_chat_id'     => array(
+			'telegram_chat_id'      => array(
 				'tab'     => 'notify',
 				'section' => 'telegram',
 				'type'    => 'text',
@@ -788,17 +796,25 @@ final class SettingsSchema {
 				'max'     => 40,
 				'test'    => 'telegram',
 			),
-			'telegram_events'      => array(
+			'telegram_events'       => array(
 				'tab'     => 'notify',
 				'section' => 'telegram',
 				'type'    => 'multicheck',
 				'label'   => __( 'Message me when', 'all-in-one-ai-chatbot' ),
-				'options' => array_diff_key( $events, array( Support\Events::MESSAGE_ANSWERED => true, Support\Events::ANSWER_RATED => true, Support\Events::LIVE_STARTED => true, Support\Events::LIVE_ENDED => true ) ),
+				'options' => array_diff_key(
+					$events,
+					array(
+						Support\Events::MESSAGE_ANSWERED => true,
+						Support\Events::ANSWER_RATED     => true,
+						Support\Events::LIVE_STARTED     => true,
+						Support\Events::LIVE_ENDED       => true,
+					)
+				),
 				'default' => array( Support\Events::LEAD_CREATED, Support\Events::HANDOFF_REQUESTED ),
 			),
 
 			// ── Live chat ──────────────────────────────────────────────────
-			'live_chat'            => array(
+			'live_chat'             => array(
 				'tab'     => 'live',
 				'section' => 'main',
 				'type'    => 'checkbox',
@@ -806,7 +822,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Switch on live chat and the AI Chatbot → Live Chat screen', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'live_agent_roles'     => array(
+			'live_agent_roles'      => array(
 				'tab'     => 'live',
 				'section' => 'main',
 				'type'    => 'multicheck',
@@ -815,7 +831,7 @@ final class SettingsSchema {
 				'options' => self::agent_roles(),
 				'default' => array(),
 			),
-			'live_wait_timeout'    => array(
+			'live_wait_timeout'     => array(
 				'tab'     => 'live',
 				'section' => 'main',
 				'type'    => 'number',
@@ -825,7 +841,7 @@ final class SettingsSchema {
 				'min'     => 1,
 				'max'     => 30,
 			),
-			'live_sound'           => array(
+			'live_sound'            => array(
 				'tab'     => 'live',
 				'section' => 'main',
 				'type'    => 'checkbox',
@@ -833,7 +849,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Play a sound in WP Admin when a visitor is waiting or writes in a live chat', 'all-in-one-ai-chatbot' ),
 				'default' => true,
 			),
-			'live_button_label'    => array(
+			'live_button_label'     => array(
 				'tab'     => 'live',
 				'section' => 'text',
 				'type'    => 'text',
@@ -841,7 +857,7 @@ final class SettingsSchema {
 				'default' => __( 'Chat with our team', 'all-in-one-ai-chatbot' ),
 				'max'     => 40,
 			),
-			'live_waiting_message' => array(
+			'live_waiting_message'  => array(
 				'tab'     => 'live',
 				'section' => 'text',
 				'type'    => 'text',
@@ -849,7 +865,7 @@ final class SettingsSchema {
 				'default' => __( 'Connecting you to our team. Someone will be with you shortly.', 'all-in-one-ai-chatbot' ),
 				'max'     => 300,
 			),
-			'live_timeout_message' => array(
+			'live_timeout_message'  => array(
 				'tab'     => 'live',
 				'section' => 'text',
 				'type'    => 'text',
@@ -857,7 +873,7 @@ final class SettingsSchema {
 				'default' => __( 'Sorry, our team is busy right now. The AI assistant can keep helping, or leave your details and we will get back to you.', 'all-in-one-ai-chatbot' ),
 				'max'     => 300,
 			),
-			'live_telegram'        => array(
+			'live_telegram'         => array(
 				'tab'     => 'live',
 				'section' => 'telegram',
 				'type'    => 'checkbox',
@@ -868,7 +884,7 @@ final class SettingsSchema {
 			),
 
 			// ── Integrations ───────────────────────────────────────────────
-			'report_frequency'     => array(
+			'report_frequency'      => array(
 				'tab'     => 'notify',
 				'section' => 'report',
 				'type'    => 'select',
@@ -881,7 +897,7 @@ final class SettingsSchema {
 				'default' => 'off',
 				'test'    => 'report',
 			),
-			'report_recipients'    => array(
+			'report_recipients'     => array(
 				'tab'         => 'notify',
 				'section'     => 'report',
 				'type'        => 'text',
@@ -891,7 +907,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 500,
 			),
-			'crm_require_consent'  => array(
+			'crm_require_consent'   => array(
 				'tab'     => 'integrations',
 				'section' => 'crm',
 				'type'    => 'checkbox',
@@ -899,7 +915,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Only send leads who ticked the consent box (Settings → Leads → Consent)', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'crm_country_code'     => array(
+			'crm_country_code'      => array(
 				'tab'         => 'integrations',
 				'section'     => 'crm',
 				'type'        => 'text',
@@ -909,7 +925,7 @@ final class SettingsSchema {
 				'default'     => '880',
 				'max'         => 4,
 			),
-			'hubspot_enabled'      => array(
+			'hubspot_enabled'       => array(
 				'tab'     => 'integrations',
 				'section' => 'hubspot',
 				'type'    => 'checkbox',
@@ -917,7 +933,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Add new leads to HubSpot', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'hubspot_key'          => array(
+			'hubspot_key'           => array(
 				'tab'     => 'integrations',
 				'section' => 'hubspot',
 				'type'    => 'secret',
@@ -925,7 +941,7 @@ final class SettingsSchema {
 				'default' => '',
 				'test'    => 'hubspot',
 			),
-			'hubspot_lifecycle'    => array(
+			'hubspot_lifecycle'     => array(
 				'tab'     => 'integrations',
 				'section' => 'hubspot',
 				'type'    => 'select',
@@ -940,7 +956,7 @@ final class SettingsSchema {
 				),
 				'default' => 'lead',
 			),
-			'hubspot_note'         => array(
+			'hubspot_note'          => array(
 				'tab'     => 'integrations',
 				'section' => 'hubspot',
 				'type'    => 'checkbox',
@@ -948,7 +964,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Attach the lead\'s message, page and chat to the contact as a note', 'all-in-one-ai-chatbot' ),
 				'default' => true,
 			),
-			'mailchimp_enabled'    => array(
+			'mailchimp_enabled'     => array(
 				'tab'     => 'integrations',
 				'section' => 'mailchimp',
 				'type'    => 'checkbox',
@@ -956,7 +972,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Add new leads to a Mailchimp audience', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'mailchimp_key'        => array(
+			'mailchimp_key'         => array(
 				'tab'     => 'integrations',
 				'section' => 'mailchimp',
 				'type'    => 'secret',
@@ -964,7 +980,7 @@ final class SettingsSchema {
 				'default' => '',
 				'test'    => 'mailchimp',
 			),
-			'mailchimp_list'       => array(
+			'mailchimp_list'        => array(
 				'tab'         => 'integrations',
 				'section'     => 'mailchimp',
 				'type'        => 'text',
@@ -974,7 +990,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 40,
 			),
-			'mailchimp_status'     => array(
+			'mailchimp_status'      => array(
 				'tab'     => 'integrations',
 				'section' => 'mailchimp',
 				'type'    => 'select',
@@ -986,7 +1002,7 @@ final class SettingsSchema {
 				),
 				'default' => 'pending',
 			),
-			'mailchimp_tags'       => array(
+			'mailchimp_tags'        => array(
 				'tab'     => 'integrations',
 				'section' => 'mailchimp',
 				'type'    => 'text',
@@ -995,7 +1011,7 @@ final class SettingsSchema {
 				'default' => 'AI Chatbot',
 				'max'     => 200,
 			),
-			'mailchimp_note'       => array(
+			'mailchimp_note'        => array(
 				'tab'     => 'integrations',
 				'section' => 'mailchimp',
 				'type'    => 'checkbox',
@@ -1003,7 +1019,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Add the lead\'s message and the start of the chat as a note on the contact', 'all-in-one-ai-chatbot' ),
 				'default' => true,
 			),
-			'brevo_enabled'        => array(
+			'brevo_enabled'         => array(
 				'tab'     => 'integrations',
 				'section' => 'brevo',
 				'type'    => 'checkbox',
@@ -1011,7 +1027,7 @@ final class SettingsSchema {
 				'desc'    => __( 'Add new leads to Brevo', 'all-in-one-ai-chatbot' ),
 				'default' => false,
 			),
-			'brevo_key'            => array(
+			'brevo_key'             => array(
 				'tab'     => 'integrations',
 				'section' => 'brevo',
 				'type'    => 'secret',
@@ -1019,7 +1035,7 @@ final class SettingsSchema {
 				'default' => '',
 				'test'    => 'brevo',
 			),
-			'brevo_lists'          => array(
+			'brevo_lists'           => array(
 				'tab'         => 'integrations',
 				'section'     => 'brevo',
 				'type'        => 'text',
@@ -1029,7 +1045,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'max'         => 100,
 			),
-			'webhook_urls'         => array(
+			'webhook_urls'          => array(
 				'tab'         => 'integrations',
 				'section'     => 'webhooks',
 				'type'        => 'urls',
@@ -1040,7 +1056,7 @@ final class SettingsSchema {
 				'default'     => '',
 				'test'        => 'webhook',
 			),
-			'webhook_events'       => array(
+			'webhook_events'        => array(
 				'tab'     => 'integrations',
 				'section' => 'webhooks',
 				'type'    => 'multicheck',
@@ -1048,7 +1064,7 @@ final class SettingsSchema {
 				'options' => $events,
 				'default' => array( Support\Events::LEAD_CREATED ),
 			),
-			'webhook_secret'       => array(
+			'webhook_secret'        => array(
 				'tab'     => 'integrations',
 				'section' => 'webhooks',
 				'type'    => 'generated',

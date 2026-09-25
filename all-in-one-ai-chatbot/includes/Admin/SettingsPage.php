@@ -81,17 +81,17 @@ final class SettingsPage {
 	 * Side effects of particular changes.
 	 *
 	 * @param array<string, mixed> $old Previous settings.
-	 * @param array<string, mixed> $new New settings.
+	 * @param array<string, mixed> $saved New settings.
 	 */
-	private static function after_save( array $old, array $new ): void {
+	private static function after_save( array $old, array $saved ): void {
 		$old_types = (array) $old['post_types'];
-		$new_types = (array) $new['post_types'];
+		$new_types = (array) $saved['post_types'];
 		sort( $old_types );
 		sort( $new_types );
 
 		// What gets indexed changed: rebuild in the background so the index
 		// matches without the owner having to know to press a button.
-		if ( $old_types !== $new_types || ( empty( $old['semantic_search'] ) && ! empty( $new['semantic_search'] ) ) ) {
+		if ( $old_types !== $new_types || ( empty( $old['semantic_search'] ) && ! empty( $saved['semantic_search'] ) ) ) {
 			update_option( Indexer::STATE_OPTION, array( 'status' => 'pending' ), false );
 			Cron::queue_build( 0 );
 		}
@@ -100,9 +100,9 @@ final class SettingsPage {
 		 * Fires after settings are validated, before they are saved.
 		 *
 		 * @param array $old Previous settings.
-		 * @param array $new New settings.
+		 * @param array $saved New settings.
 		 */
-		do_action( 'softorio_ai_settings_changed', $old, $new );
+		do_action( 'softorio_ai_settings_changed', $old, $saved );
 	}
 
 	/**

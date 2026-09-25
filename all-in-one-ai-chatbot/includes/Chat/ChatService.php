@@ -111,7 +111,15 @@ final class ChatService {
 
 		$passages = ( $this->retriever ?? new Retriever() )->search( $query, null, Audience::for_user( $context->user_id ) );
 		$system   = ( new PromptBuilder() )->build( $passages, $page_url, array_map( static fn( $t ): string => $t->name, $tools ), $context );
-		$messages = array_merge( $history, array( array( 'role' => 'user', 'content' => $message ) ) );
+		$messages = array_merge(
+			$history,
+			array(
+				array(
+					'role'    => 'user',
+					'content' => $message,
+				),
+			)
+		);
 
 		try {
 			$outcome  = $this->generate( $system, $messages, $tools, $registry, $context, $on_event );
@@ -264,9 +272,9 @@ final class ChatService {
 				$response = $router->stream( $system, $messages, $max_tokens, $tools, array( $filter, 'push' ) );
 				$filter->finish();
 			}
-			$cost    += $response->cost();
-			$in      += $response->input_tokens;
-			$out     += $response->output_tokens;
+			$cost += $response->cost();
+			$in   += $response->input_tokens;
+			$out  += $response->output_tokens;
 
 			if ( ! $response->wants_tools() || self::MAX_TOOL_ROUNDS === $round ) {
 				if ( $response->wants_tools() && '' === $response->text ) {

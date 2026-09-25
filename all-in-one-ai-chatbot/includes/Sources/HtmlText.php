@@ -11,6 +11,9 @@ use Softorio\AiAssistant\Knowledge\TextNormalizer;
 
 defined( 'ABSPATH' ) || exit;
 
+// DOM properties (textContent, parentNode…) are PHP's own camelCase names.
+// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+
 /**
  * Pulls the main content out of an HTML page.
  *
@@ -75,7 +78,7 @@ final class HtmlText {
 		}
 
 		$node ??= $xpath->query( '//body' )->item( 0 ) ?? $doc->documentElement;
-		$inner  = '';
+		$inner = '';
 
 		if ( null !== $node ) {
 			foreach ( $node->childNodes as $child ) {

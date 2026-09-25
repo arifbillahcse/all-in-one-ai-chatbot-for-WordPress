@@ -32,7 +32,12 @@ final class Queue {
 	private const MAX_ATTEMPTS = 5;
 
 	/** Seconds to wait before retry N (1-based). */
-	private const BACKOFF = array( 1 => 60, 2 => 300, 3 => 1800, 4 => 7200 );
+	private const BACKOFF = array(
+		1 => 60,
+		2 => 300,
+		3 => 1800,
+		4 => 7200,
+	);
 
 	/**
 	 * Job handlers by type.
@@ -188,7 +193,16 @@ final class Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- custom table.
 		// run_at doubles as "claimed at" while running, so housekeeping can
 		// spot a job whose runner died.
-		$wpdb->update( $table, array( 'status' => 'running', 'run_at' => time() ), array( 'id' => (int) $job['id'] ), array( '%s', '%d' ), array( '%d' ) );
+		$wpdb->update(
+			$table,
+			array(
+				'status' => 'running',
+				'run_at' => time(),
+			),
+			array( 'id' => (int) $job['id'] ),
+			array( '%s', '%d' ),
+			array( '%d' )
+		);
 
 		return $job;
 	}

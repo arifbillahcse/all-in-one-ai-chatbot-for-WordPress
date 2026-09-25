@@ -324,3 +324,10 @@ update_option( 'timezone_string', $sai_old_tz );
 delete_option( FlowStore::OPTION );
 $_SERVER['REQUEST_URI'] = '/';
 sai_reset();
+
+T::test( 'widget strings: the network "offline" message is not overwritten by the hours status', function () {
+	$i18n = \Softorio\AiAssistant\Frontend\Widget::config()['i18n'];
+	T::ok( str_contains( $i18n['offline'], 'connection' ), $i18n['offline'] );
+	T::same( 'Offline', $i18n['statusOffline'] );
+	T::same( 'Online', $i18n['statusOnline'] );
+} );

@@ -114,7 +114,16 @@ final class Ajax {
 		}
 
 		try {
-			$response = $provider->complete( 'Reply with the single word OK.', array( array( 'role' => 'user', 'content' => 'Test' ) ), 256 );
+			$response = $provider->complete(
+				'Reply with the single word OK.',
+				array(
+					array(
+						'role'    => 'user',
+						'content' => 'Test',
+					),
+				),
+				256
+			);
 		} catch ( LlmException $e ) {
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );
 		}

@@ -1615,7 +1615,7 @@
 		heading.appendChild( el( 'strong', 'sai-title', config.title || '' ) );
 		if ( hours ) {
 			var status = el( 'span', 'sai-subtitle sai-status ' + ( hours.open ? 'is-online' : 'is-offline' ) );
-			status.textContent = hours.open ? i18n.online : i18n.offline + ( hours.back ? ' · ' + i18n.backAt.replace( '%s', hours.back ) : '' );
+			status.textContent = hours.open ? i18n.statusOnline : i18n.statusOffline + ( hours.back ? ' · ' + i18n.backAt.replace( '%s', hours.back ) : '' );
 			heading.appendChild( status );
 		} else if ( config.subtitle ) {
 			heading.appendChild( el( 'span', 'sai-subtitle', config.subtitle ) );

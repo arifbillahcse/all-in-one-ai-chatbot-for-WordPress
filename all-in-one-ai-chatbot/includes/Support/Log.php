@@ -126,7 +126,7 @@ final class Log {
 
 		$args[] = $limit;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table; $where holds fixed fragments.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- custom table; $where holds fixed fragments, values are all placeholders.
 		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE ' . implode( ' AND ', $where ) . ' ORDER BY id DESC LIMIT %d', $args ), ARRAY_A );
 
 		return is_array( $rows ) ? $rows : array();

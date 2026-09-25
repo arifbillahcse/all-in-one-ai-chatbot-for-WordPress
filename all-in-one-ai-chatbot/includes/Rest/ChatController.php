@@ -154,7 +154,13 @@ final class ChatController {
 	 */
 	public static function stream( \WP_REST_Request $request ): \WP_REST_Response {
 		if ( ! \Softorio\AiAssistant\Settings::get( 'streaming', false ) ) {
-			return new \WP_REST_Response( array( 'code' => 'streaming_off', 'message' => 'Streaming is switched off.' ), 404 );
+			return new \WP_REST_Response(
+				array(
+					'code'    => 'streaming_off',
+					'message' => 'Streaming is switched off.',
+				),
+				404
+			);
 		}
 
 		/**
@@ -217,7 +223,8 @@ final class ChatController {
 		ignore_user_abort( true );
 
 		if ( function_exists( 'apache_setenv' ) ) {
-			@apache_setenv( 'no-gzip', '1' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- not available everywhere.
+			// Apache's mod_deflate would buffer the whole stream to compress it.
+			@apache_setenv( 'no-gzip', '1' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_apache_setenv -- only way to switch off gzip for this response; not available everywhere.
 		}
 
 		@ini_set( 'zlib.output_compression', '0' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.PHP.IniSet.Risky -- must not compress a stream.
@@ -248,7 +255,13 @@ final class ChatController {
 		$id    = (int) $request->get_param( 'message_id' );
 
 		if ( null === $row || ! $store->rate( (int) $row['id'], $id, (int) $request->get_param( 'rating' ) ) ) {
-			return new \WP_REST_Response( array( 'code' => 'not_found', 'message' => __( 'Answer not found.', 'all-in-one-ai-chatbot' ) ), 404 );
+			return new \WP_REST_Response(
+				array(
+					'code'    => 'not_found',
+					'message' => __( 'Answer not found.', 'all-in-one-ai-chatbot' ),
+				),
+				404
+			);
 		}
 
 		if ( 0 !== (int) $request->get_param( 'rating' ) ) {

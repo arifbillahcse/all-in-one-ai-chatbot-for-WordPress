@@ -21,10 +21,10 @@ final class MarkerFilter {
 
 	private const MARKERS = array( '[no_answer]', '**[no_answer]**' );
 
-	private string $head    = '';
-	private bool $decided   = false;
-	private bool $had_mark  = false;
-	private bool $trimming  = false;
+	private string $head   = '';
+	private bool $decided  = false;
+	private bool $had_mark = false;
+	private bool $trimming = false;
 
 	/**
 	 * Constructor.

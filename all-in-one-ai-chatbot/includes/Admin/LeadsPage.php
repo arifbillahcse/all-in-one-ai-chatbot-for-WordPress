@@ -163,7 +163,9 @@ final class LeadsPage {
 
 		// UTF-8 byte order mark, so Excel shows Bangla and other scripts correctly.
 		fwrite( $out, "\xEF\xBB\xBF" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- streaming a download.
-		fputcsv( $out, array( 'id', 'created_at_utc', 'name', 'email', 'phone', 'message', 'source', 'status', 'consent', 'consent_text', 'page_url' ) );
+		// The escape argument is explicit: PHP 8.4 deprecates relying on its
+		// default, and a deprecation notice would end up inside the file.
+		fputcsv( $out, array( 'id', 'created_at_utc', 'name', 'email', 'phone', 'message', 'source', 'status', 'consent', 'consent_text', 'page_url' ), ',', '"', '' );
 
 		foreach ( ( new LeadStore() )->each() as $row ) {
 			fputcsv(
@@ -171,7 +173,10 @@ final class LeadsPage {
 				array_map(
 					array( self::class, 'csv_safe' ),
 					array( $row['id'], $row['created_at'], $row['name'], $row['email'], $row['phone'], $row['message'], $row['source'], $row['status'], $row['consent'] ? 'yes' : 'no', $row['consent_text'], $row['page_url'] )
-				)
+				),
+				',',
+				'"',
+				''
 			);
 		}
 
@@ -207,7 +212,16 @@ final class LeadsPage {
 
 		$result = ( new LeadStore() )->search( $search, $status, self::PER_PAGE, ( $paged - 1 ) * self::PER_PAGE );
 		$pages  = (int) ceil( $result['total'] / self::PER_PAGE );
-		$here   = Menu::url( 'leads', array_filter( array( 's' => $search, 'status' => $status, 'paged' => $paged > 1 ? $paged : null ) ) );
+		$here   = Menu::url(
+			'leads',
+			array_filter(
+				array(
+					's'      => $search,
+					'status' => $status,
+					'paged'  => $paged > 1 ? $paged : null,
+				)
+			)
+		);
 		$crms   = CrmSync::enabled();
 		$all    = CrmSync::clients();
 		$queued = isset( $_GET['crm_queued'] ) ? absint( $_GET['crm_queued'] ) : -1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.

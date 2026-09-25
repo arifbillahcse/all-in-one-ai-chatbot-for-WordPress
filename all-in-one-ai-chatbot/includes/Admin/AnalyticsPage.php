@@ -98,9 +98,9 @@ final class AnalyticsPage {
 	 * @param string               $action Action.
 	 * @param string               $label  Text.
 	 * @param array<string, mixed> $fields Hidden fields.
-	 * @param string               $class  Class.
+	 * @param string               $css_class  Class.
 	 */
-	private static function button( string $action, string $label, array $fields, string $class ): void {
+	private static function button( string $action, string $label, array $fields, string $css_class ): void {
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sai-inline-form">
 			<input type="hidden" name="action" value="<?php echo esc_attr( $action ); ?>">
@@ -108,7 +108,7 @@ final class AnalyticsPage {
 			<?php foreach ( $fields as $name => $value ) : ?>
 				<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>">
 			<?php endforeach; ?>
-			<button type="submit" class="<?php echo esc_attr( $class ); ?>"><?php echo esc_html( $label ); ?></button>
+			<button type="submit" class="<?php echo esc_attr( $css_class ); ?>"><?php echo esc_html( $label ); ?></button>
 		</form>
 		<?php
 	}
@@ -160,6 +160,16 @@ final class AnalyticsPage {
 
 		// 12 months of daily bars is too dense: show weeks.
 		$chart_series = 365 === $days ? self::weekly( $series ) : $series;
+
+		$conversations_chart = Charts::bars(
+			array_map( static fn( array $d ) => $d['conversations'], $chart_series ),
+			array_map( static fn( array $d ) => $d['leads'], $chart_series ),
+			array(
+				'bars' => __( 'Conversations', 'all-in-one-ai-chatbot' ),
+				'line' => __( 'Leads', 'all-in-one-ai-chatbot' ),
+			)
+		);
+		$cost_chart          = Charts::bars( array_map( static fn( array $d ) => $d['cost'], $chart_series ), array(), array( 'bars' => __( 'AI cost', 'all-in-one-ai-chatbot' ) ), 'money' );
 		?>
 		<div class="wrap sai-admin sai-analytics">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Analytics', 'all-in-one-ai-chatbot' ); ?></h1>
@@ -192,16 +202,7 @@ final class AnalyticsPage {
 
 			<div class="sai-card">
 				<h2><?php echo esc_html( 365 === $days ? __( 'Conversations and leads per week', 'all-in-one-ai-chatbot' ) : __( 'Conversations and leads per day', 'all-in-one-ai-chatbot' ) ); ?></h2>
-				<?php
-				echo Charts::bars( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG built from escaped parts.
-					array_map( static fn( array $d ) => $d['conversations'], $chart_series ),
-					array_map( static fn( array $d ) => $d['leads'], $chart_series ),
-					array(
-						'bars' => __( 'Conversations', 'all-in-one-ai-chatbot' ),
-						'line' => __( 'Leads', 'all-in-one-ai-chatbot' ),
-					)
-				);
-				?>
+				<?php echo $conversations_chart; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG built from escaped parts in Charts. ?>
 			</div>
 
 			<div class="sai-grid-2">
@@ -219,7 +220,17 @@ final class AnalyticsPage {
 									<span class="sai-rank-actions">
 										<a class="button button-small button-primary" href="<?php echo esc_url( Report::add_answer_url( $gap['example'] ) ); ?>"><?php esc_html_e( 'Add the answer', 'all-in-one-ai-chatbot' ); ?></a>
 										<a href="<?php echo esc_url( Menu::url( 'conversations', array( 'conversation' => $gap['conversation'] ) ) ); ?>"><?php esc_html_e( 'View chat', 'all-in-one-ai-chatbot' ); ?></a>
-										<?php self::button( self::DISMISS, __( 'Dismiss', 'all-in-one-ai-chatbot' ), array( 'signature' => $gap['signature'], 'days' => $days ), 'button-link' ); ?>
+										<?php
+										self::button(
+											self::DISMISS,
+											__( 'Dismiss', 'all-in-one-ai-chatbot' ),
+											array(
+												'signature' => $gap['signature'],
+												'days' => $days,
+											),
+											'button-link'
+										);
+										?>
 									</span>
 								</li>
 							<?php endforeach; ?>
@@ -284,14 +295,7 @@ final class AnalyticsPage {
 
 			<div class="sai-card">
 				<h2><?php esc_html_e( 'AI cost per day (estimated)', 'all-in-one-ai-chatbot' ); ?></h2>
-				<?php
-				echo Charts::bars( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG built from escaped parts.
-					array_map( static fn( array $d ) => $d['cost'], $chart_series ),
-					array(),
-					array( 'bars' => __( 'AI cost', 'all-in-one-ai-chatbot' ) ),
-					'money'
-				);
-				?>
+				<?php echo $cost_chart; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG built from escaped parts in Charts. ?>
 			</div>
 
 			<p class="description">

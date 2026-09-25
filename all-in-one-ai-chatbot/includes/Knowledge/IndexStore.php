@@ -162,7 +162,7 @@ final class IndexStore {
 
 		[ $who, $who_args ] = ( $audience ?? Audience::guest() )->where();
 
-		$args = array_merge( $args, $who_args );
+		$args   = array_merge( $args, $who_args );
 		$args[] = $limit;
 
 		$sql = 'SELECT id, post_id, title, url, content, search_text, token_count, audience FROM %i WHERE ('

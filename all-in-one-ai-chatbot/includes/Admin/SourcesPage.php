@@ -161,7 +161,15 @@ final class SourcesPage {
 					),
 				);
 
-				Log::info( 'sources', 'Imported a document', array( 'file' => $file['name'], 'post' => $post_id, 'state' => $state ) );
+				Log::info(
+					'sources',
+					'Imported a document',
+					array(
+						'file'  => $file['name'],
+						'post'  => $post_id,
+						'state' => $state,
+					)
+				);
 			} catch ( SourceException $e ) {
 				$notices[] = array( 'error', $file['name'] . ': ' . $e->getMessage() );
 			}
@@ -361,10 +369,10 @@ final class SourcesPage {
 	 * @param string               $key     Action key.
 	 * @param string               $label   Button text.
 	 * @param array<string, mixed> $fields  Hidden fields.
-	 * @param string               $class   Button class.
+	 * @param string               $css_class   Button class.
 	 * @param string               $confirm Confirmation question.
 	 */
-	private static function button( string $key, string $label, array $fields = array(), string $class = 'button-link', string $confirm = '' ): void {
+	private static function button( string $key, string $label, array $fields = array(), string $css_class = 'button-link', string $confirm = '' ): void {
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sai-inline-form"<?php echo '' !== $confirm ? ' onsubmit="return confirm(' . esc_attr( (string) wp_json_encode( $confirm ) ) . ')"' : ''; ?>>
 			<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTIONS[ $key ] ); ?>">
@@ -372,7 +380,7 @@ final class SourcesPage {
 			<?php foreach ( $fields as $name => $value ) : ?>
 				<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>">
 			<?php endforeach; ?>
-			<button type="submit" class="<?php echo esc_attr( $class ); ?>"><?php echo esc_html( $label ); ?></button>
+			<button type="submit" class="<?php echo esc_attr( $css_class ); ?>"><?php echo esc_html( $label ); ?></button>
 		</form>
 		<?php
 	}

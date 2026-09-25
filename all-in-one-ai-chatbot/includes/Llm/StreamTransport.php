@@ -44,6 +44,10 @@ class StreamTransport {
 			$lines[] = $name . ': ' . $value;
 		}
 
+		// The WordPress HTTP API returns a response only once it is complete,
+		// so it cannot deliver an answer word by word. Streaming needs cURL's
+		// write callback; the request uses WordPress's CA bundle and proxy.
+		// phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_init, WordPress.WP.AlternativeFunctions.curl_curl_setopt_array, WordPress.WP.AlternativeFunctions.curl_curl_exec, WordPress.WP.AlternativeFunctions.curl_curl_error, WordPress.WP.AlternativeFunctions.curl_curl_close, WordPress.WP.AlternativeFunctions.curl_curl_setopt
 		$handle = curl_init( $url );
 
 		curl_setopt_array(
@@ -87,7 +91,7 @@ class StreamTransport {
 
 		$ok    = curl_exec( $handle );
 		$error = curl_error( $handle );
-		curl_close( $handle );
+		unset( $handle ); // Closes it (curl_close() does nothing since PHP 8.0 and is deprecated in 8.5).
 
 		if ( null !== $failed ) {
 			throw $failed instanceof LlmException ? $failed : new LlmException( $failed->getMessage(), $provider, 'server' );
@@ -147,4 +151,5 @@ class StreamTransport {
 			curl_setopt( $handle, CURLOPT_PROXYUSERPWD, $proxy->authentication() );
 		}
 	}
+	// phpcs:enable
 }

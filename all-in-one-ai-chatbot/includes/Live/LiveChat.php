@@ -32,11 +32,11 @@ defined( 'ABSPATH' ) || exit;
  */
 final class LiveChat {
 
-	public const CAP          = 'softorio_ai_live_chat';
-	public const MODES        = array( 'ai', 'waiting', 'human' );
-	private const PRESENCE    = 'softorio_ai_agents_online';
-	private const ONLINE_FOR  = 120; // Seconds since an agent's last heartbeat.
-	public const AWAY_META    = 'softorio_ai_live_away';
+	public const CAP         = 'softorio_ai_live_chat';
+	public const MODES       = array( 'ai', 'waiting', 'human' );
+	private const PRESENCE   = 'softorio_ai_agents_online';
+	private const ONLINE_FOR = 120; // Seconds since an agent's last heartbeat.
+	public const AWAY_META   = 'softorio_ai_live_away';
 
 	/**
 	 * Hook the capability mapping.
@@ -432,7 +432,7 @@ final class LiveChat {
 
 		$placeholders = implode( ',', array_fill( 0, count( $roles ), '%s' ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders -- placeholders built above.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders -- one %s per role, built above.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT id, role, content, sources, agent_id, created_at FROM %i WHERE conversation_id = %d AND id > %d AND role IN ($placeholders) ORDER BY id ASC LIMIT 200",
@@ -440,6 +440,7 @@ final class LiveChat {
 			),
 			ARRAY_A
 		);
+		// phpcs:enable
 
 		return array_map( array( self::class, 'shape' ), (array) $rows );
 	}
@@ -592,19 +593,19 @@ final class LiveChat {
 			);
 
 			$out[] = array(
-				'id'       => $id,
-				'mode'     => (string) $row['mode'],
-				'mine'     => 'human' === $row['mode'] && (int) $row['agent_id'] === $agent_id,
-				'agent'    => (int) $row['agent_id'] > 0 ? self::agent( (int) $row['agent_id'] )['name'] : '',
-				'visitor'  => self::visitor_label( $row ),
-				'title'    => (string) $row['title'],
-				'page'     => (string) $row['page_url'],
-				'last'     => is_array( $last ) ? mb_substr( (string) $last['content'], 0, 120 ) : '',
-				'last_by'  => is_array( $last ) ? (string) $last['role'] : '',
-				'updated'  => (string) $row['updated_at'],
-				'since'    => (string) ( $row['mode_since'] ?? '' ),
-				'unread'   => $unread,
-				'typing'   => '' !== self::is_typing( $id, 'visitor' ),
+				'id'      => $id,
+				'mode'    => (string) $row['mode'],
+				'mine'    => 'human' === $row['mode'] && (int) $row['agent_id'] === $agent_id,
+				'agent'   => (int) $row['agent_id'] > 0 ? self::agent( (int) $row['agent_id'] )['name'] : '',
+				'visitor' => self::visitor_label( $row ),
+				'title'   => (string) $row['title'],
+				'page'    => (string) $row['page_url'],
+				'last'    => is_array( $last ) ? mb_substr( (string) $last['content'], 0, 120 ) : '',
+				'last_by' => is_array( $last ) ? (string) $last['role'] : '',
+				'updated' => (string) $row['updated_at'],
+				'since'   => (string) ( $row['mode_since'] ?? '' ),
+				'unread'  => $unread,
+				'typing'  => '' !== self::is_typing( $id, 'visitor' ),
 			);
 		}
 		// phpcs:enable

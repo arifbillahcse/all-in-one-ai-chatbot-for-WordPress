@@ -194,8 +194,9 @@ final class PdfText {
 
 			$header = preg_split( '/\s+/', trim( substr( $data, 0, $first ) ) ) ?: array();
 			$pairs  = array();
+			$total  = min( count( $header ), 2 * $n );
 
-			for ( $i = 0; $i + 1 < count( $header ) && count( $pairs ) < $n; $i += 2 ) {
+			for ( $i = 0; $i + 1 < $total; $i += 2 ) {
 				$pairs[] = array( (int) $header[ $i ], (int) $header[ $i + 1 ] );
 			}
 
@@ -244,7 +245,9 @@ final class PdfText {
 		$pos  = strpos( $body, "\x00STREAM\x00" );
 
 		if ( false === $pos ) {
-			return $this->streams[ $number ] = null;
+			$this->streams[ $number ] = null;
+
+			return null;
 		}
 
 		$dict = substr( $body, 0, $pos );
@@ -267,7 +270,9 @@ final class PdfText {
 			}
 		}
 
-		return $this->streams[ $number ] = $data;
+		$this->streams[ $number ] = $data;
+
+		return $data;
 	}
 
 	/**
@@ -665,14 +670,17 @@ final class PdfText {
 							if ( 'str' === $item_type ) {
 								$tm = $this->show_at( $tm, (string) $item, $font, $size, $char_sp, $word_sp, $scale, $marks );
 							} elseif ( 'num' === $item_type ) {
-								$tm = $move( $tm, -(float) $item / 1000 * $size * $scale, 0 );
+								$tm = $move( $tm, - (float) $item / 1000 * $size * $scale, 0 );
 							}
 						}
 					}
 					break;
 
 				case 'BMC':
-					$marks[] = array( 'text' => null, 'shown' => false );
+					$marks[] = array(
+						'text'  => null,
+						'shown' => false,
+					);
 					break;
 
 				case 'BDC':
@@ -747,8 +755,8 @@ final class PdfText {
 		// Separator from the previous text, by position.
 		if ( null !== $this->last && '' !== $this->out ) {
 			[ $last_x, $last_y, $last_size ] = $this->last;
-			$em = max( $page_size, $last_size );
-			$dy = abs( $y - $last_y );
+			$em                              = max( $page_size, $last_size );
+			$dy                              = abs( $y - $last_y );
 
 			if ( $dy > $em * 0.5 ) {
 				$this->out = rtrim( $this->out, ' ' ) . ( $dy > $em * 1.9 ? "\n\n" : "\n" );
@@ -763,7 +771,7 @@ final class PdfText {
 		foreach ( $marks as $i => $mark ) {
 			if ( null !== $mark['text'] ) {
 				if ( ! $mark['shown'] ) {
-					$this->out          .= $mark['text'];
+					$this->out           .= $mark['text'];
 					$marks[ $i ]['shown'] = true;
 				}
 				$replaced = true;
@@ -950,7 +958,7 @@ final class PdfText {
 
 				if ( ctype_digit( $next ) && $next < '8' ) {
 					$oct = $next;
-					while ( strlen( $oct ) < 3 && isset( $s[ $i + 1 ] ) && ctype_digit( $s[ $i + 1 ] ) && $s[ $i + 1 ] < '8' ) {
+					while ( ! isset( $oct[2] ) && isset( $s[ $i + 1 ] ) && ctype_digit( $s[ $i + 1 ] ) && $s[ $i + 1 ] < '8' ) {
 						$oct .= $s[ ++$i ];
 					}
 					$out .= chr( octdec( $oct ) & 0xFF );
@@ -986,7 +994,9 @@ final class PdfText {
 			}
 
 			if ( ')' === $c ) {
-				if ( --$depth === 0 ) {
+				--$depth;
+
+				if ( 0 === $depth ) {
 					return array( $out, $i + 1 );
 				}
 				$out .= $c;
@@ -1012,9 +1022,9 @@ final class PdfText {
 			return $this->fonts[ $number ];
 		}
 
-		$dict    = $this->dict( $number );
-		$type0   = 1 === preg_match( '#/Subtype\s*/Type0\b#', $dict );
-		$font    = array(
+		$dict  = $this->dict( $number );
+		$type0 = 1 === preg_match( '#/Subtype\s*/Type0\b#', $dict );
+		$font  = array(
 			'bytes'   => $type0 ? 2 : 1,
 			'map'     => array(),
 			'simple'  => null,
@@ -1028,8 +1038,8 @@ final class PdfText {
 			$cid         = null !== $descendants ? ( self::refs( $descendants )[0] ?? null ) : null;
 
 			if ( null !== $cid ) {
-				$cid_dict     = $this->dict( $cid );
-				$font['dw']   = (float) ( $this->int_value( $cid_dict, 'DW' ) ?? 1000 );
+				$cid_dict       = $this->dict( $cid );
+				$font['dw']     = (float) ( $this->int_value( $cid_dict, 'DW' ) ?? 1000 );
 				$font['widths'] = self::cid_widths( (string) $this->array_body( $cid_dict, 'W' ) );
 			}
 		} else {
@@ -1057,7 +1067,9 @@ final class PdfText {
 			$font['unknown'] = true;
 		}
 
-		return $this->fonts[ $number ] = $font;
+		$this->fonts[ $number ] = $font;
+
+		return $font;
 	}
 
 	/**
@@ -1106,7 +1118,7 @@ final class PdfText {
 		$out    = array();
 		$count  = count( $tokens );
 
-		for ( $i = 0; $i < $count && count( $out ) < 70000; ) {
+		for ( $i = 0; $i < $count && ! isset( $out[70000] ); ) { // Cap on huge width tables.
 			if ( ! is_numeric( $tokens[ $i ] ) ) {
 				++$i;
 				continue;
@@ -1115,7 +1127,7 @@ final class PdfText {
 			$first = (int) $tokens[ $i ];
 
 			if ( '[' === ( $tokens[ $i + 1 ] ?? '' ) ) {
-				$i += 2;
+				$i   += 2;
 				$code = $first;
 				while ( $i < $count && ']' !== $tokens[ $i ] ) {
 					$out[ $code++ ] = (float) $tokens[ $i++ ];
@@ -1159,7 +1171,7 @@ final class PdfText {
 				preg_match_all( '/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]*)>/', $block, $pairs, PREG_SET_ORDER );
 				foreach ( $pairs as $pair ) {
 					$map[ (int) hexdec( $pair[1] ) ] = self::utf16( $pair[2] );
-					$bytes ??= max( 1, intdiv( strlen( $pair[1] ), 2 ) );
+					$bytes                         ??= max( 1, intdiv( strlen( $pair[1] ), 2 ) );
 				}
 			}
 		}
@@ -1169,8 +1181,8 @@ final class PdfText {
 				preg_match_all( '/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(<[0-9A-Fa-f]*>|\[[^\]]*\])/', $block, $ranges, PREG_SET_ORDER );
 
 				foreach ( $ranges as $range ) {
-					$from = (int) hexdec( $range[1] );
-					$to   = min( (int) hexdec( $range[2] ), $from + 65535 );
+					$from    = (int) hexdec( $range[1] );
+					$to      = min( (int) hexdec( $range[2] ), $from + 65535 );
 					$bytes ??= max( 1, intdiv( strlen( $range[1] ), 2 ) );
 
 					if ( '[' === $range[3][0] ) {
@@ -1187,9 +1199,9 @@ final class PdfText {
 
 					for ( $code = $from; $code <= $to; $code++ ) {
 						// The last byte counts up across the range.
-						$offset = $code - $from;
-						$prefix = substr( $start, 0, -4 );
-						$last   = (int) hexdec( substr( $start, -4 ) ) + $offset;
+						$offset       = $code - $from;
+						$prefix       = substr( $start, 0, -4 );
+						$last         = (int) hexdec( substr( $start, -4 ) ) + $offset;
 						$map[ $code ] = self::utf16( $prefix . sprintf( '%04X', $last & 0xFFFF ) );
 					}
 				}
@@ -1282,64 +1294,64 @@ final class PdfText {
 	 */
 	private static function glyph( string $name ): ?string {
 		static $names = array(
-			'space'        => ' ',
-			'exclam'       => '!',
-			'quotedbl'     => '"',
-			'numbersign'   => '#',
-			'dollar'       => '$',
-			'percent'      => '%',
-			'ampersand'    => '&',
-			'quotesingle'  => "'",
-			'quoteright'   => '’',
-			'quoteleft'    => '‘',
-			'quotedblleft' => '“',
+			'space'         => ' ',
+			'exclam'        => '!',
+			'quotedbl'      => '"',
+			'numbersign'    => '#',
+			'dollar'        => '$',
+			'percent'       => '%',
+			'ampersand'     => '&',
+			'quotesingle'   => "'",
+			'quoteright'    => '’',
+			'quoteleft'     => '‘',
+			'quotedblleft'  => '“',
 			'quotedblright' => '”',
-			'parenleft'    => '(',
-			'parenright'   => ')',
-			'asterisk'     => '*',
-			'plus'         => '+',
-			'comma'        => ',',
-			'hyphen'       => '-',
-			'minus'        => '−',
-			'endash'       => '–',
-			'emdash'       => '—',
-			'period'       => '.',
-			'slash'        => '/',
-			'colon'        => ':',
-			'semicolon'    => ';',
-			'less'         => '<',
-			'equal'        => '=',
-			'greater'      => '>',
-			'question'     => '?',
-			'at'           => '@',
-			'bracketleft'  => '[',
-			'backslash'    => '\\',
-			'bracketright' => ']',
-			'underscore'   => '_',
-			'bullet'       => '•',
-			'ellipsis'     => '…',
-			'fi'           => 'fi',
-			'fl'           => 'fl',
-			'ff'           => 'ff',
-			'ffi'          => 'ffi',
-			'ffl'          => 'ffl',
-			'zero'         => '0',
-			'one'          => '1',
-			'two'          => '2',
-			'three'        => '3',
-			'four'         => '4',
-			'five'         => '5',
-			'six'          => '6',
-			'seven'        => '7',
-			'eight'        => '8',
-			'nine'         => '9',
-			'nbspace'      => ' ',
-			'copyright'    => '©',
-			'registered'   => '®',
-			'trademark'    => '™',
-			'degree'       => '°',
-			'Euro'         => '€',
-			'sterling'     => '£',
+			'parenleft'     => '(',
+			'parenright'    => ')',
+			'asterisk'      => '*',
+			'plus'          => '+',
+			'comma'         => ',',
+			'hyphen'        => '-',
+			'minus'         => '−',
+			'endash'        => '–',
+			'emdash'        => '—',
+			'period'        => '.',
+			'slash'         => '/',
+			'colon'         => ':',
+			'semicolon'     => ';',
+			'less'          => '<',
+			'equal'         => '=',
+			'greater'       => '>',
+			'question'      => '?',
+			'at'            => '@',
+			'bracketleft'   => '[',
+			'backslash'     => '\\',
+			'bracketright'  => ']',
+			'underscore'    => '_',
+			'bullet'        => '•',
+			'ellipsis'      => '…',
+			'fi'            => 'fi',
+			'fl'            => 'fl',
+			'ff'            => 'ff',
+			'ffi'           => 'ffi',
+			'ffl'           => 'ffl',
+			'zero'          => '0',
+			'one'           => '1',
+			'two'           => '2',
+			'three'         => '3',
+			'four'          => '4',
+			'five'          => '5',
+			'six'           => '6',
+			'seven'         => '7',
+			'eight'         => '8',
+			'nine'          => '9',
+			'nbspace'       => ' ',
+			'copyright'     => '©',
+			'registered'    => '®',
+			'trademark'     => '™',
+			'degree'        => '°',
+			'Euro'          => '€',
+			'sterling'      => '£',
 		);
 
 		if ( isset( $names[ $name ] ) ) {
@@ -1373,9 +1385,9 @@ final class PdfText {
 			return '';
 		}
 
-		$out   = '';
-		$step  = (int) $font['bytes'];
-		$len   = strlen( $bytes );
+		$out  = '';
+		$step = (int) $font['bytes'];
+		$len  = strlen( $bytes );
 
 		for ( $i = 0; $i + $step <= $len; $i += $step ) {
 			$code = $step > 1 ? (int) hexdec( bin2hex( substr( $bytes, $i, $step ) ) ) : ord( $bytes[ $i ] );

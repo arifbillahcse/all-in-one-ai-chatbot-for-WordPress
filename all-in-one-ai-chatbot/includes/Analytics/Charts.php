@@ -18,8 +18,8 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Charts {
 
-	private const W = 760;
-	private const H = 220;
+	private const W     = 760;
+	private const H     = 220;
 	private const PAD_L = 44;
 	private const PAD_B = 26;
 	private const PAD_T = 12;

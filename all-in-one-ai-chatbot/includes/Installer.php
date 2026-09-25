@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Installer {
 
-	public const DB_VERSION        = '7';
+	public const DB_VERSION         = '7';
 	private const DB_VERSION_OPTION = 'softorio_ai_db_version';
 
 	/**

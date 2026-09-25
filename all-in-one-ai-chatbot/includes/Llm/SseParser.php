@@ -44,7 +44,7 @@ final class SseParser {
 	public function feed( string $chunk ): void {
 		$this->buffer .= str_replace( "\r\n", "\n", $chunk );
 
-		while ( false !== ( $pos = strpos( $this->buffer, "\n" ) ) ) {
+		while ( false !== ( $pos = strpos( $this->buffer, "\n" ) ) ) { // phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition -- read line by line.
 			$line         = substr( $this->buffer, 0, $pos );
 			$this->buffer = substr( $this->buffer, $pos + 1 );
 			$this->line( rtrim( $line, "\r" ) );

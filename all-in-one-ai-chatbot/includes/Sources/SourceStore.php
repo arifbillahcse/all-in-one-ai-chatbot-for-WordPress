@@ -81,7 +81,7 @@ final class SourceStore {
 				),
 				true
 			);
-			$state = 'updated';
+			$state  = 'updated';
 		} else {
 			$meta = array(
 				self::TYPE    => $type,
@@ -115,7 +115,7 @@ final class SourceStore {
 				),
 				true
 			);
-			$state = 'created';
+			$state  = 'created';
 		}
 
 		if ( is_wp_error( $result ) || ! $result ) {

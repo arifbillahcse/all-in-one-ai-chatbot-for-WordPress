@@ -120,7 +120,7 @@ final class ClaudeProvider implements Provider {
 						break;
 
 					case 'content_block_start':
-						$block                               = (array) ( $payload['content_block'] ?? array() );
+						$block                             = (array) ( $payload['content_block'] ?? array() );
 						$blocks[ (int) $payload['index'] ] = array(
 							'type' => (string) ( $block['type'] ?? '' ),
 							'id'   => (string) ( $block['id'] ?? '' ),
