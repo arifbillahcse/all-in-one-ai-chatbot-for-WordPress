@@ -11,7 +11,7 @@
 > WP_PATH=/path/to/test-wordpress php all-in-one-ai-chatbot/tests/run.php
 > ```
 >
-> See [`all-in-one-ai-chatbot/readme.txt`](all-in-one-ai-chatbot/readme.txt) for
+> See [`all-in-one-ai-chatbot/README.md`](all-in-one-ai-chatbot/README.md) for the full feature list, and [`readme.txt`](all-in-one-ai-chatbot/readme.txt) for
 > features, setup and developer hooks. The rest of this README describes the
 > standalone hosting-company app, which the plugin was derived from.
 
