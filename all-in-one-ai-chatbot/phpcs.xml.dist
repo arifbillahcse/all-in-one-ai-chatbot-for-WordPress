@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<ruleset name="All in One AI Chatbot">
+	<description>Coding standard for the plugin: WordPress-Extra plus security and i18n checks.</description>
+
+	<file>.</file>
+	<exclude-pattern>/tests/*</exclude-pattern>
+	<exclude-pattern>/bin/*</exclude-pattern>
+	<exclude-pattern>/languages/*</exclude-pattern>
+	<exclude-pattern>*.js</exclude-pattern>
+	<exclude-pattern>*.css</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg value="sp"/>
+
+	<config name="minimum_wp_version" value="6.4"/>
+	<config name="testVersion" value="8.1-"/>
+
+	<rule ref="WordPress-Extra">
+		<!-- PSR-4 style class files (Plugin.php), not class-plugin.php. -->
+		<exclude name="WordPress.Files.FileName"/>
+		<!--
+			Exception messages are escaped where they are shown (esc_html in
+			admin screens, textContent in JavaScript for JSON responses), so
+			escaping them when thrown would double-escape "&" and quotes.
+		-->
+		<exclude name="WordPress.Security.EscapeOutput.ExceptionNotEscaped"/>
+		<!-- "?:" is used on purpose for "this, or a default when empty/false" (preg_split() ?: array()). -->
+		<exclude name="Universal.Operators.DisallowShortTernary"/>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="all-in-one-ai-chatbot"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="softorio_ai"/>
+				<element value="Softorio\AiAssistant"/>
+				<element value="SOFTORIO_AI"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>
