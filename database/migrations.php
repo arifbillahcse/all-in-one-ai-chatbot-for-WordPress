@@ -48,4 +48,14 @@ return [
         // "failed", which is what makes re-running safe.
         'ignore_errors' => ['Duplicate key name', 'already exists'],
     ],
+
+    7 => [
+        'description' => 'Manual replies: conversation mode, agent-written messages (and the metadata column, missing from older schema files)',
+        'statements'  => [
+            "ALTER TABLE `{prefix}conversations` ADD COLUMN `metadata` TEXT NULL",
+            "ALTER TABLE `{prefix}conversations` ADD COLUMN `mode` VARCHAR(8) NOT NULL DEFAULT 'ai'",
+            "ALTER TABLE `{prefix}messages` ADD COLUMN `sender` VARCHAR(16) NULL",
+        ],
+        'ignore_errors' => ['Duplicate column name', 'already exists'],
+    ],
 ];

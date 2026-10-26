@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hostorio\Admin;
 
+use Hostorio\Chat\ConversationStore;
 use Hostorio\Core\Config;
 use Hostorio\Core\CostGuard;
 use Hostorio\Core\Logger;
@@ -227,6 +228,7 @@ final class AdminController
             'selectedId'       => $selectedId,
             'selected'         => $selected,
             'selectedMessages' => $selectedMessages,
+            'manualReady'      => $metrics->manualRepliesReady(),
         ];
     }
 
@@ -569,11 +571,67 @@ final class AdminController
         $action = (string) $request->input('action', '');
 
         return match ($page) {
+            'conversations' => $this->conversationAction($request, $action),
             'knowledge' => $this->knowledgeAction($request, $action),
             'routing'   => $this->routingAction($request),
             'settings'  => $this->settingsAction($request, $action),
             default     => Response::redirect(View::basePath()),
         };
+    }
+
+    /**
+     * Reply to a visitor yourself, or give the thread back to the AI.
+     *
+     * A reply switches the conversation to human mode: the AI stops answering
+     * it, so it cannot talk over you or contradict you. "Hand back" switches
+     * it on again; the AI then sees your replies in its history.
+     */
+    private function conversationAction(Request $request, string $action): Response
+    {
+        $publicId = Security::sanitizeIdentifier((string) $request->input('id', ''));
+        $back     = View::basePath() . '/conversations?id=' . urlencode($publicId);
+        $metrics  = new Metrics();
+
+        if (!$metrics->manualRepliesReady()) {
+            $this->flash('Manual replies need a database update first: run  php tools/update.php --migrate  (or the SQL in docs/ADMIN.md).');
+
+            return Response::redirect($back);
+        }
+
+        $conversation = $publicId === '' ? null : $metrics->conversation($publicId);
+
+        if ($conversation === null) {
+            $this->flash('That conversation does not exist.');
+
+            return Response::redirect(View::basePath() . '/conversations');
+        }
+
+        $store = new ConversationStore();
+        $id    = (int) $conversation['id'];
+
+        if ($action === 'handback') {
+            $store->setMode($id, 'ai');
+            Logger::info('Conversation handed back to the AI', ['conversation_id' => $id]);
+            $this->flash('Handed back to the AI. It will answer the next message.');
+
+            return Response::redirect($back);
+        }
+
+        if ($action === 'reply') {
+            $text = Security::sanitizeMessage((string) $request->input('message', ''), 4000);
+
+            if ($text === '') {
+                $this->flash('Type a reply first.');
+
+                return Response::redirect($back);
+            }
+
+            $store->addAgentReply($id, $text);
+            Logger::info('Agent reply sent', ['conversation_id' => $id, 'length' => mb_strlen($text, 'UTF-8')]);
+            $this->flash('Reply sent. The visitor sees it if their chat is open. The AI is paused on this thread until you hand it back.');
+        }
+
+        return Response::redirect($back);
     }
 
     private function knowledgeAction(Request $request, string $action): Response

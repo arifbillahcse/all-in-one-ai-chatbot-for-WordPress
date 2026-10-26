@@ -38,7 +38,7 @@ class ConversationStore
     /**
      * Resume a conversation the caller is entitled to, or start a new one.
      *
-     * @return array{id: int, public_id: string, resumed: bool}
+     * @return array{id: int, public_id: string, resumed: bool, mode: string}
      */
     public function resumeOrCreate(?string $publicId, CustomerIdentity $identity, string $clientKey): array
     {
@@ -50,6 +50,7 @@ class ConversationStore
                     'id'        => (int) $existing['id'],
                     'public_id' => (string) $existing['public_id'],
                     'resumed'   => true,
+                    'mode'      => (string) ($existing['mode'] ?? 'ai'),
                 ];
             }
 
@@ -59,7 +60,7 @@ class ConversationStore
             ]);
         }
 
-        return $this->create($identity, $clientKey) + ['resumed' => false];
+        return $this->create($identity, $clientKey) + ['resumed' => false, 'mode' => 'ai'];
     }
 
     /**
@@ -226,7 +227,7 @@ class ConversationStore
 
         $rows = $this->db->select(
             sprintf(
-                'SELECT role, content FROM `%s`
+                'SELECT id, role, content, sender FROM `%s`
                   WHERE conversation_id = :cid AND content <> \'\'
                   ORDER BY id ASC
                   LIMIT %d',
@@ -237,9 +238,81 @@ class ConversationStore
         );
 
         return array_map(
-            static fn (array $r): array => ['role' => (string) $r['role'], 'content' => (string) $r['content']],
+            static fn (array $r): array => [
+                'id'      => (int) $r['id'],
+                'role'    => (string) $r['role'],
+                'content' => (string) $r['content'],
+                'agent'   => ($r['sender'] ?? null) === 'agent',
+            ],
             $rows
         );
+    }
+
+    /**
+     * Replies typed by a person since the widget last looked, for the visitor
+     * who owns the conversation. Same ownership rule as resuming a chat, so
+     * knowing an id is never enough to read someone else's thread.
+     *
+     * @return array{mode: string, messages: array<int, array{id: int, content: string}>}|null
+     *         null when the conversation does not exist or is not this caller's
+     */
+    public function agentMessagesSince(
+        string $publicId,
+        CustomerIdentity $identity,
+        string $clientKey,
+        int $afterId
+    ): ?array {
+        $row = $this->findOwned($publicId, $identity, $clientKey);
+
+        if ($row === null) {
+            return null;
+        }
+
+        $rows = $this->db->select(
+            sprintf(
+                'SELECT id, content FROM `%s`
+                  WHERE conversation_id = :cid AND sender = \'agent\' AND id > :after
+                  ORDER BY id ASC
+                  LIMIT 20',
+                $this->db->table('messages')
+            ),
+            ['cid' => (int) $row['id'], 'after' => max(0, $afterId)]
+        );
+
+        return [
+            'mode'     => (string) ($row['mode'] ?? 'ai'),
+            'messages' => array_map(
+                static fn (array $r): array => ['id' => (int) $r['id'], 'content' => (string) $r['content']],
+                $rows
+            ),
+        ];
+    }
+
+    /**
+     * Switch between the AI answering and a person answering.
+     */
+    public function setMode(int $conversationId, string $mode): void
+    {
+        $this->db->execute(
+            sprintf('UPDATE `%s` SET mode = :mode, updated_at = :now WHERE id = :id', $this->db->table('conversations')),
+            [
+                'mode' => $mode === 'human' ? 'human' : 'ai',
+                'now'  => gmdate('Y-m-d H:i:s'),
+                'id'   => $conversationId,
+            ]
+        );
+    }
+
+    /**
+     * A reply typed by a person in the admin panel. The conversation moves to
+     * human mode, so the AI stays quiet until the thread is handed back.
+     */
+    public function addAgentReply(int $conversationId, string $text): int
+    {
+        $id = $this->addMessage($conversationId, 'assistant', $text, ['sender' => 'agent']);
+        $this->setMode($conversationId, 'human');
+
+        return $id;
     }
 
     /**

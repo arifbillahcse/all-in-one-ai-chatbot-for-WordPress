@@ -33,6 +33,40 @@ message shows which provider answered, the token counts, and what it cost.
 Cells beginning with `=`, `+`, `-` or `@` are prefixed with an apostrophe so
 spreadsheets do not execute them — a customer can type a formula into a chat.
 
+### Replying yourself
+
+Sometimes the AI cannot help because you know something it does not (a registrar
+hold, a billing detail, a one-off arrangement). Open the conversation and type
+under the transcript:
+
+1. **Send reply** posts your message into the visitor's chat window. It shows in
+   a green bubble labelled "Team member". If their chat is open they see it
+   within about five seconds, and a closed widget opens itself when you reply.
+2. The conversation switches to **human mode**: the AI stops answering it, so it
+   cannot talk over you or contradict you, and it costs nothing. Further visitor
+   messages are saved and show a "Waiting for you" pill in the list.
+3. **Hand back to AI** lets the AI answer the next message. It sees your replies
+   as part of the conversation, so it stays consistent with what you said.
+
+Notes: a visitor only receives your reply while their browser is on the site
+(they keep the chat for the same browser, so it also appears when they return).
+Nothing is emailed. Check the list for "Waiting for you" regularly, or after a
+visitor asks for a person. Once you have the answer, add it as a **note** under
+Knowledge base so the AI can answer next time without you.
+
+**One-time database update.** Manual replies add three columns. Run
+`php tools/update.php --migrate`, or on shared hosting without SSH paste this
+into phpMyAdmin (replace `hoai_` with your table prefix; ignore "Duplicate
+column" errors):
+
+```sql
+ALTER TABLE `hoai_conversations` ADD COLUMN `metadata` TEXT NULL;
+ALTER TABLE `hoai_conversations` ADD COLUMN `mode` VARCHAR(8) NOT NULL DEFAULT 'ai';
+ALTER TABLE `hoai_messages` ADD COLUMN `sender` VARCHAR(16) NULL;
+```
+
+Until then the Conversations page shows a notice and everything else works.
+
 ---
 
 ## Knowledge base

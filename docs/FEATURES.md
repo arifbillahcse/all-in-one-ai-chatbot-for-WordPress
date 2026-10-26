@@ -73,6 +73,15 @@ need a human.
 | **Source citations** | Answers show which articles they came from, so a customer can read further and you can audit. |
 | **Incremental re-indexing** | Driven by content hashes. A nightly sync where nothing changed costs nothing. |
 
+### Taking over a conversation
+
+| Feature | What it means |
+|---|---|
+| **Manual replies** | Answer a visitor yourself from the Conversations page when the AI lacks information you have. Your reply appears in their chat, labelled as a team member. |
+| **AI pauses while you answer** | The thread switches to human mode, so the AI cannot contradict you and spends nothing. |
+| **Waiting indicator** | Threads where the visitor wrote last and you are handling the chat are flagged "Waiting for you". |
+| **Hand back to AI** | One button returns the thread to the AI, which sees your replies as context. |
+
 ### Knowing who is asking
 
 | Feature | What it means |

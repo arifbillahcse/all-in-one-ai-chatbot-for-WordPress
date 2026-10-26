@@ -50,7 +50,7 @@
     <?php else: ?>
         <div class="card">
             <?php foreach ($messages as $message): ?>
-                <div class="bubble <?= $e($message['role']) ?>"><?= $e($message['content']) ?></div>
+                <div class="bubble <?= $e($message['role']) ?><?= ($message['sender'] ?? null) === 'agent' ? ' agent' : '' ?>"><?= ($message['sender'] ?? null) === 'agent' ? '<span class="from-agent">You (team)</span>' : '' ?><?= $e($message['content']) ?></div>
                 <?php if ($message['role'] === 'assistant'): ?>
                     <div class="meta">
                         <?= $e($message['provider'] ?? '?') ?>

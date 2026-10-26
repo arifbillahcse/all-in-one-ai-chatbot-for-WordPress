@@ -16,6 +16,8 @@
  * @var string $selectedId
  * @var array<string, mixed>|null $selected
  * @var array<int, array<string, mixed>> $selectedMessages
+ * @var bool $manualReady
+ * @var string $csrf
  */
 $pages = max(1, (int) ceil($total / max(1, $perPage)));
 
@@ -61,6 +63,14 @@ $qs = static function (array $overrides) use ($search, $page): string {
     <div class="strip-stat">Avg messages <b><?= $e(number_format((float) $stats['avg_messages'], 1)) ?></b></div>
 </div>
 
+<?php if (!$manualReady): ?>
+    <div class="card" style="margin-top:14px;border-color:#f59e0b">
+        <b>One-time database update needed for manual replies.</b>
+        Run <code>php tools/update.php --migrate</code> on the server, or paste the SQL from
+        <code>docs/ADMIN.md</code> into phpMyAdmin. Everything else keeps working meanwhile.
+    </div>
+<?php endif; ?>
+
 <form method="get" action="<?= $e($base . '/conversations') ?>" class="card" style="margin-top:14px">
     <div class="row">
         <div class="field" style="margin-bottom:0">
@@ -92,7 +102,10 @@ $qs = static function (array $overrides) use ($search, $page): string {
                    href="<?= $e($base . '/conversations?' . $qs(['id' => $row['public_id']])) ?>">
                     <span class="dept-dot <?= $e($deptClass($row)) ?>"></span>
                     <span class="crow-body">
-                        <span class="who"><?= $identityLine($row) ?></span>
+                        <span class="who"><?= $identityLine($row) ?>
+                            <?php if (!empty($row['waiting'])): ?><span class="pill waiting">Waiting for you</span>
+                            <?php elseif (($row['mode'] ?? 'ai') === 'human'): ?><span class="pill human">You</span><?php endif; ?>
+                        </span>
                         <span class="prev"><?= $row['title'] === '' ? '(untitled)' : $e($row['title']) ?></span>
                         <span class="meta">
                             <?= $e($deptLabel($row)) ?> ·
@@ -130,8 +143,30 @@ $qs = static function (array $overrides) use ($search, $page): string {
                     <div class="empty" style="border:0;background:transparent">This conversation has no messages yet.</div>
                 <?php else: ?>
                     <?php foreach ($selectedMessages as $message): ?>
-                        <div class="bubble <?= $message['role'] === 'user' ? 'user' : 'bot' ?>"><?= $e($message['content']) ?></div>
+                        <div class="bubble <?= $message['role'] === 'user' ? 'user' : ($message['sender'] === 'agent' ? 'bot agent' : 'bot') ?>"><?php
+                            if ($message['sender'] === 'agent') { echo '<span class="from-agent">You (team)</span>'; }
+                            echo $e($message['content']); ?></div>
                     <?php endforeach; ?>
+                <?php endif; ?>
+
+                <?php if ($manualReady): ?>
+                    <?php $human = ($selected['mode'] ?? 'ai') === 'human'; ?>
+                    <form method="post" action="<?= $e($base . '/conversations') ?>" class="reply-box">
+                        <input type="hidden" name="_csrf" value="<?= $e($csrf) ?>">
+                        <input type="hidden" name="id" value="<?= $e($selected['public_id']) ?>">
+                        <div class="muted" style="font-size:12px;margin-bottom:6px">
+                            <?= $human
+                                ? 'You are answering this chat. The AI is paused until you hand it back.'
+                                : 'Sending a reply pauses the AI on this chat. The visitor sees it if their chat window is open.' ?>
+                        </div>
+                        <textarea name="message" rows="3" maxlength="4000" placeholder="Type your reply to the visitor…"></textarea>
+                        <div class="actions" style="margin-top:8px">
+                            <button class="btn" type="submit" name="action" value="reply">Send reply</button>
+                            <?php if ($human): ?>
+                                <button class="btn secondary" type="submit" name="action" value="handback" formnovalidate>Hand back to AI</button>
+                            <?php endif; ?>
+                        </div>
+                    </form>
                 <?php endif; ?>
             <?php endif; ?>
         </div>

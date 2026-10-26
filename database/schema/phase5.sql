@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS `hoai_conversations` (
     `title`       VARCHAR(255)    NOT NULL DEFAULT '',
     `message_count` INT UNSIGNED  NOT NULL DEFAULT 0,
     `total_cost_usd` DECIMAL(12, 6) NOT NULL DEFAULT 0.000000,
+    `metadata`    TEXT            NULL,          -- pre-chat form answers (JSON)
+    `mode`        VARCHAR(8)      NOT NULL DEFAULT 'ai',  -- ai | human (a person is answering)
     `created_at`  DATETIME        NOT NULL,
     `updated_at`  DATETIME        NOT NULL,
     PRIMARY KEY (`id`),
@@ -52,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `hoai_messages` (
     `output_tokens`   INT UNSIGNED    NOT NULL DEFAULT 0,
     `cost_usd`        DECIMAL(12, 6)  NOT NULL DEFAULT 0.000000,
     `context_tokens`  INT UNSIGNED    NOT NULL DEFAULT 0,
+    `sender`          VARCHAR(16)     NULL,       -- 'agent' for a reply typed by a person
     `created_at`      DATETIME        NOT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_conversation` (`conversation_id`, `id`),

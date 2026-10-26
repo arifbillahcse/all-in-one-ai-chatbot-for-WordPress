@@ -201,6 +201,31 @@ final class Metrics
     }
 
     /**
+     * Whether the database has the columns manual replies need (migration 7).
+     * Checked once, so the conversation list keeps working on an install that
+     * has the new code but has not run the migration yet.
+     */
+    public function manualRepliesReady(): bool
+    {
+        static $ready = null;
+
+        if ($ready === null) {
+            try {
+                $this->db->select(sprintf(
+                    'SELECT c.mode, c.metadata, m.sender FROM `%s` c, `%s` m LIMIT 1',
+                    $this->db->table('conversations'),
+                    $this->db->table('messages')
+                ));
+                $ready = true;
+            } catch (Throwable $e) {
+                $ready = false;
+            }
+        }
+
+        return $ready;
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function recentConversations(int $limit = 40, int $offset = 0, string $search = ''): array
@@ -222,14 +247,23 @@ final class Metrics
             $bindings['q2'] = '%' . $search . '%';
         }
 
+        // "Waiting": a person is handling the thread and the visitor spoke last.
+        $extra = $this->manualRepliesReady()
+            ? sprintf(
+                ", c.mode, (c.mode = 'human' AND COALESCE((SELECT m2.role FROM `%s` m2 WHERE m2.conversation_id = c.id ORDER BY m2.id DESC LIMIT 1), '') = 'user') AS waiting",
+                $messages
+            )
+            : ", 'ai' AS mode, 0 AS waiting";
+
         return $this->many(
             sprintf(
                 'SELECT c.id, c.public_id, c.customer_id, c.title, c.message_count,
-                        c.total_cost_usd, c.created_at, c.updated_at, c.metadata
+                        c.total_cost_usd, c.created_at, c.updated_at, c.metadata%s
                    FROM `%s` c
                    %s
                   ORDER BY c.updated_at DESC
                   LIMIT %d OFFSET %d',
+                $extra,
                 $conversations,
                 $where,
                 max(1, $limit),
@@ -285,10 +319,11 @@ final class Metrics
         return $this->many(
             sprintf(
                 'SELECT role, content, provider, model, query_type, input_tokens, output_tokens,
-                        cost_usd, context_tokens, created_at
+                        cost_usd, context_tokens, created_at%s
                    FROM `%s`
                   WHERE conversation_id = :cid
                   ORDER BY id ASC',
+                $this->manualRepliesReady() ? ', sender' : ", NULL AS sender",
                 $this->db->table('messages')
             ),
             ['cid' => $conversationId]

@@ -83,6 +83,7 @@ $router->get('/api/widget/config', $widget->config(...));
 
 $router->post('/api/chat', $chat->send(...));
 $router->get('/api/chat/history', $chat->history(...));
+$router->get('/api/chat/poll', $chat->poll(...));
 
 $router->post('/api/identity/token', $identity->token(...));
 $router->post('/api/identity/login', $identity->login(...));

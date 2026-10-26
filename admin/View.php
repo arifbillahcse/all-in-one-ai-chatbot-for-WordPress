@@ -257,6 +257,12 @@ margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f3f4f6}
 .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600}
 .pill.sales{background:#dbeafe;color:#2563eb}
 .pill.services{background:#ede9fe;color:#7c3aed}
+.pill.waiting{background:#fee2e2;color:#b91c1c;margin-left:6px}
+.pill.human{background:#dcfce7;color:#15803d;margin-left:6px}
+.bubble.agent{background:#ecfdf5;border-color:#a7f3d0}
+.from-agent{display:block;font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px}
+.reply-box{position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e7eb;padding:12px 4px 4px;margin-top:8px}
+.reply-box textarea{width:100%;box-sizing:border-box;font:inherit;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;resize:vertical}
 CSS;
     }
 }

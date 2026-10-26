@@ -85,7 +85,9 @@
         position: 'bottom-right',
         suggestions: [],
         typewriter: true,
-        branding: false
+        branding: false,
+        agentLabel: 'Team member',
+        humanNotice: 'A team member is on this chat and will reply here shortly.'
     };
 
     var STORAGE_KEY = 'hoai_conversation_id';
@@ -93,6 +95,7 @@
     var STORAGE_KEY_FORM = 'hoai_form_data';
     var STORAGE_KEY_TOKEN = 'hoai_identity_token';
     var STORAGE_KEY_LOG = 'hoai_chat_log';
+    var STORAGE_KEY_AGENT = 'hoai_last_agent_id';
     var LOCAL_LOG_LIMIT = 100;
     var conversationId = null;
     var formData = null;
@@ -345,6 +348,8 @@
             '.msg.user { justify-content: flex-end; }',
             '.msg.user .bubble { background: var(--accent); color: var(--accent-text); border-bottom-right-radius: 4px; }',
             '.msg.bot .bubble { background: #fff; border: 1px solid #e5e7eb; border-bottom-left-radius: 4px; }',
+            '.msg.bot.agent .bubble { background: #ecfdf5; border-color: #a7f3d0; }',
+            '.agent-tag { display: block; font-size: 11px; font-weight: 700; color: #047857; margin-bottom: 2px; }',
             '.msg.error .bubble { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }',
             '.bubble a { color: inherit; text-decoration: underline; }',
             '.msg.bot .bubble a { color: #1d4ed8; }',
@@ -546,6 +551,14 @@
         bubble.className = 'bubble';
         row.appendChild(bubble);
 
+        if (options.agent) {
+            row.className += ' agent';
+            var tag = document.createElement('span');
+            tag.className = 'agent-tag';
+            tag.textContent = config.agentLabel || 'Team member';
+            bubble.appendChild(tag);
+        }
+
         log.appendChild(row);
         hasMessages = true;
 
@@ -742,6 +755,19 @@
                     } catch (e) { /* storage unavailable; carry on */ }
                 }
 
+                // A person has taken over this chat: nothing to show for the
+                // AI, but tell the visitor once that someone is on it, and
+                // start watching for the reply.
+                if (result.body.human) {
+                    if (!humanNoticeShown) {
+                        humanNoticeShown = true;
+                        addMessage('bot', config.humanNotice);
+                    }
+                    schedulePoll();
+                    announce('Message sent to the team.');
+                    return;
+                }
+
                 addMessage('bot', result.body.answer || '', {
                     progressive: true,
                     sources: result.body.sources
@@ -750,6 +776,7 @@
 
                 broadcastTurn(text, result.body.answer || '', result.body.sources);
                 announce('Reply received.');
+                schedulePoll();
                 return;
             }
 
@@ -798,6 +825,87 @@
                 statusLine.textContent = '';
             }
         }, 1500);
+    }
+
+    // ── Replies typed by a person ────────────────────────────────────────────
+    var humanNoticeShown = false;
+    var pollTimer = null;
+
+    function lastAgentId() {
+        try {
+            return parseInt(window.localStorage.getItem(STORAGE_KEY_AGENT) || '0', 10) || 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    function rememberAgentId(id) {
+        try {
+            if (id > lastAgentId()) {
+                window.localStorage.setItem(STORAGE_KEY_AGENT, String(id));
+            }
+        } catch (e) { /* storage unavailable; at worst a reply shows twice after a reload */ }
+    }
+
+    /**
+     * Ask the server whether a person has replied. Cheap, and only runs once
+     * there is a conversation; quicker while the panel is open and the tab is
+     * visible, slow otherwise so an idle page costs next to nothing.
+     */
+    function schedulePoll() {
+        if (pollTimer || !conversationId) {
+            return;
+        }
+
+        var delay = document.hidden ? 60000 : (isOpen ? 5000 : 20000);
+
+        pollTimer = window.setTimeout(function () {
+            pollTimer = null;
+            pollAgent().then(schedulePoll);
+        }, delay);
+    }
+
+    function pollAgent() {
+        if (!conversationId) {
+            return Promise.resolve();
+        }
+
+        var url = settings.endpoint.replace(/\/chat$/, '/chat/poll')
+            + '?conversation_id=' + encodeURIComponent(conversationId)
+            + '&after=' + lastAgentId();
+
+        var headers = {};
+
+        if (settings.token) {
+            headers['X-Chat-Token'] = settings.token;
+        }
+
+        return fetch(url, { method: 'GET', headers: headers })
+            .then(function (response) { return response.json(); })
+            .then(function (body) {
+                if (!body || !body.ok || !Array.isArray(body.messages)) {
+                    return;
+                }
+
+                body.messages.forEach(function (message) {
+                    var text = String(message.content || '');
+
+                    addMessage('bot', text, { agent: true });
+                    recordMessage('bot', text);
+                    rememberAgentId(message.id);
+                });
+
+                if (body.messages.length) {
+                    // Someone answered: make sure the visitor can see it.
+                    if (!isOpen) {
+                        open();
+                    }
+                    announce('A team member replied.');
+                }
+            })
+            .catch(function () {
+                // Offline or a hiccup: try again on the next tick.
+            });
     }
 
     // ── Panel ────────────────────────────────────────────────────────────────
@@ -1324,8 +1432,12 @@
                 body.messages.forEach(function (message) {
                     var role = message.role === 'user' ? 'user' : 'bot';
                     var content = String(message.content || '');
-                    addMessage(role, content);
+                    addMessage(role, content, { agent: !!message.agent });
                     recordMessage(role, content);
+
+                    if (message.agent) {
+                        rememberAgentId(message.id);
+                    }
                 });
             })
             .catch(function () {
@@ -1404,6 +1516,8 @@
                 if (settings.openOnLoad || wasOpenBefore()) {
                     open();
                 }
+
+                schedulePoll();
             });
     }
 

@@ -157,6 +157,33 @@ final class ChatEngine
             }
         }
 
+        /*
+         * A person is answering this thread. Store the visitor's message so the
+         * agent sees it, and stay silent: no model call, no cost, and nothing
+         * for the AI to talk over the agent with.
+         */
+        if ($conversationId !== null && ($conversation['mode'] ?? 'ai') === 'human') {
+            try {
+                $this->conversations->addMessage($conversationId, 'user', $message);
+                $this->conversations->ensureTitle($conversationId, $message);
+            } catch (Throwable $e) {
+                Logger::error('Storing a message in a human-handled chat failed', ['error' => $e->getMessage()]);
+            }
+
+            return new ChatReply(
+                text: '',
+                conversationId: $publicId,
+                provider: '',
+                model: '',
+                queryType: 'human',
+                costUsd: 0.0,
+                inputTokens: 0,
+                outputTokens: 0,
+                contextTokens: 0,
+                human: true,
+            );
+        }
+
         $context = $this->contextBuilder->build($message, $identity);
 
         $toolDefinitions = $this->tools->definitionsFor($identity);

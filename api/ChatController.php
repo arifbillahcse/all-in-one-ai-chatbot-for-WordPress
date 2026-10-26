@@ -157,6 +157,40 @@ final class ChatController
     }
 
     /**
+     * Replies typed by a person, for the widget to pick up. Cheap read with the
+     * same ownership check as history. The widget calls it every few seconds
+     * while a chat is open, so it is not counted against the message limit.
+     */
+    public function poll(Request $request): Response
+    {
+        $conversationId = Security::sanitizeIdentifier((string) $request->input('conversation_id', ''));
+
+        if ($conversationId === '') {
+            return Response::error('The `conversation_id` field is required.', 422, 'invalid_input');
+        }
+
+        $store = $this->conversationStore();
+
+        if ($store === null) {
+            return Response::error('Conversation history is unavailable.', 503, 'unavailable');
+        }
+
+        $identity = CustomerIdentity::fromRequest($request);
+        $result   = $store->agentMessagesSince(
+            $conversationId,
+            $identity,
+            ConversationStore::clientKey($request->ip),
+            (int) $request->input('after', 0)
+        );
+
+        if ($result === null) {
+            return Response::error('Conversation not found.', 404, 'not_found');
+        }
+
+        return Response::ok($result);
+    }
+
+    /**
      * Conversation persistence is optional: without a working database the
      * chatbot still answers, it just forgets. Better than refusing to talk.
      */

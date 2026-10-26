@@ -26,6 +26,7 @@ final class ChatReply
         public readonly array $sources = [],
         public readonly array $toolCalls = [],
         public readonly bool $truncated = false,
+        public readonly bool $human = false,
     ) {
     }
 
@@ -49,6 +50,7 @@ final class ChatReply
                 $this->toolCalls
             ),
             'truncated'       => $this->truncated,
+            'human'           => $this->human,
         ];
     }
 
