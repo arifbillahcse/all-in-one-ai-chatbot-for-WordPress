@@ -184,3 +184,18 @@ $qs = static function (array $overrides) use ($search, $page): string {
         </div>
     <?php endif; ?>
 <?php endif; ?>
+
+<?php if ($manualReady): ?>
+<script>
+// Pick up new visitor messages without a manual refresh, but never while a
+// reply is being typed or a field has focus.
+setTimeout(function refresh() {
+    var box = document.querySelector('.reply-box textarea');
+    if (!document.hidden && !(box && (box.value.trim() !== '' || document.activeElement === box))) {
+        location.reload();
+        return;
+    }
+    setTimeout(refresh, 30000);
+}, 30000);
+</script>
+<?php endif; ?>

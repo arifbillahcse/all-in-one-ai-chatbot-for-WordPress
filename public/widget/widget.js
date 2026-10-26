@@ -758,6 +758,8 @@
                 // A person has taken over this chat: nothing to show for the
                 // AI, but tell the visitor once that someone is on it, and
                 // start watching for the reply.
+                humanActive = !!result.body.human;
+
                 if (result.body.human) {
                     if (!humanNoticeShown) {
                         humanNoticeShown = true;
@@ -830,6 +832,10 @@
     // ── Replies typed by a person ────────────────────────────────────────────
     var humanNoticeShown = false;
     var pollTimer = null;
+    var pollStopped = false;
+    // Quick polling only while a person is handling the chat; otherwise an
+    // idle AI chat checks rarely, which keeps shared hosting quiet.
+    var humanActive = false;
 
     function lastAgentId() {
         try {
@@ -853,11 +859,11 @@
      * visible, slow otherwise so an idle page costs next to nothing.
      */
     function schedulePoll() {
-        if (pollTimer || !conversationId) {
+        if (pollTimer || pollStopped || !conversationId) {
             return;
         }
 
-        var delay = document.hidden ? 60000 : (isOpen ? 5000 : 20000);
+        var delay = document.hidden ? 60000 : (humanActive ? (isOpen ? 4000 : 15000) : (isOpen ? 15000 : 45000));
 
         pollTimer = window.setTimeout(function () {
             pollTimer = null;
@@ -883,9 +889,17 @@
         return fetch(url, { method: 'GET', headers: headers })
             .then(function (response) { return response.json(); })
             .then(function (body) {
+                if (body && body.error && body.error.code === 'not_found') {
+                    // Not this visitor's chat (or gone): stop asking.
+                    pollStopped = true;
+                    return;
+                }
+
                 if (!body || !body.ok || !Array.isArray(body.messages)) {
                     return;
                 }
+
+                humanActive = body.mode === 'human';
 
                 body.messages.forEach(function (message) {
                     var text = String(message.content || '');

@@ -73,6 +73,17 @@ final class ChatEngine
         $this->visitorDepartment = $visitorDepartment;
     }
 
+    private function budgetException(): LlmException
+    {
+        return new LlmException(
+            'Spending limit reached; refusing new requests.',
+            'cost-guard',
+            0,
+            'budget_exceeded',
+            false
+        );
+    }
+
     /**
      * Answer a question.
      *
@@ -89,14 +100,13 @@ final class ChatEngine
          * retrieval so a runaway does not keep paying for embeddings and
          * database reads on requests that will be refused anyway.
          */
-        if (CostGuard::shouldBlock()) {
-            throw new LlmException(
-                'Spending limit reached; refusing new requests.',
-                'cost-guard',
-                0,
-                'budget_exceeded',
-                false
-            );
+        $blocked = CostGuard::shouldBlock();
+
+        // A chat a person is handling costs nothing, so an exhausted budget
+        // must not cut visitors off from them. Only a request that names an
+        // existing thread can be one of those; everything else stops here.
+        if ($blocked && ($conversationPublicId === null || $conversationPublicId === '')) {
+            throw $this->budgetException();
         }
 
         $conversationId = null;
@@ -157,12 +167,18 @@ final class ChatEngine
             }
         }
 
+        $human = $conversationId !== null && ($conversation['mode'] ?? 'ai') === 'human';
+
+        if ($blocked && !$human) {
+            throw $this->budgetException();
+        }
+
         /*
          * A person is answering this thread. Store the visitor's message so the
          * agent sees it, and stay silent: no model call, no cost, and nothing
          * for the AI to talk over the agent with.
          */
-        if ($conversationId !== null && ($conversation['mode'] ?? 'ai') === 'human') {
+        if ($human) {
             try {
                 $this->conversations->addMessage($conversationId, 'user', $message);
                 $this->conversations->ensureTitle($conversationId, $message);

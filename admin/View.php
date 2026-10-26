@@ -99,6 +99,13 @@ final class View
             'widget-demo'   => 'Widget demo',
         ];
 
+        // Chats waiting for a human reply, as a badge. Never allowed to break a page.
+        try {
+            $waiting = (new Metrics())->waitingCount();
+        } catch (\Throwable) {
+            $waiting = 0;
+        }
+
         $links = '';
 
         foreach ($nav as $path => $label) {
@@ -110,7 +117,8 @@ final class View
             } else {
                 $href = $base . ($path === '' ? '' : '/' . $path);
                 $class = $active === $path ? ' class="on"' : '';
-                $links .= '<a href="' . $e($href) . '"' . $class . '>' . $e($label) . '</a>';
+                $badge = $path === 'conversations' && $waiting > 0 ? ' <span class="pill waiting">' . $waiting . '</span>' : '';
+                $links .= '<a href="' . $e($href) . '"' . $class . '>' . $e($label) . $badge . '</a>';
             }
         }
 

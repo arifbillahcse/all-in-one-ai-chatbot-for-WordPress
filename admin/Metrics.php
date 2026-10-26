@@ -226,6 +226,27 @@ final class Metrics
     }
 
     /**
+     * Chats a person is handling where the visitor spoke last. Shown as a
+     * badge in the admin navigation so nothing waits unnoticed.
+     */
+    public function waitingCount(): int
+    {
+        if (!$this->manualRepliesReady()) {
+            return 0;
+        }
+
+        $row = $this->one(sprintf(
+            "SELECT COUNT(*) AS c FROM `%s` c
+              WHERE c.mode = 'human'
+                AND (SELECT m.role FROM `%s` m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) = 'user'",
+            $this->db->table('conversations'),
+            $this->db->table('messages')
+        ));
+
+        return (int) ($row['c'] ?? 0);
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function recentConversations(int $limit = 40, int $offset = 0, string $search = ''): array
